@@ -1,0 +1,457 @@
+[
+  {
+    "id": "EM-1007",
+    "sender": "Vagif <ajshja@mail.com>",
+    "subject": "Hello",
+    "body": "hello hello,mn",
+    "category": "Academic",
+    "department": "Academic",
+    "caseOrigin": "Email intake",
+    "routingDecision": {
+      "department": "Academic",
+      "confidence": "Medium",
+      "confidenceScore": 91,
+      "reason": "This case currently maps into the Academic workflow based on the available intake and summary information.",
+      "signals": [
+        "academic",
+        "workflow summary"
+      ],
+      "escalationReason": null,
+      "suggestedAssignees": [
+        "Priya Shah",
+        "Ava Patel"
+      ]
+    },
+    "approvalState": "Needs Review",
+    "confidence": 91,
+    "priority": "High",
+    "status": "Auto-sent",
+    "assignee": null,
+    "aiDraft": "Hello Vagif,\n\nThanks for reaching out to academic operations. We reviewed the request against the current academic records guidance and prepared a draft response with the most likely approval path and expected next steps.\n\nWe will keep this case moving and follow up if a staff member needs to confirm any exception-specific details before the response is finalized.\n\nBest regards,\nEduMailAI Staff Workspace",
+    "staffNote": null,
+    "source": "Academic-Records-SOP-2026.pdf",
+    "summary": "Academic request about Hello. Intake notes: hello hello,mn",
+    "manualReviewReason": null,
+    "receivedAt": "2026-04-05T12:20:01.098Z",
+    "lastUpdatedAt": "2026-04-06T18:04:55.571Z",
+    "threadHistory": [
+      {
+        "id": "THREAD-INBOUND",
+        "kind": "Inbound",
+        "label": "Manual intake",
+        "author": "Vagif",
+        "sentAt": "2026-04-05T12:20:01.086Z",
+        "body": "hello hello,mn"
+      },
+      {
+        "id": "THREAD-INTAKE",
+        "kind": "Internal",
+        "label": "Workspace intake",
+        "author": "EduMailAI compose flow",
+        "sentAt": "2026-04-05T12:20:01.086Z",
+        "body": "Created a new case and prepared an initial local draft for staff review."
+      },
+      {
+        "id": "CURRENT-DRAFT",
+        "kind": "Outbound",
+        "label": "Approved reply",
+        "author": "Staff Workspace",
+        "sentAt": "2026-04-06T18:04:55.571Z",
+        "body": "Hello Vagif,\n\nThanks for reaching out to academic operations. We reviewed the request against the current academic records guidance and prepared a draft response with the most likely approval path and expected next steps.\n\nWe will keep this case moving and follow up if a staff member needs to confirm any exception-specific details before the response is finalized.\n\nBest regards,\nEduMailAI Staff Workspace"
+      }
+    ],
+    "sourceCitations": [
+      {
+        "id": "SRC-ACADEMIC-PRIMARY",
+        "documentName": "Academic-Records-SOP-2026.pdf",
+        "excerpt": "Grade corrections require department approval before the Registrar posts the updated record.",
+        "reason": "Supports the initial academic draft guidance."
+      }
+    ]
+  },
+  {
+    "id": "EM-1006",
+    "sender": "Vagif <ajshja@mail.com>",
+    "subject": "Hello",
+    "body": "hello hello,mn",
+    "category": "Academic",
+    "department": "Academic",
+    "caseOrigin": "Email intake",
+    "routingDecision": {
+      "department": "Academic",
+      "confidence": "Medium",
+      "confidenceScore": 91,
+      "reason": "This case currently maps into the Academic workflow based on the available intake and summary information.",
+      "signals": [
+        "academic",
+        "workflow summary"
+      ],
+      "escalationReason": null,
+      "suggestedAssignees": [
+        "Priya Shah",
+        "Ava Patel"
+      ]
+    },
+    "approvalState": "Needs Review",
+    "confidence": 91,
+    "priority": "High",
+    "status": "Draft",
+    "assignee": null,
+    "aiDraft": "Hello Vagif,\n\nThanks for reaching out to academic operations. We reviewed the request against the current academic records guidance and prepared a draft response with the most likely approval path and expected next steps.\n\nWe will keep this case moving and follow up if a staff member needs to confirm any exception-specific details before the response is finalized.\n\nBest regards,\nEduMailAI Staff Workspace",
+    "staffNote": null,
+    "source": "Academic-Records-SOP-2026.pdf",
+    "summary": "Academic request about Hello. Intake notes: hello hello,mn",
+    "manualReviewReason": null,
+    "receivedAt": "2026-04-05T12:19:10.838Z",
+    "lastUpdatedAt": "2026-04-05T12:19:10.838Z",
+    "threadHistory": [
+      {
+        "id": "THREAD-INBOUND",
+        "kind": "Inbound",
+        "label": "Manual intake",
+        "author": "Vagif",
+        "sentAt": "2026-04-05T12:18:56.505Z",
+        "body": "hello hello,mn"
+      },
+      {
+        "id": "THREAD-INTAKE",
+        "kind": "Internal",
+        "label": "Workspace intake",
+        "author": "EduMailAI compose flow",
+        "sentAt": "2026-04-05T12:18:56.505Z",
+        "body": "Created a new case and prepared an initial local draft for staff review."
+      },
+      {
+        "id": "CURRENT-DRAFT",
+        "kind": "Outbound",
+        "label": "Current draft",
+        "author": "Staff Workspace",
+        "sentAt": "2026-04-05T12:19:10.838Z",
+        "body": "Hello Vagif,\n\nThanks for reaching out to academic operations. We reviewed the request against the current academic records guidance and prepared a draft response with the most likely approval path and expected next steps.\n\nWe will keep this case moving and follow up if a staff member needs to confirm any exception-specific details before the response is finalized.\n\nBest regards,\nEduMailAI Staff Workspace"
+      }
+    ],
+    "sourceCitations": [
+      {
+        "id": "SRC-ACADEMIC-PRIMARY",
+        "documentName": "Academic-Records-SOP-2026.pdf",
+        "excerpt": "Grade corrections require department approval before the Registrar posts the updated record.",
+        "reason": "Supports the initial academic draft guidance."
+      }
+    ]
+  },
+  {
+    "id": "EM-1001",
+    "sender": "Maya Thompson <maya.thompson@student.edu>",
+    "subject": "Questions about international admission requirements",
+    "body": "Hello Admissions Team, I am applying as an international student for Fall 2027 and wanted to confirm if IELTS scores are mandatory when I already have SAT verbal scores. Could you also share the deadline for scholarship consideration?",
+    "category": "Admissions",
+    "confidence": 93,
+    "priority": "Medium",
+    "status": "Draft",
+    "assignee": "Ava Patel",
+    "aiDraft": "Hello Maya,\n\nThank you for your interest in EduMail University. For international applicants, IELTS or TOEFL is generally required unless your prior education was completed in English. SAT verbal scores are helpful but do not replace the English proficiency requirement in most cases.\n\nFor scholarship consideration, please submit your full application by December 15.\n\nBest regards,\nAdmissions Office",
+    "staffNote": null,
+    "source": "Admissions-International-Policy-2026.pdf",
+    "summary": "International applicant asking about English-language requirements and scholarship timing for Fall 2027.",
+    "manualReviewReason": null,
+    "receivedAt": "2026-03-27T09:12:00.000Z",
+    "lastUpdatedAt": "2026-03-27T10:05:00.000Z",
+    "threadHistory": [
+      {
+        "id": "EM-1001-TH-1",
+        "kind": "Inbound",
+        "label": "Student inquiry",
+        "author": "Maya Thompson",
+        "sentAt": "2026-03-27T09:12:00.000Z",
+        "body": "Hello Admissions Team, I am applying as an international student for Fall 2027 and wanted to confirm if IELTS scores are mandatory when I already have SAT verbal scores. Could you also share the deadline for scholarship consideration?"
+      },
+      {
+        "id": "EM-1001-TH-2",
+        "kind": "Internal",
+        "label": "Routing note",
+        "author": "Admissions triage",
+        "sentAt": "2026-03-27T09:20:00.000Z",
+        "body": "Assigned to international admissions review because scholarship timing is bundled into the same response."
+      }
+    ],
+    "sourceCitations": [
+      {
+        "id": "EM-1001-SRC-1",
+        "documentName": "Admissions-International-Policy-2026.pdf",
+        "excerpt": "International applicants must provide IELTS or TOEFL scores unless prior study was completed in English.",
+        "reason": "Supports the English proficiency requirement."
+      },
+      {
+        "id": "EM-1001-SRC-2",
+        "documentName": "Admissions-International-Policy-2026.pdf",
+        "excerpt": "Priority scholarship review requires a complete application submitted by December 15.",
+        "reason": "Supports the scholarship deadline in the draft."
+      }
+    ],
+    "department": "Admissions",
+    "caseOrigin": "Email intake",
+    "routingDecision": {
+      "department": "Admissions",
+      "confidence": "Medium",
+      "confidenceScore": 93,
+      "reason": "This case currently maps into the Admissions workflow based on the available intake and summary information.",
+      "signals": [
+        "admissions",
+        "workflow summary"
+      ],
+      "escalationReason": null,
+      "suggestedAssignees": [
+        "Ava Patel",
+        "Jordan Lee"
+      ]
+    },
+    "approvalState": "Needs Review"
+  },
+  {
+    "id": "EM-1002",
+    "sender": "Liam Patel <liam.patel@student.edu>",
+    "subject": "Installment plan for spring tuition payment",
+    "body": "Hi Finance Office, I cannot pay the full spring tuition this month. Is there a monthly installment option and what are the late fee rules if one payment is delayed?",
+    "category": "Finance",
+    "confidence": 89,
+    "priority": "High",
+    "status": "Auto-sent",
+    "assignee": "Noah Kim",
+    "aiDraft": "Hello Liam,\n\nYes, we offer a monthly installment plan for spring tuition. You can enroll through the student billing portal under Payment Plans. Please note that each missed installment may incur a late fee based on our tuition policy.\n\nIf needed, we can also connect you with Financial Aid to discuss additional support options.\n\nRegards,\nStudent Finance Team",
+    "staffNote": null,
+    "source": "Student-Billing-Handbook-2026.docx",
+    "summary": "Finance inquiry about tuition installments and late-fee exposure for spring billing.",
+    "manualReviewReason": null,
+    "receivedAt": "2026-03-27T11:46:00.000Z",
+    "lastUpdatedAt": "2026-03-27T12:18:00.000Z",
+    "threadHistory": [
+      {
+        "id": "EM-1002-TH-1",
+        "kind": "Inbound",
+        "label": "Student inquiry",
+        "author": "Liam Patel",
+        "sentAt": "2026-03-27T11:46:00.000Z",
+        "body": "Hi Finance Office, I cannot pay the full spring tuition this month. Is there a monthly installment option and what are the late fee rules if one payment is delayed?"
+      },
+      {
+        "id": "EM-1002-TH-2",
+        "kind": "Outbound",
+        "label": "Approved reply",
+        "author": "Noah Kim",
+        "sentAt": "2026-03-27T12:18:00.000Z",
+        "body": "Confirmed installment-plan availability, pointed the student to the billing portal, and called out late-fee policy plus financial-aid escalation."
+      }
+    ],
+    "sourceCitations": [
+      {
+        "id": "EM-1002-SRC-1",
+        "documentName": "Student-Billing-Handbook-2026.docx",
+        "excerpt": "Students may enroll in a monthly payment plan through the billing portal before the published spring tuition deadline.",
+        "reason": "Supports the installment-plan availability in the reply."
+      }
+    ],
+    "department": "Finance",
+    "caseOrigin": "Email intake",
+    "routingDecision": {
+      "department": "Finance",
+      "confidence": "Medium",
+      "confidenceScore": 89,
+      "reason": "This case currently maps into the Finance workflow based on the available intake and summary information.",
+      "signals": [
+        "finance",
+        "workflow summary"
+      ],
+      "escalationReason": null,
+      "suggestedAssignees": [
+        "Noah Kim",
+        "Priya Shah"
+      ]
+    },
+    "approvalState": "Approved"
+  },
+  {
+    "id": "EM-1003",
+    "sender": "Registrar Queue <noreply@registrar.edu>",
+    "subject": "Name mismatch on transcript request",
+    "body": "A transcript request from student ID 224198 was flagged due to a legal name mismatch between SIS and the transcript form. Please review and advise next steps.",
+    "category": "Registrar",
+    "confidence": 74,
+    "priority": "High",
+    "status": "Escalated",
+    "assignee": "Priya Shah",
+    "aiDraft": null,
+    "staffNote": "Potential legal-name exception. Confirm the registrar identity-match policy before replying.",
+    "source": "Transcript-Request-Workflow-v4.pdf",
+    "summary": "Registrar exception case involving identity verification before a transcript request can proceed.",
+    "manualReviewReason": "This case requires policy confirmation because the request involves a legal-name mismatch across systems.",
+    "receivedAt": "2026-03-28T07:30:00.000Z",
+    "lastUpdatedAt": "2026-03-28T08:14:00.000Z",
+    "threadHistory": [
+      {
+        "id": "EM-1003-TH-1",
+        "kind": "System",
+        "label": "Queue alert",
+        "author": "Registrar Queue",
+        "sentAt": "2026-03-28T07:30:00.000Z",
+        "body": "Transcript request flagged due to a legal-name mismatch between SIS and the submitted transcript form."
+      },
+      {
+        "id": "EM-1003-TH-2",
+        "kind": "Internal",
+        "label": "Escalation note",
+        "author": "Priya Shah",
+        "sentAt": "2026-03-28T08:14:00.000Z",
+        "body": "Needs registrar identity-match policy confirmation before the student is contacted."
+      }
+    ],
+    "sourceCitations": [
+      {
+        "id": "EM-1003-SRC-1",
+        "documentName": "Transcript-Request-Workflow-v4.pdf",
+        "excerpt": "Transcript requests with legal-name discrepancies must be held until identity verification is completed by Registrar Operations.",
+        "reason": "Explains why this case cannot be auto-sent yet."
+      }
+    ],
+    "department": "Registrar",
+    "caseOrigin": "Email intake",
+    "routingDecision": {
+      "department": "Registrar",
+      "confidence": "Low",
+      "confidenceScore": 74,
+      "reason": "Manual review is required before this case can be confidently routed into Registrar.",
+      "signals": [
+        "manual review required"
+      ],
+      "escalationReason": "This case requires policy confirmation because the request involves a legal-name mismatch across systems.",
+      "suggestedAssignees": [
+        "Jordan Lee",
+        "Ava Patel"
+      ]
+    },
+    "approvalState": "Escalated"
+  },
+  {
+    "id": "EM-1004",
+    "sender": "Prof. Elena Cruz <ecruz@faculty.edu>",
+    "subject": "Grade change approval process for capstone course",
+    "body": "Good afternoon, I need to submit a grade correction for two capstone students due to an LMS export issue. Can you confirm the approval chain and expected processing timeline?",
+    "category": "Academic",
+    "confidence": 91,
+    "priority": "Medium",
+    "status": "Draft",
+    "assignee": null,
+    "aiDraft": "Dear Professor Cruz,\n\nThank you for reaching out. Grade correction requests for capstone courses should be submitted via the Academic Records portal. After submission, requests route to your department chair for approval and then to the Registrar for final posting.\n\nTypical processing time is 3-5 business days.\n\nBest,\nAcademic Operations",
+    "staffNote": null,
+    "source": "Academic-Records-SOP-2026.pdf",
+    "summary": "Faculty request about grade-correction approvals and turnaround for capstone records.",
+    "manualReviewReason": null,
+    "receivedAt": "2026-03-28T14:22:00.000Z",
+    "lastUpdatedAt": "2026-03-28T14:41:00.000Z",
+    "threadHistory": [
+      {
+        "id": "EM-1004-TH-1",
+        "kind": "Inbound",
+        "label": "Faculty inquiry",
+        "author": "Prof. Elena Cruz",
+        "sentAt": "2026-03-28T14:22:00.000Z",
+        "body": "Good afternoon, I need to submit a grade correction for two capstone students due to an LMS export issue. Can you confirm the approval chain and expected processing timeline?"
+      },
+      {
+        "id": "EM-1004-TH-2",
+        "kind": "Internal",
+        "label": "Draft queued",
+        "author": "Academic Operations",
+        "sentAt": "2026-03-28T14:41:00.000Z",
+        "body": "Draft created from academic-records SOP. Waiting for assignment before final review."
+      }
+    ],
+    "sourceCitations": [
+      {
+        "id": "EM-1004-SRC-1",
+        "documentName": "Academic-Records-SOP-2026.pdf",
+        "excerpt": "Grade corrections route to the department chair first and then to the Registrar for posting after approval.",
+        "reason": "Supports the approval-chain explanation."
+      }
+    ],
+    "department": "Academic",
+    "caseOrigin": "Email intake",
+    "routingDecision": {
+      "department": "Academic",
+      "confidence": "Medium",
+      "confidenceScore": 91,
+      "reason": "This case currently maps into the Academic workflow based on the available intake and summary information.",
+      "signals": [
+        "academic",
+        "workflow summary"
+      ],
+      "escalationReason": null,
+      "suggestedAssignees": [
+        "Priya Shah",
+        "Ava Patel"
+      ]
+    },
+    "approvalState": "Needs Review"
+  },
+  {
+    "id": "EM-1005",
+    "sender": "Noah Kim <noah.kim@student.edu>",
+    "subject": "Deadline to drop elective without W grade",
+    "body": "Hi, could you tell me the last date to drop an elective this semester without receiving a W on my transcript? I am considering a schedule adjustment.",
+    "category": "Registrar",
+    "confidence": 96,
+    "priority": "Low",
+    "status": "Auto-sent",
+    "assignee": "Jordan Lee",
+    "aiDraft": "Hello Noah,\n\nThe last date to drop an elective course without receiving a W grade this semester is April 4. You can process the change through the registration portal before 11:59 PM local time.\n\nIf you want help evaluating schedule impacts, we recommend speaking with your academic advisor.\n\nRegards,\nRegistrar Office",
+    "staffNote": null,
+    "source": "Academic-Calendar-2026.pdf",
+    "summary": "Registrar deadline question about course-drop timing and transcript impact.",
+    "manualReviewReason": null,
+    "receivedAt": "2026-03-29T08:05:00.000Z",
+    "lastUpdatedAt": "2026-03-29T08:21:00.000Z",
+    "threadHistory": [
+      {
+        "id": "EM-1005-TH-1",
+        "kind": "Inbound",
+        "label": "Student inquiry",
+        "author": "Noah Kim",
+        "sentAt": "2026-03-29T08:05:00.000Z",
+        "body": "Hi, could you tell me the last date to drop an elective this semester without receiving a W on my transcript? I am considering a schedule adjustment."
+      },
+      {
+        "id": "EM-1005-TH-2",
+        "kind": "Outbound",
+        "label": "Approved reply",
+        "author": "Jordan Lee",
+        "sentAt": "2026-03-29T08:21:00.000Z",
+        "body": "Confirmed the no-W drop deadline and directed the student to academic advising for schedule planning."
+      }
+    ],
+    "sourceCitations": [
+      {
+        "id": "EM-1005-SRC-1",
+        "documentName": "Academic-Calendar-2026.pdf",
+        "excerpt": "The last day to drop an elective without a W grade is April 4 at 11:59 PM local time.",
+        "reason": "Supports the deadline quoted in the approved reply."
+      }
+    ],
+    "department": "Registrar",
+    "caseOrigin": "Email intake",
+    "routingDecision": {
+      "department": "Registrar",
+      "confidence": "Medium",
+      "confidenceScore": 96,
+      "reason": "This case currently maps into the Registrar workflow based on the available intake and summary information.",
+      "signals": [
+        "registrar",
+        "workflow summary"
+      ],
+      "escalationReason": null,
+      "suggestedAssignees": [
+        "Jordan Lee",
+        "Ava Patel"
+      ]
+    },
+    "approvalState": "Approved"
+  }
+]
