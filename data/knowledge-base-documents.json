@@ -1,0 +1,37 @@
+[
+  {
+    "id": "DOC-1",
+    "name": "Admissions-International-Policy-2026.pdf",
+    "category": "Admissions",
+    "uploadedAt": "2026-03-20",
+    "pages": 34
+  },
+  {
+    "id": "DOC-2",
+    "name": "Student-Billing-Handbook-2026.docx",
+    "category": "Finance",
+    "uploadedAt": "2026-03-18",
+    "pages": 21
+  },
+  {
+    "id": "DOC-3",
+    "name": "Transcript-Request-Workflow-v4.pdf",
+    "category": "Registrar",
+    "uploadedAt": "2026-03-14",
+    "pages": 12
+  },
+  {
+    "id": "DOC-4",
+    "name": "Academic-Records-SOP-2026.pdf",
+    "category": "Academic",
+    "uploadedAt": "2026-03-10",
+    "pages": 27
+  },
+  {
+    "id": "DOC-5",
+    "name": "Academic-Calendar-2026.pdf",
+    "category": "Registrar",
+    "uploadedAt": "2026-03-08",
+    "pages": 9
+  }
+]

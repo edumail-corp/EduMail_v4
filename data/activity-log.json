@@ -1,0 +1,22 @@
+[
+  {
+    "id": "ACT-8ac76e60",
+    "timestamp": "2026-04-05T12:20:01.193Z",
+    "action": "case_created",
+    "entityType": "email",
+    "entityId": "EM-1007",
+    "title": "Hello",
+    "description": "Created a new case and added it to the review queue.",
+    "href": "/dashboard/inbox?emailId=EM-1007"
+  },
+  {
+    "id": "ACT-a91f4a20",
+    "timestamp": "2026-04-05T12:19:17.520Z",
+    "action": "case_created",
+    "entityType": "email",
+    "entityId": "EM-1006",
+    "title": "Hello",
+    "description": "Created a new case and added it to the review queue.",
+    "href": "/dashboard/inbox?emailId=EM-1006"
+  }
+]
