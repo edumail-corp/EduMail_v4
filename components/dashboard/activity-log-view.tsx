@@ -20,6 +20,11 @@ import {
   type ActivityEvent,
   type ActivityFilter,
 } from "@/lib/activity-log";
+import {
+  assessEmailGrounding,
+  getEmailDepartment,
+  type StaffEmail,
+} from "@/lib/email-data";
 
 function matchesActivitySearch(event: ActivityEvent, query: string) {
   if (query.length === 0) {
@@ -81,8 +86,10 @@ function getLastSevenSnapshots(anchorIso: string) {
 
 export function ActivityLogView({
   events,
+  emails,
 }: Readonly<{
   events: ActivityEvent[];
+  emails: StaffEmail[];
 }>) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -120,6 +127,44 @@ export function ActivityLogView({
       : Math.round(
           ((counts.document_uploaded + counts.document_deleted) / counts.All) * 100
         );
+  const emailsWithGrounding = emails.map((email) => ({
+    email,
+    grounding: assessEmailGrounding(email),
+  }));
+  const approvalReadyCount = emailsWithGrounding.filter(
+    ({ grounding }) => grounding.approvalReady
+  ).length;
+  const weakGroundingCount = emailsWithGrounding.filter(
+    ({ grounding }) => grounding.strength === "Weak"
+  ).length;
+  const unassignedQueueCount = emails.filter((email) => email.assignee === null).length;
+  const escalatedQueueCount = emails.filter(
+    (email) => email.status === "Escalated"
+  ).length;
+  const approvalReadinessRate =
+    emails.length === 0 ? 0 : Math.round((approvalReadyCount / emails.length) * 100);
+  const weakGroundingRate =
+    emails.length === 0 ? 0 : Math.round((weakGroundingCount / emails.length) * 100);
+  const riskByDepartment = Object.entries(
+    emailsWithGrounding.reduce<Record<string, { weak: number; total: number }>>(
+      (totals, { email, grounding }) => {
+        const department = getEmailDepartment(email);
+        const current = totals[department] ?? { weak: 0, total: 0 };
+        current.total += 1;
+        current.weak += grounding.strength === "Weak" ? 1 : 0;
+        totals[department] = current;
+        return totals;
+      },
+      {}
+    )
+  ).sort((left, right) => {
+    if (right[1].weak !== left[1].weak) {
+      return right[1].weak - left[1].weak;
+    }
+
+    return right[1].total - left[1].total;
+  });
+  const mostAtRiskDepartment = riskByDepartment[0];
 
   function buildFilterHref(nextFilter: ActivityFilter) {
     const nextSearchParams = new URLSearchParams(searchParams.toString());
@@ -268,6 +313,92 @@ export function ActivityLogView({
                     {visibleEvents.length} shown
                   </p>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={`${dashboardPanelClassName} p-5`}>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+              Review Pressure
+            </p>
+            <h3 className="mt-3 text-2xl font-semibold tracking-tight text-[#1E2340]">
+              Review Pressure
+            </h3>
+
+            <div className="mt-6 space-y-5">
+              <div>
+                <div className="mb-2 flex items-center justify-between text-sm text-slate-500">
+                  <span>Approval-ready share</span>
+                  <span className="font-semibold text-[#4F57E8]">
+                    {approvalReadinessRate}%
+                  </span>
+                </div>
+                <div className="h-2.5 rounded-full bg-[#E7EBF6]">
+                  <div
+                    className="h-2.5 rounded-full bg-[#5C61FF]"
+                    style={{ width: `${approvalReadinessRate}%` }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-2 flex items-center justify-between text-sm text-slate-500">
+                  <span>Weak-support pressure</span>
+                  <span className="font-semibold text-[#D43D63]">
+                    {weakGroundingRate}%
+                  </span>
+                </div>
+                <div className="h-2.5 rounded-full bg-[#F6E3E8]">
+                  <div
+                    className="h-2.5 rounded-full bg-[#D43D63]"
+                    style={{ width: `${weakGroundingRate}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                <div className="rounded-[22px] border border-white/75 bg-white/64 px-4 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    Approval-ready
+                  </p>
+                  <p className="mt-2 text-lg font-semibold text-[#1E2340]">
+                    {approvalReadyCount}
+                  </p>
+                </div>
+                <div className="rounded-[22px] border border-white/75 bg-white/64 px-4 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    Weak support
+                  </p>
+                  <p className="mt-2 text-lg font-semibold text-[#1E2340]">
+                    {weakGroundingCount}
+                  </p>
+                </div>
+                <div className="rounded-[22px] border border-white/75 bg-white/64 px-4 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    Unassigned
+                  </p>
+                  <p className="mt-2 text-lg font-semibold text-[#1E2340]">
+                    {unassignedQueueCount}
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-[22px] border border-white/75 bg-white/64 px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  Highest-risk department
+                </p>
+                <p className="mt-2 text-lg font-semibold text-[#1E2340]">
+                  {mostAtRiskDepartment
+                    ? mostAtRiskDepartment[0]
+                    : "No live queue"}
+                </p>
+                <p className="mt-2 text-sm leading-7 text-slate-500">
+                  {mostAtRiskDepartment
+                    ? mostAtRiskDepartment[1].weak > 0
+                      ? `${mostAtRiskDepartment[1].weak} weakly grounded cases and ${escalatedQueueCount} escalations are currently putting the most review pressure on this workspace.`
+                      : "No department is currently carrying weak-support cases."
+                    : "Review pressure will appear here once cases are flowing through the queue."}
+                </p>
               </div>
             </div>
           </div>

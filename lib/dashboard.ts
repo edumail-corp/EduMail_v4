@@ -1,7 +1,10 @@
 import type {
+  CaseApprovalState,
   EmailCategory,
   EmailPriority,
   EmailStatus,
+  GroundingStrength,
+  WorkloadPressure,
 } from "@/lib/email-data";
 
 export const dashboardNavItems = [
@@ -52,6 +55,25 @@ export const emailPriorityClasses: Record<EmailPriority, string> = {
   Low: "border-transparent bg-slate-100 text-slate-600",
   Medium: "border-transparent bg-[#FFF4DF] text-[#B97411]",
   High: "border-transparent bg-[#FFE9EE] text-[#D43D63]",
+};
+
+export const approvalStateClasses: Record<CaseApprovalState, string> = {
+  "Awaiting Draft": "bg-slate-100 text-slate-600",
+  "Needs Review": "bg-[#EEF0FF] text-[#555CF0]",
+  Approved: "bg-[#E9FBF1] text-[#0C8A53]",
+  Escalated: "bg-[#FFE9EE] text-[#D43D63]",
+};
+
+export const groundingStrengthClasses: Record<GroundingStrength, string> = {
+  Strong: "bg-[#E9FBF1] text-[#0C8A53]",
+  Moderate: "bg-[#FFF3D9] text-[#B67100]",
+  Weak: "bg-[#FFE9EE] text-[#D43D63]",
+};
+
+export const workloadPressureClasses: Record<WorkloadPressure, string> = {
+  Balanced: "bg-[#E9FBF1] text-[#0C8A53]",
+  Busy: "bg-[#FFF3D9] text-[#B67100]",
+  Overloaded: "bg-[#FFE9EE] text-[#D43D63]",
 };
 
 export function formatEmailDate(iso: string) {

@@ -339,6 +339,9 @@ export async function createStaffEmail(
     ),
   };
   const synchronizedNextEmail = synchronizeOperationalFields(nextEmail);
+  const routingDecision =
+    synchronizedNextEmail.routingDecision ??
+    buildFallbackRoutingDecision(synchronizedNextEmail);
 
   await writeStaffEmails([synchronizedNextEmail, ...emails]);
 
@@ -349,8 +352,8 @@ export async function createStaffEmail(
     title: synchronizedNextEmail.subject,
     description:
       synchronizedNextEmail.status === "Escalated"
-        ? `Created a new case, suggested ${synchronizedNextEmail.department}, recommended ${synchronizedNextEmail.routingDecision.suggestedAssignees.join(", ")}, and routed it into the Escalations queue.`
-        : `Created a new case, suggested ${synchronizedNextEmail.department}, recommended ${synchronizedNextEmail.routingDecision.suggestedAssignees.join(", ")}, and added it to the review queue.`,
+        ? `Created a new case, suggested ${synchronizedNextEmail.department}, recommended ${routingDecision.suggestedAssignees.join(", ")}, and routed it into the Escalations queue.`
+        : `Created a new case, suggested ${synchronizedNextEmail.department}, recommended ${routingDecision.suggestedAssignees.join(", ")}, and added it to the review queue.`,
     href:
       synchronizedNextEmail.status === "Escalated"
         ? `/dashboard/escalations?emailId=${encodeURIComponent(synchronizedNextEmail.id)}`

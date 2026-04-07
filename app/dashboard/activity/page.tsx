@@ -1,13 +1,17 @@
 import { Suspense } from "react";
 import { ActivityLogView } from "@/components/dashboard/activity-log-view";
 import { listWorkspaceActivity } from "@/lib/server/services/activity-service";
+import { listMailboxEmails } from "@/lib/server/services/mailbox-service";
 
 export default async function ActivityPage() {
-  const events = await listWorkspaceActivity(40);
+  const [events, emails] = await Promise.all([
+    listWorkspaceActivity(40),
+    listMailboxEmails(),
+  ]);
 
   return (
     <Suspense fallback={null}>
-      <ActivityLogView events={events} />
+      <ActivityLogView events={events} emails={emails} />
     </Suspense>
   );
 }

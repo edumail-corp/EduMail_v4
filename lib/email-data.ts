@@ -9,6 +9,7 @@ export type StaffAssignmentSelectValue = "Unassigned" | StaffAssignee;
 export type DepartmentFilter = "All" | Department;
 export type CaseOrigin = "Email intake" | "Manual intake";
 export type RoutingConfidence = "Low" | "Medium" | "High";
+export type GroundingStrength = "Weak" | "Moderate" | "Strong";
 export type CaseApprovalState =
   | "Awaiting Draft"
   | "Needs Review"
@@ -87,6 +88,84 @@ export type StaffEmailUpdateInput = {
   staffNote?: string | null;
 };
 
+export type EmailGroundingAssessment = {
+  strength: GroundingStrength;
+  score: number;
+  approvalReady: boolean;
+  summary: string;
+  positives: string[];
+  risks: string[];
+};
+
+export type EmailApprovalGuidance = {
+  blockers: string[];
+  nextActions: string[];
+};
+
+export type EmailCitationGroup = {
+  documentName: string;
+  citationCount: number;
+  excerpts: string[];
+  reasons: string[];
+};
+
+export type WorkloadPressure = "Balanced" | "Busy" | "Overloaded";
+
+export type OwnerWorkloadSummary = {
+  owner: StaffAssignee;
+  totalCount: number;
+  activeCount: number;
+  approvalReadyCount: number;
+  weakSupportCount: number;
+  strongSupportCount: number;
+  escalatedCount: number;
+  highPriorityCount: number;
+  primaryDepartment: Department | null;
+  departments: Department[];
+  pressureScore: number;
+  pressure: WorkloadPressure;
+};
+
+export type DepartmentQueueSummary = {
+  department: Department;
+  totalCount: number;
+  activeCount: number;
+  approvalReadyCount: number;
+  weakSupportCount: number;
+  strongSupportCount: number;
+  unassignedCount: number;
+  escalatedCount: number;
+  highPriorityCount: number;
+  ownerCoverageRate: number;
+  suggestedOwners: StaffAssignee[];
+  lightestOwner: StaffAssignee | null;
+  pressureScore: number;
+  pressure: WorkloadPressure;
+};
+
+export type MailboxOperationsSnapshot = {
+  totalCount: number;
+  activeCount: number;
+  approvalReadyCount: number;
+  weakSupportCount: number;
+  strongSupportCount: number;
+  unassignedCount: number;
+  escalatedCount: number;
+  departmentSummaries: DepartmentQueueSummary[];
+  ownerSummaries: OwnerWorkloadSummary[];
+  mostPressuredDepartment: DepartmentQueueSummary | null;
+  mostLoadedOwner: OwnerWorkloadSummary | null;
+};
+
+export type AssignmentRecommendation = {
+  assignee: StaffAssignee;
+  department: Department;
+  reason: string;
+  queueSummary: string;
+  departmentSummary: string;
+  pressure: WorkloadPressure;
+};
+
 export const minimumSenderNameLength = 2;
 export const minimumEmailSubjectLength = 3;
 export const minimumEmailBodyLength = 10;
@@ -140,6 +219,590 @@ export function getEmailApprovalState(
   }
 
   return "Awaiting Draft" as const;
+}
+
+export function getEmailWorkflowHref(
+  email: Pick<StaffEmail, "id" | "status">
+) {
+  if (email.status === "Escalated") {
+    return `/dashboard/escalations?emailId=${encodeURIComponent(email.id)}`;
+  }
+
+  if (email.status === "Draft") {
+    return `/dashboard/drafts?emailId=${encodeURIComponent(email.id)}`;
+  }
+
+  return `/dashboard/inbox?emailId=${encodeURIComponent(email.id)}`;
+}
+
+export function groupEmailSourceCitations(
+  citations: StaffEmail["sourceCitations"]
+): EmailCitationGroup[] {
+  const groups = citations.reduce<Record<string, EmailCitationGroup>>(
+    (totals, citation) => {
+      const current = totals[citation.documentName] ?? {
+        documentName: citation.documentName,
+        citationCount: 0,
+        excerpts: [],
+        reasons: [],
+      };
+
+      current.citationCount += 1;
+
+      if (!current.excerpts.includes(citation.excerpt)) {
+        current.excerpts.push(citation.excerpt);
+      }
+
+      if (!current.reasons.includes(citation.reason)) {
+        current.reasons.push(citation.reason);
+      }
+
+      totals[citation.documentName] = current;
+      return totals;
+    },
+    {}
+  );
+
+  return Object.values(groups).sort((left, right) => {
+    if (right.citationCount !== left.citationCount) {
+      return right.citationCount - left.citationCount;
+    }
+
+    return left.documentName.localeCompare(right.documentName);
+  });
+}
+
+export function assessEmailGrounding(
+  email: Pick<
+    StaffEmail,
+    "aiDraft" | "source" | "sourceCitations" | "manualReviewReason" | "routingDecision" | "assignee"
+  >
+): EmailGroundingAssessment {
+  const positives: string[] = [];
+  const risks: string[] = [];
+  const uniqueDocumentCount = new Set(
+    email.sourceCitations.map((citation) => citation.documentName)
+  ).size;
+  const routingConfidenceScore = email.routingDecision?.confidenceScore ?? 0;
+
+  let score = 0;
+
+  if (email.aiDraft) {
+    score += 24;
+    positives.push("A draft is already available for human review.");
+  } else {
+    risks.push("No draft is available yet, so a human response is still required.");
+  }
+
+  if (email.source) {
+    score += 20;
+    positives.push(`A source document is linked to this case (${email.source}).`);
+  } else {
+    risks.push("No source document is linked to this case yet.");
+  }
+
+  if (email.sourceCitations.length > 0) {
+    score += 18;
+    positives.push(
+      `${email.sourceCitations.length} cited passage${email.sourceCitations.length === 1 ? "" : "s"} support the draft.`
+    );
+  } else if (email.source) {
+    score += 6;
+    risks.push("A source is linked, but no supporting excerpts are attached to the draft.");
+  } else {
+    risks.push("The draft does not include stored supporting excerpts.");
+  }
+
+  if (uniqueDocumentCount >= 2) {
+    score += 12;
+    positives.push(`Support is distributed across ${uniqueDocumentCount} source documents.`);
+  } else if (uniqueDocumentCount === 1 && email.sourceCitations.length > 0) {
+    score += 6;
+    positives.push("At least one source document is grounded into the draft.");
+  }
+
+  if (routingConfidenceScore >= 85) {
+    score += 12;
+    positives.push(`Routing confidence is high at ${routingConfidenceScore}%.`);
+  } else if (routingConfidenceScore >= 70) {
+    score += 6;
+    positives.push(`Routing confidence is acceptable at ${routingConfidenceScore}%.`);
+  } else if (routingConfidenceScore > 0) {
+    risks.push(`Routing confidence is only ${routingConfidenceScore}%, so the queue placement should be checked carefully.`);
+  } else {
+    risks.push("No routing confidence score is attached to this case.");
+  }
+
+  if (email.assignee) {
+    score += 4;
+    positives.push(`An owner is assigned (${email.assignee}).`);
+  } else {
+    risks.push("No owner is assigned yet.");
+  }
+
+  if (email.manualReviewReason) {
+    score -= 22;
+    risks.push(email.manualReviewReason);
+  }
+
+  score = Math.max(0, Math.min(100, score));
+
+  const strength: GroundingStrength =
+    score >= 72 ? "Strong" : score >= 48 ? "Moderate" : "Weak";
+  const approvalReady =
+    Boolean(email.aiDraft) &&
+    Boolean(email.source) &&
+    email.sourceCitations.length > 0 &&
+    !email.manualReviewReason &&
+    routingConfidenceScore >= 70;
+
+  let summary =
+    "This draft still needs a human to validate the routing and policy support before approval.";
+
+  if (approvalReady) {
+    summary =
+      "This draft has enough visible support to move into final human review and approval.";
+  } else if (strength === "Moderate") {
+    summary =
+      "This draft has partial support, but a reviewer should confirm the routing logic or add stronger cited evidence before approval.";
+  } else if (strength === "Weak") {
+    summary =
+      "This draft is weakly grounded and should be treated as a manual-review case until stronger support is attached.";
+  }
+
+  return {
+    strength,
+    score,
+    approvalReady,
+    summary,
+    positives,
+    risks,
+  };
+}
+
+export function getEmailApprovalGuidance(
+  email: Pick<
+    StaffEmail,
+    "aiDraft" | "source" | "sourceCitations" | "manualReviewReason" | "routingDecision" | "assignee"
+  >
+): EmailApprovalGuidance {
+  const blockers: string[] = [];
+  const nextActions: string[] = [];
+  const grounding = assessEmailGrounding(email);
+  const routingConfidenceScore = email.routingDecision?.confidenceScore ?? 0;
+
+  if (!email.aiDraft) {
+    blockers.push("No draft is ready, so the case cannot move into approval.");
+    nextActions.push("Write or save a draft response before final review.");
+  }
+
+  if (!email.assignee) {
+    blockers.push("The case does not have a current owner.");
+    nextActions.push("Assign the case to the best-fit department owner.");
+  }
+
+  if (!email.source) {
+    blockers.push("No primary policy source is linked to the case.");
+    nextActions.push("Attach the most relevant knowledge-base source before approval.");
+  }
+
+  if (email.source && email.sourceCitations.length === 0) {
+    blockers.push("The draft references a source, but no stored cited passages are attached.");
+    nextActions.push("Add at least one cited excerpt showing which policy line supports the response.");
+  }
+
+  if (routingConfidenceScore > 0 && routingConfidenceScore < 70) {
+    blockers.push(
+      `Routing confidence is only ${routingConfidenceScore}%, so the department placement should be confirmed.`
+    );
+    nextActions.push("Verify the routed department or manually reassign the case if needed.");
+  }
+
+  if (email.manualReviewReason) {
+    blockers.push(email.manualReviewReason);
+    nextActions.push("Resolve the manual-review hold before sending anything outward.");
+  }
+
+  if (!grounding.approvalReady && blockers.length === 0) {
+    blockers.push("The case still needs stronger evidence before it is safe to approve.");
+  }
+
+  if (nextActions.length === 0) {
+    nextActions.push("Complete a final human review and approve the reply when ready.");
+  }
+
+  return {
+    blockers,
+    nextActions,
+  };
+}
+
+function isActiveWorkflowEmail(email: Pick<StaffEmail, "status">) {
+  return email.status !== "Auto-sent";
+}
+
+function getOwnerPressure(
+  summary: Pick<
+    OwnerWorkloadSummary,
+    "pressureScore" | "activeCount" | "weakSupportCount" | "escalatedCount"
+  >
+): WorkloadPressure {
+  if (
+    summary.pressureScore >= 36 ||
+    summary.activeCount >= 4 ||
+    summary.weakSupportCount >= 2 ||
+    summary.escalatedCount >= 2
+  ) {
+    return "Overloaded";
+  }
+
+  if (
+    summary.pressureScore >= 16 ||
+    summary.activeCount >= 2 ||
+    summary.weakSupportCount >= 1 ||
+    summary.escalatedCount >= 1
+  ) {
+    return "Busy";
+  }
+
+  return "Balanced";
+}
+
+function getDepartmentPressure(
+  summary: Pick<
+    DepartmentQueueSummary,
+    | "pressureScore"
+    | "activeCount"
+    | "weakSupportCount"
+    | "unassignedCount"
+    | "escalatedCount"
+  >
+): WorkloadPressure {
+  if (
+    summary.pressureScore >= 42 ||
+    summary.activeCount >= 5 ||
+    summary.weakSupportCount >= 2 ||
+    summary.unassignedCount >= 2 ||
+    summary.escalatedCount >= 2
+  ) {
+    return "Overloaded";
+  }
+
+  if (
+    summary.pressureScore >= 18 ||
+    summary.activeCount >= 2 ||
+    summary.weakSupportCount >= 1 ||
+    summary.unassignedCount >= 1 ||
+    summary.escalatedCount >= 1
+  ) {
+    return "Busy";
+  }
+
+  return "Balanced";
+}
+
+function pickLightestDepartmentOwner(
+  department: Department,
+  ownerSummaries: OwnerWorkloadSummary[]
+) {
+  const candidateOwners = getDepartmentSuggestedAssignees(department)
+    .map((owner) => ownerSummaries.find((summary) => summary.owner === owner))
+    .filter((summary): summary is OwnerWorkloadSummary => summary !== undefined)
+    .sort((left, right) => {
+      if (left.pressureScore !== right.pressureScore) {
+        return left.pressureScore - right.pressureScore;
+      }
+
+      if (left.activeCount !== right.activeCount) {
+        return left.activeCount - right.activeCount;
+      }
+
+      if (left.weakSupportCount !== right.weakSupportCount) {
+        return left.weakSupportCount - right.weakSupportCount;
+      }
+
+      if (left.totalCount !== right.totalCount) {
+        return left.totalCount - right.totalCount;
+      }
+
+      return left.owner.localeCompare(right.owner);
+    });
+
+  return candidateOwners[0]?.owner ?? null;
+}
+
+export function summarizeMailboxOperations(
+  emails: StaffEmail[]
+): MailboxOperationsSnapshot {
+  const ownerSummaries = staffAssigneeOptions
+    .map<OwnerWorkloadSummary>((owner) => {
+      const ownerEmails = emails.filter((email) => email.assignee === owner);
+      const activeEmails = ownerEmails.filter(isActiveWorkflowEmail);
+      const ownerGrounding = activeEmails.map((email) => assessEmailGrounding(email));
+      const departmentCounts = activeEmails.reduce<Partial<Record<Department, number>>>(
+        (totals, email) => {
+          const department = getEmailDepartment(email);
+          totals[department] = (totals[department] ?? 0) + 1;
+          return totals;
+        },
+        {}
+      );
+
+      const primaryDepartment =
+        Object.entries(departmentCounts).sort((left, right) => {
+          if (right[1] !== left[1]) {
+            return right[1] - left[1];
+          }
+
+          return left[0].localeCompare(right[0]);
+        })[0]?.[0] ?? null;
+
+      const approvalReadyCount = ownerGrounding.filter(
+        (grounding) => grounding.approvalReady
+      ).length;
+      const weakSupportCount = ownerGrounding.filter(
+        (grounding) => grounding.strength === "Weak"
+      ).length;
+      const strongSupportCount = ownerGrounding.filter(
+        (grounding) => grounding.strength === "Strong"
+      ).length;
+      const escalatedCount = activeEmails.filter(
+        (email) => email.status === "Escalated"
+      ).length;
+      const highPriorityCount = activeEmails.filter(
+        (email) => email.priority === "High"
+      ).length;
+      const pressureScore =
+        activeEmails.length * 8 +
+        weakSupportCount * 6 +
+        escalatedCount * 5 +
+        highPriorityCount * 4 -
+        approvalReadyCount * 3;
+
+      return {
+        owner,
+        totalCount: ownerEmails.length,
+        activeCount: activeEmails.length,
+        approvalReadyCount,
+        weakSupportCount,
+        strongSupportCount,
+        escalatedCount,
+        highPriorityCount,
+        primaryDepartment:
+          primaryDepartment === null ? null : (primaryDepartment as Department),
+        departments: Object.keys(departmentCounts) as Department[],
+        pressureScore,
+        pressure: getOwnerPressure({
+          pressureScore,
+          activeCount: activeEmails.length,
+          weakSupportCount,
+          escalatedCount,
+        }),
+      };
+    })
+    .sort((left, right) => {
+      if (right.pressureScore !== left.pressureScore) {
+        return right.pressureScore - left.pressureScore;
+      }
+
+      if (right.activeCount !== left.activeCount) {
+        return right.activeCount - left.activeCount;
+      }
+
+      return left.owner.localeCompare(right.owner);
+    });
+
+  const departmentSummaries = emailCategoryOptions
+    .map<DepartmentQueueSummary>((department) => {
+      const departmentEmails = emails.filter(
+        (email) => getEmailDepartment(email) === department
+      );
+      const activeEmails = departmentEmails.filter(isActiveWorkflowEmail);
+      const departmentGrounding = activeEmails.map((email) =>
+        assessEmailGrounding(email)
+      );
+      const approvalReadyCount = departmentGrounding.filter(
+        (grounding) => grounding.approvalReady
+      ).length;
+      const weakSupportCount = departmentGrounding.filter(
+        (grounding) => grounding.strength === "Weak"
+      ).length;
+      const strongSupportCount = departmentGrounding.filter(
+        (grounding) => grounding.strength === "Strong"
+      ).length;
+      const unassignedCount = activeEmails.filter(
+        (email) => email.assignee === null
+      ).length;
+      const escalatedCount = activeEmails.filter(
+        (email) => email.status === "Escalated"
+      ).length;
+      const highPriorityCount = activeEmails.filter(
+        (email) => email.priority === "High"
+      ).length;
+      const pressureScore =
+        activeEmails.length * 7 +
+        weakSupportCount * 6 +
+        unassignedCount * 5 +
+        escalatedCount * 5 +
+        highPriorityCount * 4 -
+        approvalReadyCount * 2;
+
+      return {
+        department,
+        totalCount: departmentEmails.length,
+        activeCount: activeEmails.length,
+        approvalReadyCount,
+        weakSupportCount,
+        strongSupportCount,
+        unassignedCount,
+        escalatedCount,
+        highPriorityCount,
+        ownerCoverageRate:
+          activeEmails.length === 0
+            ? 100
+            : Math.round(
+                ((activeEmails.length - unassignedCount) / activeEmails.length) *
+                  100
+              ),
+        suggestedOwners: getDepartmentSuggestedAssignees(department),
+        lightestOwner: null,
+        pressureScore,
+        pressure: getDepartmentPressure({
+          pressureScore,
+          activeCount: activeEmails.length,
+          weakSupportCount,
+          unassignedCount,
+          escalatedCount,
+        }),
+      };
+    })
+    .map((summary) => ({
+      ...summary,
+      lightestOwner: pickLightestDepartmentOwner(summary.department, ownerSummaries),
+    }))
+    .sort((left, right) => {
+      if (right.pressureScore !== left.pressureScore) {
+        return right.pressureScore - left.pressureScore;
+      }
+
+      if (right.activeCount !== left.activeCount) {
+        return right.activeCount - left.activeCount;
+      }
+
+      return left.department.localeCompare(right.department);
+    });
+
+  const activeEmails = emails.filter(isActiveWorkflowEmail);
+  const activeGrounding = activeEmails.map((email) => assessEmailGrounding(email));
+
+  return {
+    totalCount: emails.length,
+    activeCount: activeEmails.length,
+    approvalReadyCount: activeGrounding.filter((grounding) => grounding.approvalReady)
+      .length,
+    weakSupportCount: activeGrounding.filter(
+      (grounding) => grounding.strength === "Weak"
+    ).length,
+    strongSupportCount: activeGrounding.filter(
+      (grounding) => grounding.strength === "Strong"
+    ).length,
+    unassignedCount: activeEmails.filter((email) => email.assignee === null).length,
+    escalatedCount: activeEmails.filter((email) => email.status === "Escalated")
+      .length,
+    departmentSummaries,
+    ownerSummaries,
+    mostPressuredDepartment:
+      departmentSummaries.find((summary) => summary.activeCount > 0) ?? null,
+    mostLoadedOwner: ownerSummaries.find((summary) => summary.activeCount > 0) ?? null,
+  };
+}
+
+export function getEmailAssignmentRecommendation(
+  email: Pick<
+    StaffEmail,
+    "assignee" | "category" | "department" | "routingDecision"
+  >,
+  snapshot: MailboxOperationsSnapshot
+): AssignmentRecommendation | null {
+  const department = getEmailDepartment(email);
+  const candidateOwners =
+    email.routingDecision?.suggestedAssignees.length
+      ? email.routingDecision.suggestedAssignees
+      : getDepartmentSuggestedAssignees(department);
+
+  if (candidateOwners.length === 0) {
+    return null;
+  }
+
+  const ownerMap = new Map(
+    snapshot.ownerSummaries.map((summary) => [summary.owner, summary])
+  );
+
+  const candidateSummaries = candidateOwners
+    .map((owner) => ownerMap.get(owner))
+    .filter((summary): summary is OwnerWorkloadSummary => summary !== undefined)
+    .sort((left, right) => {
+      if (left.pressureScore !== right.pressureScore) {
+        return left.pressureScore - right.pressureScore;
+      }
+
+      if (left.activeCount !== right.activeCount) {
+        return left.activeCount - right.activeCount;
+      }
+
+      if (left.weakSupportCount !== right.weakSupportCount) {
+        return left.weakSupportCount - right.weakSupportCount;
+      }
+
+      if (left.totalCount !== right.totalCount) {
+        return left.totalCount - right.totalCount;
+      }
+
+      return left.owner.localeCompare(right.owner);
+    });
+
+  const currentOwnerSummary = email.assignee ? ownerMap.get(email.assignee) : null;
+  let recommendedSummary = candidateSummaries[0] ?? currentOwnerSummary ?? null;
+
+  if (
+    currentOwnerSummary &&
+    candidateOwners.includes(currentOwnerSummary.owner) &&
+    recommendedSummary &&
+    currentOwnerSummary.pressureScore <= recommendedSummary.pressureScore + 2
+  ) {
+    recommendedSummary = currentOwnerSummary;
+  }
+
+  if (!recommendedSummary) {
+    return null;
+  }
+
+  const departmentSummary = snapshot.departmentSummaries.find(
+    (summary) => summary.department === department
+  );
+  const queueSummary = `${recommendedSummary.activeCount} active • ${recommendedSummary.weakSupportCount} weak-support • ${recommendedSummary.approvalReadyCount} approval-ready`;
+  const departmentSummaryText = departmentSummary
+    ? `${departmentSummary.activeCount} active in ${department} • ${departmentSummary.unassignedCount} unassigned • ${departmentSummary.weakSupportCount} weak-support`
+    : `${department} workload summary is not available yet.`;
+
+  let reason = `${recommendedSummary.owner} is in the ${department} rotation and currently has the lightest visible workload.`;
+
+  if (email.assignee === recommendedSummary.owner) {
+    reason = `${recommendedSummary.owner} already owns this case and still looks like the best-fit owner for the current ${department} workload.`;
+  } else if (email.assignee && currentOwnerSummary) {
+    reason = `${recommendedSummary.owner} has a lighter ${department} queue than ${email.assignee}, so this case is a better fit there right now.`;
+  } else if (recommendedSummary.activeCount === 0) {
+    reason = `${recommendedSummary.owner} is part of the ${department} rotation and has no active cases in this queue slice yet.`;
+  }
+
+  return {
+    assignee: recommendedSummary.owner,
+    department,
+    reason,
+    queueSummary,
+    departmentSummary: departmentSummaryText,
+    pressure: recommendedSummary.pressure,
+  };
 }
 
 export const emailCategoryOptions = [
