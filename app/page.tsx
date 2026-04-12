@@ -33,46 +33,13 @@ export default function Home() {
               replies depend on.
             </p>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-8">
               <Link
-                href="/dashboard/compose"
+                href="/dashboard"
                 className="inline-flex items-center rounded-full bg-[#5C61FF] px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(92,97,255,0.26)] transition hover:bg-[#4E54F6]"
-              >
-                Compose New Case
-              </Link>
-              <Link
-                href="/dashboard/inbox"
-                className="inline-flex items-center rounded-full border border-white/80 bg-white/82 px-5 py-3 text-sm font-semibold text-[#4F57E8] shadow-[0_14px_38px_rgba(141,156,186,0.14)] transition hover:bg-white"
               >
                 Open Staff Dashboard
               </Link>
-              <Link
-                href="/dashboard/activity"
-                className="inline-flex items-center rounded-full border border-white/80 bg-white/82 px-5 py-3 text-sm font-semibold text-slate-700 shadow-[0_14px_38px_rgba(141,156,186,0.14)] transition hover:bg-white"
-              >
-                View Activity Log
-              </Link>
-              <Link
-                href="/dashboard/knowledge-base"
-                className="inline-flex items-center rounded-full border border-white/80 bg-white/82 px-5 py-3 text-sm font-semibold text-slate-700 shadow-[0_14px_38px_rgba(141,156,186,0.14)] transition hover:bg-white"
-              >
-                View Knowledge Base
-              </Link>
-            </div>
-
-            <div className="mt-10 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-[24px] border border-white/75 bg-white/68 p-4 shadow-[0_16px_34px_rgba(143,155,181,0.1)]">
-                <p className="text-2xl font-semibold text-slate-900">3</p>
-                <p className="mt-1 text-sm text-slate-600">review queues</p>
-              </div>
-              <div className="rounded-[24px] border border-white/75 bg-white/68 p-4 shadow-[0_16px_34px_rgba(143,155,181,0.1)]">
-                <p className="text-2xl font-semibold text-slate-900">4</p>
-                <p className="mt-1 text-sm text-slate-600">staff owners</p>
-              </div>
-              <div className="rounded-[24px] border border-white/75 bg-white/68 p-4 shadow-[0_16px_34px_rgba(143,155,181,0.1)]">
-                <p className="text-2xl font-semibold text-slate-900">1</p>
-                <p className="mt-1 text-sm text-slate-600">compose workflow</p>
-              </div>
             </div>
           </section>
 

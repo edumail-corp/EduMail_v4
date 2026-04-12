@@ -106,7 +106,7 @@ export function DashboardShell({
                   Local Prototype
                 </p>
                 <p className="mt-3 text-sm leading-6 text-slate-600">
-                  Mailbox decisions, new-case intake, activity history, and document uploads persist locally while the product stays provider-agnostic.
+                  Mailbox decisions, new-case intake, and document uploads persist locally while the product stays provider-agnostic.
                 </p>
                 <Link
                   href="/dashboard/settings"

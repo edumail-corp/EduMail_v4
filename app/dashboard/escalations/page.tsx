@@ -1,19 +1,16 @@
-import { Suspense } from "react";
-import { MailboxView } from "@/components/dashboard/mailbox-view";
+import { redirect } from "next/navigation";
 
-export default function EscalationsPage() {
-  return (
-    <Suspense fallback={null}>
-      <MailboxView
-        filter="Escalated"
-        eyebrow="Escalation Desk"
-        title="Escalations"
-        description="Review messages that fell below the confidence threshold or need a staff member to intervene before a response can be finalized."
-        metaSuffix="escalations open"
-        listTitle="Escalated Cases"
-        listDescription="Messages that need manual handling or deeper policy review."
-        emptyMessage="No escalations at this time."
-      />
-    </Suspense>
-  );
+export default async function EscalationsPage({
+  searchParams,
+}: Readonly<{
+  searchParams: Promise<{ emailId?: string | string[] }>;
+}>) {
+  const { emailId: rawId } = await searchParams;
+  const emailId = Array.isArray(rawId) ? rawId[0] : rawId;
+  const params = new URLSearchParams();
+  params.set("view", "escalations");
+  if (emailId) {
+    params.set("emailId", emailId);
+  }
+  redirect(`/dashboard/inbox?${params.toString()}`);
 }

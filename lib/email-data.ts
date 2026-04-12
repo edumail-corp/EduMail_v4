@@ -225,11 +225,7 @@ export function getEmailWorkflowHref(
   email: Pick<StaffEmail, "id" | "status">
 ) {
   if (email.status === "Escalated") {
-    return `/dashboard/escalations?emailId=${encodeURIComponent(email.id)}`;
-  }
-
-  if (email.status === "Draft") {
-    return `/dashboard/drafts?emailId=${encodeURIComponent(email.id)}`;
+    return `/dashboard/inbox?view=escalations&emailId=${encodeURIComponent(email.id)}`;
   }
 
   return `/dashboard/inbox?emailId=${encodeURIComponent(email.id)}`;

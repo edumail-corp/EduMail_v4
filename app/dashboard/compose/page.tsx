@@ -124,7 +124,7 @@ export default function ComposePage() {
 
       const destination =
         data.email.status === "Escalated"
-          ? `/dashboard/escalations?emailId=${encodeURIComponent(data.email.id)}`
+          ? `/dashboard/inbox?view=escalations&emailId=${encodeURIComponent(data.email.id)}`
           : `/dashboard/inbox?emailId=${encodeURIComponent(data.email.id)}`;
 
       router.push(destination);

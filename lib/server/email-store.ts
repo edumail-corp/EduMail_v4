@@ -196,7 +196,7 @@ function getEmailActivityDescription(previousEmail: StaffEmail, nextEmail: Staff
         : "Cleared the current message owner and returned it to the unassigned pool.",
       href:
         nextEmail.status === "Escalated"
-          ? `/dashboard/escalations?emailId=${encodeURIComponent(nextEmail.id)}`
+          ? `/dashboard/inbox?view=escalations&emailId=${encodeURIComponent(nextEmail.id)}`
           : `/dashboard/inbox?emailId=${encodeURIComponent(nextEmail.id)}`,
     };
   }
@@ -207,14 +207,14 @@ function getEmailActivityDescription(previousEmail: StaffEmail, nextEmail: Staff
         action: "draft_saved" as const,
         description:
           "Saved a new reply draft and converted the escalated case into the Draft queue.",
-        href: `/dashboard/drafts?emailId=${encodeURIComponent(nextEmail.id)}`,
+        href: `/dashboard/inbox?emailId=${encodeURIComponent(nextEmail.id)}`,
       };
     }
 
     return {
       action: "draft_saved" as const,
       description: "Updated the reply draft for continued review.",
-      href: `/dashboard/drafts?emailId=${encodeURIComponent(nextEmail.id)}`,
+      href: `/dashboard/inbox?emailId=${encodeURIComponent(nextEmail.id)}`,
     };
   }
 
@@ -227,7 +227,7 @@ function getEmailActivityDescription(previousEmail: StaffEmail, nextEmail: Staff
           : "Cleared the internal staff note from this message.",
       href:
         nextEmail.status === "Escalated"
-          ? `/dashboard/escalations?emailId=${encodeURIComponent(nextEmail.id)}`
+          ? `/dashboard/inbox?view=escalations&emailId=${encodeURIComponent(nextEmail.id)}`
           : `/dashboard/inbox?emailId=${encodeURIComponent(nextEmail.id)}`,
     };
   }
@@ -356,7 +356,7 @@ export async function createStaffEmail(
         : `Created a new case, suggested ${synchronizedNextEmail.department}, recommended ${routingDecision.suggestedAssignees.join(", ")}, and added it to the review queue.`,
     href:
       synchronizedNextEmail.status === "Escalated"
-        ? `/dashboard/escalations?emailId=${encodeURIComponent(synchronizedNextEmail.id)}`
+        ? `/dashboard/inbox?view=escalations&emailId=${encodeURIComponent(synchronizedNextEmail.id)}`
         : `/dashboard/inbox?emailId=${encodeURIComponent(synchronizedNextEmail.id)}`,
   });
 

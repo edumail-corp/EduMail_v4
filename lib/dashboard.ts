@@ -10,19 +10,11 @@ import type {
 export const dashboardNavItems = [
   { label: "Dashboard", shortLabel: "Home", href: "/dashboard", icon: "overview" },
   { label: "Inbox", shortLabel: "All", href: "/dashboard/inbox", icon: "inbox" },
-  { label: "Draft Queue", shortLabel: "Review", href: "/dashboard/drafts", icon: "drafts" },
-  { label: "Escalations", shortLabel: "Urgent", href: "/dashboard/escalations", icon: "escalations" },
   {
     label: "Knowledge Base",
     shortLabel: "Docs",
     href: "/dashboard/knowledge-base",
     icon: "knowledge",
-  },
-  {
-    label: "Activity Log",
-    shortLabel: "Log",
-    href: "/dashboard/activity",
-    icon: "activity",
   },
   {
     label: "Settings",

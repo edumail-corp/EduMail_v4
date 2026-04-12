@@ -1,17 +1,5 @@
-import { Suspense } from "react";
-import { ActivityLogView } from "@/components/dashboard/activity-log-view";
-import { listWorkspaceActivity } from "@/lib/server/services/activity-service";
-import { listMailboxEmails } from "@/lib/server/services/mailbox-service";
+import { redirect } from "next/navigation";
 
-export default async function ActivityPage() {
-  const [events, emails] = await Promise.all([
-    listWorkspaceActivity(40),
-    listMailboxEmails(),
-  ]);
-
-  return (
-    <Suspense fallback={null}>
-      <ActivityLogView events={events} emails={emails} />
-    </Suspense>
-  );
+export default function ActivityPage() {
+  redirect("/dashboard");
 }

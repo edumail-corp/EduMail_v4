@@ -51,13 +51,6 @@ export function DashboardTopBar({
 
       <div className="flex items-center gap-3 self-end lg:self-auto">
         <Link
-          href="/dashboard/activity"
-          className="grid h-12 w-12 place-items-center rounded-full border border-white/80 bg-white/78 text-slate-500 shadow-[0_14px_36px_rgba(140,153,179,0.16)] transition hover:bg-white hover:text-[#5C61FF]"
-          aria-label="Open activity log"
-        >
-          <DashboardIcon name="notification" />
-        </Link>
-        <Link
           href="/dashboard/settings"
           className="grid h-12 w-12 place-items-center rounded-full border border-white/80 bg-white/78 text-slate-500 shadow-[0_14px_36px_rgba(140,153,179,0.16)] transition hover:bg-white hover:text-[#5C61FF]"
           aria-label="Open settings"
