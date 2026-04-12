@@ -31,7 +31,7 @@ function shouldScanFile(filePath) {
 
 function inspectFile(filePath) {
   const absolutePath = path.join(rootDir, filePath);
-  const contents = readFileSync(absolutePath, "utf8");
+  const contents = readFileSync(absolutePath, "utf8").replaceAll("\r\n", "\n");
   const lines = contents.split("\n");
 
   lines.forEach((line, index) => {

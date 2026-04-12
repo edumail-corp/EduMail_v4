@@ -1,4 +1,10 @@
-import type { EmailCategory } from "@/lib/email-data";
+import type {
+  CaseApprovalState,
+  EmailCategory,
+  EmailStatus,
+  GroundingStrength,
+  StaffAssignee,
+} from "@/lib/email-data";
 
 export type KnowledgeBaseCategory = EmailCategory;
 export type KnowledgeBaseFilter = "All" | KnowledgeBaseCategory;
@@ -20,6 +26,33 @@ export type KnowledgeDocument = {
   previewExcerpt: string;
   origin: KnowledgeDocumentOrigin;
   referenceCount: number;
+  approvalReadyCaseCount?: number;
+  weakSupportCaseCount?: number;
+  relatedCases?: KnowledgeDocumentRelatedCase[];
+  supportHighlights?: KnowledgeDocumentSupportHighlight[];
+};
+
+export type KnowledgeDocumentRelatedCase = {
+  id: string;
+  subject: string;
+  department: KnowledgeBaseCategory;
+  status: EmailStatus;
+  approvalState: CaseApprovalState;
+  approvalReady: boolean;
+  assignee: StaffAssignee | null;
+  groundingStrength: GroundingStrength;
+  href: string;
+  updatedAt: string;
+  citationReason: string;
+  citationExcerpt: string;
+};
+
+export type KnowledgeDocumentSupportHighlight = {
+  caseId: string;
+  caseSubject: string;
+  href: string;
+  reason: string;
+  excerpt: string;
 };
 
 export type KnowledgeDocumentDraft = {

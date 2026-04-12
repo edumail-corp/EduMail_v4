@@ -6,9 +6,8 @@ import {
   type ActivityEvent,
   type ActivityEventCreateInput,
 } from "@/lib/activity-log";
-import { getWritableDataPath } from "@/lib/server/storage-path";
 
-const activityLogPath = getWritableDataPath("activity-log.json");
+const activityLogPath = path.join(process.cwd(), "data", "activity-log.json");
 
 async function writeActivityEvents(events: ActivityEvent[]) {
   await writeFile(activityLogPath, `${JSON.stringify(events, null, 2)}\n`, "utf8");

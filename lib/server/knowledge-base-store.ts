@@ -8,10 +8,17 @@ import {
   type KnowledgeDocument,
 } from "@/lib/knowledge-base-data";
 import { appendActivityEvent } from "@/lib/server/activity-log-store";
-import { getWritableDataPath } from "@/lib/server/storage-path";
 
-const knowledgeBaseStorePath = getWritableDataPath("knowledge-base-documents.json");
-const knowledgeBaseFilesDirectory = getWritableDataPath("knowledge-base-files");
+const knowledgeBaseStorePath = path.join(
+  process.cwd(),
+  "data",
+  "knowledge-base-documents.json"
+);
+const knowledgeBaseFilesDirectory = path.join(
+  process.cwd(),
+  "data",
+  "knowledge-base-files"
+);
 const seedDocumentMap = new Map(
   getInitialKnowledgeDocuments().map((document) => [document.id, document])
 );

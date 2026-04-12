@@ -1,9 +1,14 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import {
+  assessEmailGrounding,
+  type AssignmentRecommendation,
+  type DepartmentQueueSummary,
   defaultStaffAssignmentSelection,
   getEmailApprovalState,
+  getEmailApprovalGuidance,
   getEmailDepartment,
+  groupEmailSourceCitations,
   staffAssigneeOptions,
   type StaffAssignmentSelectValue,
   type StaffEmail,
@@ -17,9 +22,12 @@ import {
 } from "@/components/dashboard/dashboard-chrome";
 import { EmailStatusBadge } from "@/components/dashboard/email-badges";
 import {
+  approvalStateClasses,
   emailPriorityClasses,
   formatEmailDate,
   formatEmailDay,
+  groundingStrengthClasses,
+  workloadPressureClasses,
 } from "@/lib/dashboard";
 
 const disabledPrimaryButtonClassName =
@@ -54,24 +62,22 @@ function DetailCard({
   );
 }
 
-function getApprovalBadgeClassName(approvalState: string) {
-  if (approvalState === "Approved") {
-    return "bg-[#E9FBF1] text-[#0C8A53]";
+function getGroundingBarClassName(strength: string) {
+  if (strength === "Strong") {
+    return "bg-gradient-to-r from-[#37B77F] to-[#0C8A53]";
   }
 
-  if (approvalState === "Escalated") {
-    return "bg-[#FFE9EE] text-[#D43D63]";
+  if (strength === "Moderate") {
+    return "bg-gradient-to-r from-[#F3B552] to-[#B76B13]";
   }
 
-  if (approvalState === "Awaiting Draft") {
-    return "bg-slate-100 text-slate-600";
-  }
-
-  return "bg-[#EEF0FF] text-[#555CF0]";
+  return "bg-gradient-to-r from-[#F78AA3] to-[#D43D63]";
 }
 
 export function EmailDetailPanel({
   email,
+  assignmentRecommendation,
+  departmentSummary,
   onApprove,
   isApproving = false,
   assigneeValue = defaultStaffAssignmentSelection,
@@ -94,6 +100,8 @@ export function EmailDetailPanel({
   isSavingNote = false,
 }: Readonly<{
   email?: StaffEmail;
+  assignmentRecommendation?: AssignmentRecommendation | null;
+  departmentSummary?: DepartmentQueueSummary | null;
   onApprove?: () => void;
   isApproving?: boolean;
   assigneeValue?: StaffAssignmentSelectValue;
@@ -135,6 +143,13 @@ export function EmailDetailPanel({
         ? "Medium"
         : "Low");
   const suggestedOwners = email.routingDecision?.suggestedAssignees ?? [];
+  const primaryLibraryHref = email.source
+    ? `/dashboard/knowledge-base?document=${encodeURIComponent(
+        email.source
+      )}&context=${encodeURIComponent(
+        email.sourceCitations[0]?.excerpt ?? email.summary
+      )}`
+    : null;
 
   const hasDraft = email.aiDraft !== null;
   const isAlreadySent = email.status === "Auto-sent";
@@ -169,6 +184,10 @@ export function EmailDetailPanel({
     canEditAssignment &&
     Boolean(onSaveAssignee) &&
     assigneeValue !== (email.assignee ?? defaultStaffAssignmentSelection);
+  const canUseAssignmentRecommendation =
+    Boolean(assignmentRecommendation) &&
+    canEditAssignment &&
+    assigneeValue !== assignmentRecommendation?.assignee;
   const canEnterNoteEditMode =
     !isApproving &&
     !isSavingAssignee &&
@@ -218,6 +237,9 @@ export function EmailDetailPanel({
   const citationDocumentCount = new Set(
     email.sourceCitations.map((citation) => citation.documentName)
   ).size;
+  const citationGroups = groupEmailSourceCitations(email.sourceCitations);
+  const groundingAssessment = assessEmailGrounding(email);
+  const approvalGuidance = getEmailApprovalGuidance(email);
   const draftModeLabel = hasDraft
     ? email.manualReviewReason
       ? "Manual draft saved"
@@ -249,6 +271,10 @@ export function EmailDetailPanel({
       label: "No unresolved manual hold",
       complete: email.manualReviewReason === null,
     },
+    {
+      label: "Grounding strong enough to approve",
+      complete: groundingAssessment.approvalReady,
+    },
   ];
   const readinessCount = readinessItems.filter((item) => item.complete).length;
 
@@ -275,9 +301,7 @@ export function EmailDetailPanel({
             {department}
           </span>
           <span
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold shadow-[0_12px_24px_rgba(144,156,182,0.12)] ${getApprovalBadgeClassName(
-              approvalState
-            )}`}
+            className={`rounded-full px-3 py-1.5 text-xs font-semibold shadow-[0_12px_24px_rgba(144,156,182,0.12)] ${approvalStateClasses[approvalState]}`}
           >
             {approvalState}
           </span>
@@ -420,10 +444,10 @@ export function EmailDetailPanel({
               </p>
             </div>
             <Link
-              href={`/dashboard/knowledge-base?document=${encodeURIComponent(email.source)}`}
+              href={primaryLibraryHref ?? "/dashboard/knowledge-base"}
               className={dashboardSecondaryButtonClassName}
             >
-              Open in Library
+              Open Source Context
             </Link>
           </div>
         ) : null}
@@ -443,21 +467,127 @@ export function EmailDetailPanel({
               Grounding
             </p>
             <p className="mt-2 text-sm font-semibold text-slate-900">
-              {email.sourceCitations.length > 0
-                ? `${email.sourceCitations.length} citations`
-                : email.source
-                  ? "Source only"
-                  : "No source"}
+              {groundingAssessment.strength}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              {groundingAssessment.score}% support score
             </p>
           </div>
 
           <div className="rounded-[24px] border border-white/75 bg-white/65 p-4 shadow-[0_16px_34px_rgba(143,155,181,0.12)]">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-              Confidence
+              Approval Posture
             </p>
             <p className="mt-2 text-sm font-semibold text-slate-900">
-              {routingConfidenceScore}%
+              {groundingAssessment.approvalReady
+                ? "Ready for approval"
+                : "Needs human review"}
             </p>
+            <p className="mt-1 text-xs text-slate-500">
+              {citationDocumentCount} source document
+              {citationDocumentCount === 1 ? "" : "s"} referenced
+            </p>
+          </div>
+        </div>
+
+        <div className="mb-5 rounded-[24px] border border-white/75 bg-white/62 p-4 shadow-[0_14px_32px_rgba(143,155,181,0.1)]">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#2E5FA3]">
+                Grounding Readout
+              </p>
+              <p className="mt-2 text-sm font-semibold text-slate-900">
+                {groundingAssessment.summary}
+              </p>
+            </div>
+            <span
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold ${groundingStrengthClasses[groundingAssessment.strength]}`}
+            >
+              {groundingAssessment.strength} support
+            </span>
+          </div>
+
+          <div className="mt-4 h-2.5 w-full rounded-full bg-slate-200">
+            <div
+              className={`h-2.5 rounded-full ${getGroundingBarClassName(
+                groundingAssessment.strength
+              )}`}
+              style={{ width: `${groundingAssessment.score}%` }}
+            />
+          </div>
+
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <div className="rounded-[20px] border border-[#D8F0E4] bg-[#F5FCF8] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+                What looks safe
+              </p>
+              <div className="mt-3 space-y-2">
+                {groundingAssessment.positives.length > 0 ? (
+                  groundingAssessment.positives.map((item) => (
+                    <p key={item} className="text-sm leading-6 text-emerald-950">
+                      {item}
+                    </p>
+                  ))
+                ) : (
+                  <p className="text-sm leading-6 text-emerald-950">
+                    No strong support signals are attached yet.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-[20px] border border-[#FFE1E8] bg-[#FFF6F8] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#B4375C]">
+                What still needs review
+              </p>
+              <div className="mt-3 space-y-2">
+                {groundingAssessment.risks.length > 0 ? (
+                  groundingAssessment.risks.map((item) => (
+                    <p key={item} className="text-sm leading-6 text-[#7A2440]">
+                      {item}
+                    </p>
+                  ))
+                ) : (
+                  <p className="text-sm leading-6 text-[#7A2440]">
+                    No blocking review risks are currently flagged.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-5 grid gap-4 lg:grid-cols-2">
+          <div className="rounded-[24px] border border-[#FFE1E8] bg-[#FFF6F8] p-4 shadow-[0_14px_32px_rgba(143,155,181,0.1)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#B4375C]">
+              Approval Blockers
+            </p>
+            <div className="mt-3 space-y-2">
+              {approvalGuidance.blockers.length > 0 ? (
+                approvalGuidance.blockers.map((blocker) => (
+                  <p key={blocker} className="text-sm leading-6 text-[#7A2440]">
+                    {blocker}
+                  </p>
+                ))
+              ) : (
+                <p className="text-sm leading-6 text-[#7A2440]">
+                  No blocking issues are currently flagged.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-[24px] border border-[#DCE1FF] bg-[#F5F6FF] p-4 shadow-[0_14px_32px_rgba(143,155,181,0.1)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#2E5FA3]">
+              Next Review Actions
+            </p>
+            <div className="mt-3 space-y-2">
+              {approvalGuidance.nextActions.map((action) => (
+                <p key={action} className="text-sm leading-6 text-slate-700">
+                  {action}
+                </p>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -492,6 +622,42 @@ export function EmailDetailPanel({
             <p className="text-sm leading-6 text-slate-500">
               {citationSummaryLabel}
             </p>
+            {citationGroups.length > 0 ? (
+              <div className="grid gap-3 lg:grid-cols-2">
+                {citationGroups.map((group) => (
+                  <div
+                    key={group.documentName}
+                    className="rounded-[24px] border border-white/75 bg-white/62 p-4 shadow-[0_14px_32px_rgba(143,155,181,0.1)]"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-sm font-semibold text-slate-900">
+                        {group.documentName}
+                      </p>
+                      <span className="rounded-full bg-white/82 px-3 py-1.5 text-xs font-semibold text-slate-500">
+                        {group.citationCount} cited passage
+                        {group.citationCount === 1 ? "" : "s"}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                      Coverage summary
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                      {group.reasons.join(" ")}
+                    </p>
+                    <Link
+                      href={`/dashboard/knowledge-base?document=${encodeURIComponent(
+                        group.documentName
+                      )}&context=${encodeURIComponent(
+                        group.excerpts[0] ?? email.summary
+                      )}&reason=${encodeURIComponent(group.reasons[0] ?? "Supports the current draft.")}`}
+                      className="mt-4 inline-flex text-xs font-semibold text-[#2E5FA3] transition hover:text-[#1F3864]"
+                    >
+                      Open grouped context
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            ) : null}
             {email.sourceCitations.map((citation) => (
               <div
                 key={citation.id}
@@ -502,10 +668,14 @@ export function EmailDetailPanel({
                     {citation.documentName}
                   </p>
                   <Link
-                    href={`/dashboard/knowledge-base?document=${encodeURIComponent(citation.documentName)}`}
+                    href={`/dashboard/knowledge-base?document=${encodeURIComponent(
+                      citation.documentName
+                    )}&context=${encodeURIComponent(
+                      citation.excerpt
+                    )}&reason=${encodeURIComponent(citation.reason)}`}
                     className="text-xs font-semibold text-[#2E5FA3] transition hover:text-[#1F3864]"
                   >
-                    Open Source
+                    View Context
                   </Link>
                 </div>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
@@ -564,6 +734,45 @@ export function EmailDetailPanel({
       </DetailCard>
 
       <DetailCard title="Ownership" subtitle="Route this message to a teammate">
+        {assignmentRecommendation ? (
+          <div className="mb-5 rounded-[24px] border border-[#DCE1FF] bg-[#F5F6FF] p-4 shadow-[0_14px_32px_rgba(143,155,181,0.1)]">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#2E5FA3]">
+                  Assignment Guidance
+                </p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">
+                  Recommended owner: {assignmentRecommendation.assignee}
+                </p>
+              </div>
+              <span
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold ${workloadPressureClasses[assignmentRecommendation.pressure]}`}
+              >
+                {assignmentRecommendation.pressure}
+              </span>
+            </div>
+
+            <p className="mt-3 text-sm leading-6 text-slate-700">
+              {assignmentRecommendation.reason}
+            </p>
+            <p className="mt-3 text-xs font-medium uppercase tracking-[0.14em] text-slate-400">
+              {assignmentRecommendation.queueSummary}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              {assignmentRecommendation.departmentSummary}
+            </p>
+            {departmentSummary ? (
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                {departmentSummary.pressure === "Overloaded"
+                  ? `${departmentSummary.department} is currently overloaded, so balancing this case matters more than continuity.`
+                  : departmentSummary.pressure === "Busy"
+                    ? `${departmentSummary.department} is busy, so new assignments should follow the lightest owner in rotation.`
+                    : `${departmentSummary.department} is balanced enough to keep continuity with the current owner if needed.`}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
         <div className="space-y-3">
           <label
             className="block text-sm font-medium text-slate-600"
@@ -608,6 +817,15 @@ export function EmailDetailPanel({
         </div>
 
         <div className="mt-5 flex flex-wrap gap-3">
+          {assignmentRecommendation && canUseAssignmentRecommendation ? (
+            <button
+              type="button"
+              onClick={() => onAssigneeChange?.(assignmentRecommendation.assignee)}
+              className={`text-sm ${dashboardSecondaryButtonClassName}`}
+            >
+              Use Recommendation
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={onSaveAssignee}
@@ -725,7 +943,9 @@ export function EmailDetailPanel({
         </div>
 
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-medium text-slate-600">Confidence Score</p>
+          <p className="text-sm font-medium text-slate-600">
+            Routing Confidence
+          </p>
           <span className="text-sm font-semibold text-[#2E5FA3]">
             {routingConfidenceScore}%
           </span>
@@ -738,6 +958,17 @@ export function EmailDetailPanel({
         </div>
 
         <p className="mt-5 text-sm leading-6 text-slate-500">{reviewMessage}</p>
+
+        {!groundingAssessment.approvalReady ? (
+          <div className="mt-5 rounded-[24px] border border-[#FFE1E8] bg-[#FFF6F8] p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#B4375C]">
+              Approval Hold
+            </p>
+            <p className="mt-2 text-sm leading-6 text-[#7A2440]">
+              This case is not yet marked safe to approve. Review the grounding readout above and resolve the remaining risks before sending.
+            </p>
+          </div>
+        ) : null}
 
         <div className="mt-5 flex flex-wrap gap-3">
           {isEditingDraft ? (

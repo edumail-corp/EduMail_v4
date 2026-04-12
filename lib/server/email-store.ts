@@ -18,9 +18,8 @@ import {
   type StaffEmailUpdateInput,
 } from "@/lib/email-data";
 import { appendActivityEvent } from "@/lib/server/activity-log-store";
-import { getWritableDataPath } from "@/lib/server/storage-path";
 
-const emailStorePath = getWritableDataPath("staff-emails.json");
+const emailStorePath = path.join(process.cwd(), "data", "staff-emails.json");
 const seedEmailMap = new Map(
   getInitialStaffEmails().map((email) => [email.id, email])
 );
@@ -340,9 +339,9 @@ export async function createStaffEmail(
     ),
   };
   const synchronizedNextEmail = synchronizeOperationalFields(nextEmail);
-  const suggestedAssigneesSummary =
-    synchronizedNextEmail.routingDecision?.suggestedAssignees?.join(", ") ??
-    "no suggested assignees";
+  const routingDecision =
+    synchronizedNextEmail.routingDecision ??
+    buildFallbackRoutingDecision(synchronizedNextEmail);
 
   await writeStaffEmails([synchronizedNextEmail, ...emails]);
 
@@ -353,8 +352,8 @@ export async function createStaffEmail(
     title: synchronizedNextEmail.subject,
     description:
       synchronizedNextEmail.status === "Escalated"
-        ? `Created a new case, suggested ${synchronizedNextEmail.department}, recommended ${suggestedAssigneesSummary}, and routed it into the Escalations queue.`
-        : `Created a new case, suggested ${synchronizedNextEmail.department}, recommended ${suggestedAssigneesSummary}, and added it to the review queue.`,
+        ? `Created a new case, suggested ${synchronizedNextEmail.department}, recommended ${routingDecision.suggestedAssignees.join(", ")}, and routed it into the Escalations queue.`
+        : `Created a new case, suggested ${synchronizedNextEmail.department}, recommended ${routingDecision.suggestedAssignees.join(", ")}, and added it to the review queue.`,
     href:
       synchronizedNextEmail.status === "Escalated"
         ? `/dashboard/escalations?emailId=${encodeURIComponent(synchronizedNextEmail.id)}`

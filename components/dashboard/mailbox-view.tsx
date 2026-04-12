@@ -10,11 +10,13 @@ import {
 import { DashboardTopBar } from "@/components/dashboard/dashboard-top-bar";
 import {
   departmentFilterOptions,
+  getEmailAssignmentRecommendation,
   filterEmailsByDepartment,
   defaultStaffAssignmentFilter,
   defaultStaffAssignmentSelection,
   filterEmails,
   filterEmailsByAssignment,
+  getEmailDepartment,
   getDepartmentFilterLabel,
   getStaffAssignmentFilterLabel,
   getInitialSelectedEmailId,
@@ -22,12 +24,14 @@ import {
   isDepartmentFilter,
   isStaffAssignmentFilter,
   staffAssignmentFilters,
+  summarizeMailboxOperations,
   type DepartmentFilter,
   type EmailFilter,
   type StaffAssignmentFilter,
   type StaffAssignmentSelectValue,
   type StaffEmail,
 } from "@/lib/email-data";
+import { workloadPressureClasses } from "@/lib/dashboard";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { EmailDetailPanel } from "@/components/dashboard/email-detail-panel";
 import { EmailList } from "@/components/dashboard/email-list";
@@ -122,9 +126,6 @@ export function MailboxView({
   const [searchQuery, setSearchQuery] = useState("");
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const normalizedSearchQuery = deferredSearchQuery.trim().toLowerCase();
-  const visibleEmails = emails.filter((email) =>
-    matchesMailboxSearch(email, normalizedSearchQuery)
-  );
   const requestedEmailId = searchParams.get("emailId") ?? "";
   const requestedAssigneeParam = searchParams.get("assignee");
   const requestedDepartmentParam = searchParams.get("department");
@@ -136,14 +137,27 @@ export function MailboxView({
     requestedDepartmentParam && isDepartmentFilter(requestedDepartmentParam)
       ? requestedDepartmentParam
       : "All";
+  const queueEmails = applyMailboxFilters(emails);
+  const visibleEmails = queueEmails.filter((email) =>
+    matchesMailboxSearch(email, normalizedSearchQuery)
+  );
+  const operationsSnapshot = summarizeMailboxOperations(queueEmails);
   const selectedEmail = getSelectedEmail(visibleEmails, selectedId);
+  const selectedAssignmentRecommendation = selectedEmail
+    ? getEmailAssignmentRecommendation(selectedEmail, operationsSnapshot)
+    : null;
+  const selectedDepartmentSummary = selectedEmail
+    ? operationsSnapshot.departmentSummaries.find(
+        (summary) => summary.department === getEmailDepartment(selectedEmail)
+      ) ?? null
+    : null;
   const assignmentLabel = getStaffAssignmentFilterLabel(assignmentFilter);
   const departmentLabel = getDepartmentFilterLabel(departmentFilter);
   const meta = isLoading
     ? "Loading messages..."
     : assignmentFilter === defaultStaffAssignmentFilter && departmentFilter === "All"
-      ? `${emails.length} ${metaSuffix}`
-      : `${emails.length} ${metaSuffix} for ${assignmentLabel} in ${departmentLabel}`;
+      ? `${queueEmails.length} ${metaSuffix}`
+      : `${queueEmails.length} ${metaSuffix} for ${assignmentLabel} in ${departmentLabel}`;
 
   function applyMailboxFilters(nextEmails: StaffEmail[]) {
     return filterEmailsByDepartment(
@@ -190,11 +204,10 @@ export function MailboxView({
       setLoadError(null);
       setActionError(null);
       setActionMessage(null);
-      setSearchQuery("");
 
         try {
           const response = await fetch(
-          `/api/emails?filter=${encodeURIComponent(filter)}&assignee=${encodeURIComponent(assignmentFilter)}&department=${encodeURIComponent(departmentFilter)}`,
+          `/api/emails?filter=${encodeURIComponent(filter)}`,
            {
              cache: "no-store",
            }
@@ -220,7 +233,7 @@ export function MailboxView({
     }
 
     void loadEmails();
-  }, [assignmentFilter, departmentFilter, filter]);
+  }, [filter]);
 
   useEffect(() => {
     setSelectedId((currentId) => {
@@ -297,13 +310,11 @@ export function MailboxView({
         );
       }
 
-      setEmails((currentEmails) => {
-        const nextEmails = currentEmails.map((email) =>
+      setEmails((currentEmails) =>
+        currentEmails.map((email) =>
           email.id === data.email.id ? data.email : email
-        );
-
-        return applyMailboxFilters(nextEmails);
-      });
+        )
+      );
       setActionMessage(`"${data.email.subject}" moved to Auto-sent.`);
     } catch (error) {
       setActionError(
@@ -352,10 +363,8 @@ export function MailboxView({
       }
 
       setEmails((currentEmails) =>
-        applyMailboxFilters(
-          currentEmails.map((email) =>
-            email.id === data.email.id ? data.email : email
-          )
+        currentEmails.map((email) =>
+          email.id === data.email.id ? data.email : email
         )
       );
       setActionMessage(
@@ -429,13 +438,11 @@ export function MailboxView({
         );
       }
 
-      setEmails((currentEmails) => {
-        const nextEmails = currentEmails.map((email) =>
+      setEmails((currentEmails) =>
+        currentEmails.map((email) =>
           email.id === data.email.id ? data.email : email
-        );
-
-        return applyMailboxFilters(nextEmails);
-      });
+        )
+      );
       setIsEditingDraft(false);
       setActionMessage(
         selectedEmail.status === "Escalated"
@@ -663,11 +670,222 @@ export function MailboxView({
         </p>
       </section>
 
+      <section className="mb-4 grid gap-4 2xl:grid-cols-[minmax(0,1.08fr)_minmax(340px,0.92fr)]">
+        <article className={`${dashboardPanelClassName} p-5 md:p-6`}>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+                Queue Operations
+              </p>
+              <h3 className="mt-3 text-2xl font-semibold tracking-tight text-[#1E2340]">
+                Department pressure and approval load
+              </h3>
+              <p className="mt-2 text-sm leading-7 text-slate-500">
+                This snapshot follows the current queue filters so team leads can spot which department needs coverage, which cases are approval-ready, and where human review is still piling up.
+              </p>
+            </div>
+            <div className="rounded-[22px] border border-white/80 bg-white/68 px-4 py-3 text-sm text-slate-500">
+              {normalizedSearchQuery.length > 0
+                ? `Search is showing ${visibleEmails.length} of ${queueEmails.length} filtered cases.`
+                : `Showing ${queueEmails.length} filtered cases in this queue slice.`}
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-[22px] border border-white/80 bg-white/64 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Active queue
+              </p>
+              <p className="mt-3 text-3xl font-semibold tracking-tight text-[#1E2340]">
+                {operationsSnapshot.activeCount}
+              </p>
+              <p className="mt-2 text-sm text-slate-500">
+                Cases still waiting on review, routing, or approval.
+              </p>
+            </div>
+            <div className="rounded-[22px] border border-white/80 bg-white/64 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Approval-ready
+              </p>
+              <p className="mt-3 text-3xl font-semibold tracking-tight text-[#1E2340]">
+                {operationsSnapshot.approvalReadyCount}
+              </p>
+              <p className="mt-2 text-sm text-slate-500">
+                Cases that can move into final human approval now.
+              </p>
+            </div>
+            <div className="rounded-[22px] border border-white/80 bg-white/64 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Weak support
+              </p>
+              <p className="mt-3 text-3xl font-semibold tracking-tight text-[#1E2340]">
+                {operationsSnapshot.weakSupportCount}
+              </p>
+              <p className="mt-2 text-sm text-slate-500">
+                Cases still needing stronger citations or routing confidence.
+              </p>
+            </div>
+            <div className="rounded-[22px] border border-white/80 bg-white/64 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Ownership gaps
+              </p>
+              <p className="mt-3 text-3xl font-semibold tracking-tight text-[#1E2340]">
+                {operationsSnapshot.unassignedCount}
+              </p>
+              <p className="mt-2 text-sm text-slate-500">
+                Unassigned active cases still waiting for a department owner.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-3 xl:grid-cols-2">
+            {operationsSnapshot.departmentSummaries.some(
+              (summary) => summary.totalCount > 0
+            ) ? (
+              operationsSnapshot.departmentSummaries
+                .filter((summary) => summary.totalCount > 0)
+                .map((summary) => (
+                  <div
+                    key={summary.department}
+                    className="rounded-[24px] border border-white/80 bg-white/64 p-4 shadow-[0_14px_32px_rgba(141,153,179,0.12)]"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-lg font-semibold tracking-tight text-[#1E2340]">
+                          {summary.department}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-500">
+                          {summary.activeCount} active • {summary.ownerCoverageRate}% owned
+                        </p>
+                      </div>
+                      <span
+                        className={`rounded-full px-3 py-1.5 text-xs font-semibold ${workloadPressureClasses[summary.pressure]}`}
+                      >
+                        {summary.pressure}
+                      </span>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-3 gap-3 text-center">
+                      <div className="rounded-[18px] border border-white/75 bg-white/82 px-3 py-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                          Ready
+                        </p>
+                        <p className="mt-2 text-xl font-semibold text-[#1E2340]">
+                          {summary.approvalReadyCount}
+                        </p>
+                      </div>
+                      <div className="rounded-[18px] border border-white/75 bg-white/82 px-3 py-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                          Weak
+                        </p>
+                        <p className="mt-2 text-xl font-semibold text-[#1E2340]">
+                          {summary.weakSupportCount}
+                        </p>
+                      </div>
+                      <div className="rounded-[18px] border border-white/75 bg-white/82 px-3 py-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                          Unassigned
+                        </p>
+                        <p className="mt-2 text-xl font-semibold text-[#1E2340]">
+                          {summary.unassignedCount}
+                        </p>
+                      </div>
+                    </div>
+
+                    <p className="mt-4 text-sm leading-6 text-slate-500">
+                      {summary.lightestOwner
+                        ? `${summary.lightestOwner} is the lightest visible owner in this department right now.`
+                        : "No department owner is available in the current queue slice yet."}
+                    </p>
+                  </div>
+                ))
+            ) : (
+              <div className="rounded-[24px] border border-dashed border-white/80 bg-white/54 px-5 py-8 text-sm text-slate-500 xl:col-span-2">
+                Department pressure cards will appear here once this queue slice has live cases.
+              </div>
+            )}
+          </div>
+        </article>
+
+        <article className={`${dashboardPanelClassName} p-5 md:p-6`}>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+            Owner Balance
+          </p>
+          <h3 className="mt-3 text-2xl font-semibold tracking-tight text-[#1E2340]">
+            Owner load and rebalance guidance
+          </h3>
+          <p className="mt-2 text-sm leading-7 text-slate-500">
+            Use this to decide whether the next case should stay with the current owner or move to the lightest teammate in the department rotation.
+          </p>
+
+          <div className="mt-5 space-y-3">
+            {operationsSnapshot.ownerSummaries.map((summary) => (
+              <div
+                key={summary.owner}
+                className="rounded-[24px] border border-white/80 bg-white/64 p-4 shadow-[0_14px_32px_rgba(141,153,179,0.12)]"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-lg font-semibold tracking-tight text-[#1E2340]">
+                      {summary.owner}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {summary.activeCount} active • {summary.departments.join(", ") || "No live load yet"}
+                    </p>
+                  </div>
+                  <span
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold ${workloadPressureClasses[summary.pressure]}`}
+                  >
+                    {summary.pressure}
+                  </span>
+                </div>
+
+                <div className="mt-4 grid grid-cols-3 gap-3 text-center">
+                  <div className="rounded-[18px] border border-white/75 bg-white/82 px-3 py-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                      Ready
+                    </p>
+                    <p className="mt-2 text-xl font-semibold text-[#1E2340]">
+                      {summary.approvalReadyCount}
+                    </p>
+                  </div>
+                  <div className="rounded-[18px] border border-white/75 bg-white/82 px-3 py-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                      Weak
+                    </p>
+                    <p className="mt-2 text-xl font-semibold text-[#1E2340]">
+                      {summary.weakSupportCount}
+                    </p>
+                  </div>
+                  <div className="rounded-[18px] border border-white/75 bg-white/82 px-3 py-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                      Escalated
+                    </p>
+                    <p className="mt-2 text-xl font-semibold text-[#1E2340]">
+                      {summary.escalatedCount}
+                    </p>
+                  </div>
+                </div>
+
+                <p className="mt-4 text-sm leading-6 text-slate-500">
+                  {summary.pressure === "Overloaded"
+                    ? "Route the next case away from this owner unless continuity is more important than load balancing."
+                    : summary.pressure === "Busy"
+                      ? "This owner can keep working the queue, but new cases should be balanced carefully."
+                      : "This owner is a safe candidate for the next handoff in their department rotation."}
+                </p>
+              </div>
+            ))}
+          </div>
+        </article>
+      </section>
+
       <div className="grid gap-4 xl:grid-cols-[minmax(380px,0.94fr)_minmax(0,1.06fr)]">
         <EmailList
           title={listTitle}
           description={listDescription}
           emails={visibleEmails}
+          operationsSnapshot={operationsSnapshot}
           selectedId={selectedEmail?.id ?? ""}
           onSelect={setSelectedId}
           emptyActionHref="/dashboard/compose"
@@ -682,6 +900,8 @@ export function MailboxView({
         />
         <EmailDetailPanel
           email={selectedEmail}
+          assignmentRecommendation={selectedAssignmentRecommendation}
+          departmentSummary={selectedDepartmentSummary}
           onApprove={handleApprove}
           isApproving={approvingId === selectedEmail?.id}
           assigneeValue={assigneeValue}

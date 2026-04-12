@@ -1,11 +1,16 @@
 import Link from "next/link";
 import {
+  approvalStateClasses,
   emailPriorityClasses,
   formatEmailDate,
+  groundingStrengthClasses,
 } from "@/lib/dashboard";
 import {
+  assessEmailGrounding,
+  getEmailAssignmentRecommendation,
   getEmailApprovalState,
   getEmailDepartment,
+  type MailboxOperationsSnapshot,
   type StaffEmail,
 } from "@/lib/email-data";
 import {
@@ -17,26 +22,11 @@ import {
   EmailStatusBadge,
 } from "@/components/dashboard/email-badges";
 
-function getApprovalBadgeClassName(approvalState: string) {
-  if (approvalState === "Approved") {
-    return "bg-[#E9FBF1] text-[#0C8A53]";
-  }
-
-  if (approvalState === "Escalated") {
-    return "bg-[#FFE9EE] text-[#D43D63]";
-  }
-
-  if (approvalState === "Awaiting Draft") {
-    return "bg-slate-100 text-slate-600";
-  }
-
-  return "bg-[#EEF0FF] text-[#555CF0]";
-}
-
 export function EmailList({
   title,
   description,
   emails,
+  operationsSnapshot,
   selectedId,
   onSelect,
   emptyMessage,
@@ -46,12 +36,15 @@ export function EmailList({
   title: string;
   description: string;
   emails: StaffEmail[];
+  operationsSnapshot?: MailboxOperationsSnapshot;
   selectedId: string;
   onSelect: (id: string) => void;
   emptyMessage: string;
   emptyActionHref?: string;
   emptyActionLabel?: string;
 }>) {
+  const queueSnapshot = operationsSnapshot;
+
   return (
     <section className={`${dashboardPanelClassName} overflow-hidden p-5 md:p-6`}>
       <div className="mb-5">
@@ -78,6 +71,10 @@ export function EmailList({
             const senderName = email.sender.split(" <")[0] ?? email.sender;
             const department = getEmailDepartment(email);
             const approvalState = getEmailApprovalState(email);
+            const groundingAssessment = assessEmailGrounding(email);
+            const assignmentRecommendation = queueSnapshot
+              ? getEmailAssignmentRecommendation(email, queueSnapshot)
+              : null;
             const footerActionLabel =
               email.status === "Auto-sent"
                 ? "View Sent Reply"
@@ -136,9 +133,7 @@ export function EmailList({
                   <EmailStatusBadge status={email.status} />
                   <EmailCategoryBadge category={email.category} />
                   <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getApprovalBadgeClassName(
-                      approvalState
-                    )}`}
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${approvalStateClasses[approvalState]}`}
                   >
                     {approvalState}
                   </span>
@@ -153,6 +148,11 @@ export function EmailList({
                       {email.routingDecision.confidenceScore}%
                     </span>
                   ) : null}
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${groundingStrengthClasses[groundingAssessment.strength]}`}
+                  >
+                    {groundingAssessment.strength} support
+                  </span>
                   {email.source ? (
                     <span className="rounded-full bg-[#EEF0FF] px-2.5 py-1 text-xs font-semibold text-[#5C61FF]">
                       {email.source}
@@ -177,6 +177,13 @@ export function EmailList({
                     Suggested owners: {email.routingDecision.suggestedAssignees.join(", ")}
                   </p>
                 ) : null}
+                {assignmentRecommendation ? (
+                  <p className="mt-3 text-xs font-medium uppercase tracking-[0.16em] text-[#4F57E8]">
+                    {email.assignee === assignmentRecommendation.assignee
+                      ? `Best-fit owner: ${assignmentRecommendation.assignee}`
+                      : `Rebalance suggestion: ${assignmentRecommendation.assignee}`}
+                  </p>
+                ) : null}
 
                 <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-xs font-medium text-slate-500">
                   <div className="flex flex-wrap items-center gap-2">
@@ -189,6 +196,12 @@ export function EmailList({
                     <span>Updated {formatEmailDate(email.lastUpdatedAt)}</span>
                     <span className="text-slate-300">•</span>
                     <span>{citationMetaLabel}</span>
+                    {assignmentRecommendation ? (
+                      <>
+                        <span className="text-slate-300">•</span>
+                        <span>{assignmentRecommendation.queueSummary}</span>
+                      </>
+                    ) : null}
                   </div>
                   <span className="rounded-full bg-white/78 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5C61FF] shadow-[0_12px_24px_rgba(144,156,182,0.12)]">
                     {footerActionLabel}

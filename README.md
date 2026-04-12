@@ -67,4 +67,5 @@ Note: the production build uses `next/font` with Geist, so it may need network a
 
 - The message, activity, and document data persist locally using JSON files plus uploaded files in the project workspace.
 - This is still a local prototype, so there is no real authentication, database, or external email integration yet.
-- The next logical step is replacing local file storage with a real backend and user/account model.
+- The current product focus is stabilizing the local review workflow, grounding surfaces, and oversight dashboard before swapping in real providers.
+- The next implementation phase is formalizing swappable adapters for persistence, inbox ingestion, storage, and AI providers without changing the current workflow shape.
