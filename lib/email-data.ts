@@ -268,6 +268,27 @@ export function groupEmailSourceCitations(
   });
 }
 
+export function getEmailReplyEntry(
+  email: Pick<StaffEmail, "threadHistory">
+) {
+  const currentDraftEntry = email.threadHistory.find(
+    (entry) => entry.id === "CURRENT-DRAFT"
+  );
+
+  if (currentDraftEntry) {
+    return currentDraftEntry;
+  }
+
+  const outboundEntries = email.threadHistory
+    .filter((entry) => entry.kind === "Outbound")
+    .sort(
+      (left, right) =>
+        new Date(right.sentAt).getTime() - new Date(left.sentAt).getTime()
+    );
+
+  return outboundEntries[0] ?? null;
+}
+
 export function assessEmailGrounding(
   email: Pick<
     StaffEmail,

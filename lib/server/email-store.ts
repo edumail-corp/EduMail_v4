@@ -5,6 +5,7 @@ import {
   filterEmailsByAssignment,
   filterEmailsByDepartment,
   getDepartmentSuggestedAssignees,
+  getEmailReplyEntry,
   getInitialStaffEmails,
   getEmailApprovalState,
   getEmailDepartment,
@@ -143,16 +144,36 @@ function normalizeStoredEmail(email: Partial<StaffEmail>) {
 }
 
 function synchronizeDraftThreadEntry(
-  email: StaffEmail,
-  nextTimestamp: string
+  nextEmail: StaffEmail,
+  nextTimestamp: string,
+  previousEmail?: StaffEmail
 ): EmailThreadEntry[] {
-  const withoutDraftEntry = email.threadHistory.filter(
+  const withoutDraftEntry = nextEmail.threadHistory.filter(
     (entry) => entry.id !== "CURRENT-DRAFT"
   );
+  const previousDraftEntry = previousEmail
+    ? getEmailReplyEntry(previousEmail)
+    : null;
+  const draftWasUpdated = previousEmail
+    ? nextEmail.aiDraft !== previousEmail.aiDraft
+    : true;
+  const replyWasApproved =
+    previousEmail !== undefined &&
+    previousEmail.status !== "Auto-sent" &&
+    nextEmail.status === "Auto-sent";
 
-  if (!email.aiDraft) {
+  if (!nextEmail.aiDraft) {
     return withoutDraftEntry;
   }
+
+  const entryTimestamp =
+    draftWasUpdated || replyWasApproved
+      ? nextTimestamp
+      : previousDraftEntry?.sentAt ?? nextTimestamp;
+  const entryAuthor =
+    replyWasApproved || draftWasUpdated
+      ? nextEmail.assignee ?? "Staff Workspace"
+      : previousDraftEntry?.author ?? nextEmail.assignee ?? "Staff Workspace";
 
   return [
     ...withoutDraftEntry,
@@ -160,10 +181,10 @@ function synchronizeDraftThreadEntry(
       id: "CURRENT-DRAFT",
       kind: "Outbound",
       label:
-        email.status === "Auto-sent" ? "Approved reply" : "Current draft",
-      author: email.assignee ?? "Staff Workspace",
-      sentAt: nextTimestamp,
-      body: email.aiDraft,
+        nextEmail.status === "Auto-sent" ? "Approved reply" : "Current draft",
+      author: entryAuthor,
+      sentAt: entryTimestamp,
+      body: nextEmail.aiDraft,
     } satisfies EmailThreadEntry,
   ];
 }
@@ -294,7 +315,8 @@ export async function updateStaffEmail(
     ...nextEmailBeforeThreadSync,
     threadHistory: synchronizeDraftThreadEntry(
       nextEmailBeforeThreadSync,
-      nextTimestamp
+      nextTimestamp,
+      previousEmail
     ),
   };
   const synchronizedNextEmail = synchronizeOperationalFields(nextEmail);

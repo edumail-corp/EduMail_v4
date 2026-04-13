@@ -20,7 +20,7 @@ export function InboxWithTabs() {
               : "border border-white/80 bg-white/70 text-slate-500 hover:bg-white hover:text-[#4F57E8]"
           }`}
         >
-          All messages
+          Inbox
         </Link>
         <Link
           href="/dashboard/inbox?view=escalations"
@@ -53,11 +53,12 @@ export function InboxWithTabs() {
           filter="All"
           eyebrow="Operations"
           title="Inbox"
-          description="Browse the full message queue, inspect the retrieved context, and decide whether the suggested response is ready to move forward."
+          description="Open a message, read the inquiry, and review the generated reply in a more standard inbox view."
           metaSuffix="total messages"
-          listTitle="Message Queue"
+          listTitle="Messages"
           listDescription="All captured inbound messages across the current prototype mailbox."
           emptyMessage="No messages available."
+          interfaceMode="email"
         />
       )}
     </>
