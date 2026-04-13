@@ -39,11 +39,26 @@ export type EmailSourceCitation = {
   reason: string;
 };
 
+export type RoutingReasonCode =
+  | "selected_category_match"
+  | "department_override"
+  | "ambiguous_department_match"
+  | "insufficient_department_signals"
+  | "low_confidence_manual_review"
+  | "escalation_signal_detected"
+  | "fallback_mapping";
+
+export type RoutingReason = {
+  code: RoutingReasonCode;
+  signal?: string;
+};
+
 export type RoutingDecision = {
   department: Department;
   confidence: RoutingConfidence;
   confidenceScore: number;
   reason: string;
+  routingReasons: RoutingReason[];
   signals: string[];
   escalationReason: string | null;
   suggestedAssignees: StaffAssignee[];

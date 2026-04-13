@@ -11,32 +11,35 @@ import {
 } from "@/lib/email-data";
 import type { LanguagePreference } from "@/lib/user-preferences";
 import {
-  createStaffEmail,
-  listStaffEmails,
-  updateStaffEmail,
-} from "@/lib/server/email-store";
-import { generateSeededDraftSuggestion } from "@/lib/server/services/ai-draft-service";
+  getAIDraftAdapter,
+  getMailboxAdapter,
+} from "@/lib/server/adapters";
+
+const mailboxAdapter = getMailboxAdapter();
 
 export async function listMailboxEmails(
   filter: EmailFilter = "All",
   assignmentFilter: StaffAssignmentFilter = "All",
   departmentFilter: DepartmentFilter = "All"
 ) {
-  return listStaffEmails(filter, assignmentFilter, departmentFilter);
+  return mailboxAdapter.listEmails(filter, assignmentFilter, departmentFilter);
 }
 
 export async function updateMailboxEmail(
   id: string,
   updates: StaffEmailUpdateInput
 ) {
-  return updateStaffEmail(id, updates);
+  return mailboxAdapter.updateEmail(id, updates);
 }
 
 export async function createMailboxEmail(
   input: StaffEmailCreateInput,
   language: LanguagePreference = "English"
 ) {
-  const suggestion = await generateSeededDraftSuggestion(input, language);
+  const suggestion = await (await getAIDraftAdapter()).generateDraftSuggestion(
+    input,
+    language
+  );
   const timestamp = new Date().toISOString();
   const isPolish = language === "Polish";
   const localizedDepartment = translateDepartment(
@@ -48,7 +51,7 @@ export async function createMailboxEmail(
     language
   ).toLowerCase();
 
-  return createStaffEmail({
+  return mailboxAdapter.createEmail({
     sender: `${input.senderName.trim()} <${input.senderEmail.trim().toLowerCase()}>`,
     subject: input.subject.trim(),
     body: input.body.trim(),

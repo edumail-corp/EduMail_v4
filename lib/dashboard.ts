@@ -18,6 +18,18 @@ export const dashboardNavItems = [
     icon: "knowledge",
   },
   {
+    label: "Activity",
+    shortLabel: "Audit",
+    href: "/dashboard/activity",
+    icon: "activity",
+  },
+  {
+    label: "Admin",
+    shortLabel: "Control",
+    href: "/dashboard/admin",
+    icon: "database",
+  },
+  {
     label: "Settings",
     shortLabel: "Config",
     href: "/dashboard/settings",

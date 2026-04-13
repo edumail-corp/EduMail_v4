@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import path from "node:path";
 import {
   getInitialActivityEvents,
   type ActivityEvent,
@@ -9,8 +8,9 @@ import {
   readJsonFileWithFallback,
   writeJsonFileAtomically,
 } from "@/lib/server/json-file-store";
+import { getWritableDataPath } from "@/lib/server/storage-path";
 
-const activityLogPath = path.join(process.cwd(), "data", "activity-log.json");
+const activityLogPath = getWritableDataPath("activity-log.json");
 
 async function writeActivityEvents(events: ActivityEvent[]) {
   await writeJsonFileAtomically(activityLogPath, events);

@@ -18,7 +18,7 @@ export async function GET(
     );
   }
 
-  return new NextResponse(fileData.fileBuffer, {
+  return new NextResponse(new Uint8Array(fileData.fileBuffer), {
     status: 200,
     headers: {
       "Content-Type": fileData.mimeType,

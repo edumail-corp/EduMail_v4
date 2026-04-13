@@ -14,17 +14,10 @@ import {
   readJsonFileWithFallback,
   writeJsonFileAtomically,
 } from "@/lib/server/json-file-store";
+import { getWritableDataPath } from "@/lib/server/storage-path";
 
-const knowledgeBaseStorePath = path.join(
-  process.cwd(),
-  "data",
-  "knowledge-base-documents.json"
-);
-const knowledgeBaseFilesDirectory = path.join(
-  process.cwd(),
-  "data",
-  "knowledge-base-files"
-);
+const knowledgeBaseStorePath = getWritableDataPath("knowledge-base-documents.json");
+const knowledgeBaseFilesDirectory = getWritableDataPath("knowledge-base-files");
 const seedDocumentMap = new Map(
   getInitialKnowledgeDocuments().map((document) => [document.id, document])
 );

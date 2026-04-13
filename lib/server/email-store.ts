@@ -1,4 +1,3 @@
-import path from "node:path";
 import {
   filterEmails,
   filterEmailsByAssignment,
@@ -13,20 +12,36 @@ import {
   type EmailFilter,
   type EmailThreadEntry,
   type RoutingDecision,
+  type RoutingReason,
   type StaffAssignmentFilter,
   type StaffEmail,
   type StaffEmailUpdateInput,
 } from "@/lib/email-data";
 import { appendActivityEvent } from "@/lib/server/activity-log-store";
+import { getLocalizedRoutingDecisionReason } from "@/lib/local-routing";
 import {
   readJsonFileWithFallback,
   writeJsonFileAtomically,
 } from "@/lib/server/json-file-store";
+import { getWritableDataPath } from "@/lib/server/storage-path";
 
-const emailStorePath = path.join(process.cwd(), "data", "staff-emails.json");
+const emailStorePath = getWritableDataPath("staff-emails.json");
 const seedEmailMap = new Map(
   getInitialStaffEmails().map((email) => [email.id, email])
 );
+
+function buildFallbackRoutingReasons(
+  email: Partial<StaffEmail>
+): RoutingReason[] {
+  if (email.manualReviewReason) {
+    return [
+      { code: "fallback_mapping" },
+      { code: "low_confidence_manual_review" },
+    ];
+  }
+
+  return [{ code: "fallback_mapping" }];
+}
 
 function buildFallbackRoutingDecision(
   email: Partial<StaffEmail>
@@ -36,19 +51,23 @@ function buildFallbackRoutingDecision(
     category: email.category ?? "Admissions",
   });
   const escalationReason = email.manualReviewReason ?? null;
-
-  return {
+  const routingReasons = buildFallbackRoutingReasons(email);
+  const nextDecision: RoutingDecision = {
     department,
     confidence: escalationReason ? "Low" : "Medium",
     confidenceScore: email.confidence ?? (escalationReason ? 58 : 74),
-    reason: escalationReason
-      ? `Manual review is required before this case can be confidently routed into ${department}.`
-      : `This case currently maps into the ${department} workflow based on the available intake and summary information.`,
+    reason: "",
+    routingReasons,
     signals: escalationReason
       ? ["manual review required"]
       : [department.toLowerCase(), "workflow summary"],
     escalationReason,
     suggestedAssignees: getDepartmentSuggestedAssignees(department),
+  };
+
+  return {
+    ...nextDecision,
+    reason: getLocalizedRoutingDecisionReason(nextDecision),
   };
 }
 
@@ -60,6 +79,24 @@ function synchronizeOperationalFields(email: StaffEmail): StaffEmail {
         department,
         escalationReason:
           email.routingDecision.escalationReason ?? email.manualReviewReason ?? null,
+        routingReasons:
+          email.routingDecision.routingReasons?.length
+            ? email.routingDecision.routingReasons
+            : buildFallbackRoutingReasons(email),
+        reason:
+          email.routingDecision.reason ||
+          getLocalizedRoutingDecisionReason({
+            ...email.routingDecision,
+            department,
+            escalationReason:
+              email.routingDecision.escalationReason ??
+              email.manualReviewReason ??
+              null,
+            routingReasons:
+              email.routingDecision.routingReasons?.length
+                ? email.routingDecision.routingReasons
+                : buildFallbackRoutingReasons(email),
+          }),
         suggestedAssignees:
           email.routingDecision.suggestedAssignees?.length
             ? email.routingDecision.suggestedAssignees

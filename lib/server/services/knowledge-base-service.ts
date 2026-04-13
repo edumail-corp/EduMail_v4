@@ -5,17 +5,18 @@ import {
   getEmailWorkflowHref,
 } from "@/lib/email-data";
 import {
-  createKnowledgeBaseDocument,
-  deleteKnowledgeBaseDocument,
-  getKnowledgeBaseDocumentFile,
-  listKnowledgeBaseDocuments,
-} from "@/lib/server/knowledge-base-store";
-import { listStaffEmails } from "@/lib/server/email-store";
+  getKnowledgeBaseAdapter,
+  getMailboxAdapter,
+} from "@/lib/server/adapters";
+import type { CreateKnowledgeBaseDocumentInput } from "@/lib/server/adapters/contracts";
+
+const knowledgeBaseAdapter = getKnowledgeBaseAdapter();
+const mailboxAdapter = getMailboxAdapter();
 
 export async function listKnowledgeLibraryDocuments() {
   const [documents, emails] = await Promise.all([
-    listKnowledgeBaseDocuments(),
-    listStaffEmails(),
+    knowledgeBaseAdapter.listDocuments(),
+    mailboxAdapter.listEmails(),
   ]);
 
   return documents.map((document) => ({
@@ -85,15 +86,15 @@ export async function listKnowledgeLibraryDocuments() {
 }
 
 export async function createKnowledgeLibraryDocument(
-  input: Parameters<typeof createKnowledgeBaseDocument>[0]
+  input: CreateKnowledgeBaseDocumentInput
 ) {
-  return createKnowledgeBaseDocument(input);
+  return knowledgeBaseAdapter.createDocument(input);
 }
 
 export async function deleteKnowledgeLibraryDocument(id: string) {
-  return deleteKnowledgeBaseDocument(id);
+  return knowledgeBaseAdapter.deleteDocument(id);
 }
 
 export async function getKnowledgeLibraryDocumentFile(id: string) {
-  return getKnowledgeBaseDocumentFile(id);
+  return knowledgeBaseAdapter.getDocumentFile(id);
 }

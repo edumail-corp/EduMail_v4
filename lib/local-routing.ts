@@ -3,6 +3,7 @@ import type {
   EmailCategory,
   RoutingConfidence,
   RoutingDecision,
+  RoutingReason,
   StaffEmailCreateInput,
 } from "@/lib/email-data";
 import {
@@ -92,11 +93,71 @@ function getConfidenceLabel(score: number): RoutingConfidence {
   return "Low";
 }
 
+function hasRoutingReason(
+  decision: Pick<RoutingDecision, "routingReasons">,
+  code: RoutingReason["code"]
+) {
+  return decision.routingReasons.some((reason) => reason.code === code);
+}
+
+function buildRoutingReasonSummary(
+  decision: Pick<
+    RoutingDecision,
+    | "department"
+    | "confidenceScore"
+    | "signals"
+    | "escalationReason"
+    | "routingReasons"
+  >,
+  inputCategory: EmailCategory,
+  language: LanguagePreference
+) {
+  const isPolish = language === "Polish";
+  const departmentLabel = translateDepartment(decision.department, language);
+  const selectedCategoryLabel = translateDepartment(inputCategory, language);
+  const signalList = decision.signals
+    .map((signal) => translateRoutingSignal(signal, language))
+    .join(", ");
+
+  if (decision.escalationReason || hasRoutingReason(decision, "escalation_signal_detected")) {
+    return isPolish
+      ? `Sprawa pozostaje w ręcznym przeglądzie dla działu ${departmentLabel}, ponieważ sygnały routingu wskazują na potrzebę dodatkowej kontroli.`
+      : `This case remains in manual review for ${decision.department} because the routing signals indicate that extra review is needed.`;
+  }
+
+  if (hasRoutingReason(decision, "insufficient_department_signals")) {
+    return isPolish
+      ? `Zgłoszenie tymczasowo opiera się na wybranej kategorii ${selectedCategoryLabel}, ponieważ tekst nie daje jeszcze wystarczająco bezpośrednich sygnałów routingu.`
+      : `The intake is currently leaning on the selected ${inputCategory} category because the text does not provide enough direct routing evidence yet.`;
+  }
+
+  if (hasRoutingReason(decision, "ambiguous_department_match")) {
+    return isPolish
+      ? `Treść zgłoszenia zahacza o kilka działów, ale ${departmentLabel} ma obecnie najsilniejsze dopasowanie sygnałów.`
+      : `The intake overlaps multiple departments, but ${decision.department} currently has the strongest signal match.`;
+  }
+
+  if (hasRoutingReason(decision, "department_override")) {
+    return isPolish
+      ? `Treść zgłoszenia silniej wskazuje na dział ${departmentLabel} niż na pierwotnie wybraną kategorię ${selectedCategoryLabel}.`
+      : `The intake text aligns more strongly with ${decision.department} than the originally selected ${inputCategory} category.`;
+  }
+
+  if (hasRoutingReason(decision, "selected_category_match") && signalList.length > 0) {
+    return isPolish
+      ? `Najsilniejsze sygnały (${signalList}) wskazują na dział ${departmentLabel}, a pewność routingu wynosi ${decision.confidenceScore}%.`
+      : `The strongest visible signals (${decision.signals.join(", ")}) point to ${decision.department}, with routing confidence at ${decision.confidenceScore}%.`;
+  }
+
+  return isPolish
+    ? `Sprawa obecnie pozostaje w kolejce ${departmentLabel} z pewnością routingu ${decision.confidenceScore}%.`
+    : `This case currently remains in the ${decision.department} queue with routing confidence at ${decision.confidenceScore}%.`;
+}
+
 export function inferLocalRoutingDecision(
   input: Pick<StaffEmailCreateInput, "category" | "priority" | "subject" | "body">,
   language: LanguagePreference = "English"
 ): RoutingDecision {
-  const isPolish = language === "Polish";
   const subject = normalizeText(input.subject);
   const body = normalizeText(input.body);
   const combined = `${subject} ${body}`;
@@ -163,50 +224,58 @@ export function inferLocalRoutingDecision(
   );
 
   const confidence = getConfidenceLabel(confidenceScore);
-  const selectedCategoryLabel = translateDepartment(input.category, language);
-  const departmentLabel = translateDepartment(department, language);
   const escalationReason =
     riskySignals.length > 0
-      ? isPolish
+      ? language === "Polish"
         ? `Wykryto sygnały eskalacji: ${riskySignals
             .map((signal) => translateRoutingSignal(signal, language))
             .join(", ")}.`
         : `Escalation signals detected: ${riskySignals.join(", ")}.`
       : hasWeakSignalCoverage
-        ? isPolish
+        ? language === "Polish"
           ? "Treść zgłoszenia nie zawiera wystarczającej liczby sygnałów działowych, aby bezpiecznie przypisać ją bez ręcznego przeglądu."
           : `The intake does not contain enough department-specific signals to route without manual review.`
         : confidence === "Low"
-        ? isPolish
+        ? language === "Polish"
           ? "Pewność routingu jest niska, więc tę sprawę należy sprawdzić ręcznie przed dalszym przetwarzaniem."
           : `Routing confidence is low, so this case should be checked manually before it moves forward.`
         : null;
-
-  const reason = hasWeakSignalCoverage
-    ? isPolish
-      ? `Zgłoszenie tymczasowo opiera się na wybranej kategorii ${selectedCategoryLabel}, ponieważ tekst nie daje jeszcze wystarczająco bezpośrednich sygnałów routingu.`
-      : `The intake is currently leaning on the selected ${input.category} category because the text does not provide enough direct routing evidence yet.`
-    : isAmbiguousDepartmentMatch
-      ? isPolish
-        ? `Treść zgłoszenia zahacza o kilka działów, ale ${departmentLabel} ma obecnie najsilniejsze dopasowanie sygnałów.`
-        : `The intake overlaps multiple departments, but ${department} currently has the strongest signal match.`
-      : shouldOverrideSelectedCategory
-        ? isPolish
-          ? `Treść zgłoszenia silniej wskazuje na dział ${departmentLabel} niż na pierwotnie wybraną kategorię ${selectedCategoryLabel}.`
-          : `The intake text aligns more strongly with ${department} than the originally selected ${input.category} category.`
-        : isPolish
-          ? `Język zgłoszenia najlepiej pasuje do działu ${departmentLabel}, więc sprawa pozostaje w tej kolejce operacyjnej.`
-          : `The intake language aligns with ${department}, so the case stays in that operational queue.`;
-
-  return {
+  const routingReasons: RoutingReason[] = [
+    ...riskySignals.map((signal) => ({
+      code: "escalation_signal_detected" as const,
+      signal,
+    })),
+    ...(hasWeakSignalCoverage
+      ? ([{ code: "insufficient_department_signals" as const }] satisfies RoutingReason[])
+      : []),
+    ...(confidence === "Low"
+      ? ([{ code: "low_confidence_manual_review" as const }] satisfies RoutingReason[])
+      : []),
+    ...(isAmbiguousDepartmentMatch
+      ? ([{ code: "ambiguous_department_match" as const }] satisfies RoutingReason[])
+      : []),
+    ...(shouldOverrideSelectedCategory
+      ? ([{ code: "department_override" as const }] satisfies RoutingReason[])
+      : []),
+    ...(!shouldOverrideSelectedCategory && !hasWeakSignalCoverage
+      ? ([{ code: "selected_category_match" as const }] satisfies RoutingReason[])
+      : []),
+  ];
+  const nextDecision: RoutingDecision = {
     department,
     confidence,
     confidenceScore,
-    reason,
+    reason: "",
+    routingReasons,
     signals: [...new Set([...effectiveSignals, ...riskySignals])]
       .slice(0, 5),
     escalationReason,
     suggestedAssignees: getDepartmentSuggestedAssignees(department),
+  };
+
+  return {
+    ...nextDecision,
+    reason: buildRoutingReasonSummary(nextDecision, input.category, language),
   };
 }
 
@@ -217,31 +286,23 @@ export function getDepartmentSourceDocument(department: Department) {
 export function getLocalizedRoutingDecisionReason(
   decision: Pick<
     RoutingDecision,
-    "department" | "confidence" | "confidenceScore" | "signals" | "escalationReason"
+    | "department"
+    | "confidence"
+    | "confidenceScore"
+    | "routingReasons"
+    | "signals"
+    | "escalationReason"
   >,
   language: LanguagePreference = "English"
 ) {
-  const isPolish = language === "Polish";
-  const departmentLabel = translateDepartment(decision.department, language);
-  const signalList = decision.signals
-    .map((signal) => translateRoutingSignal(signal, language))
-    .join(", ");
-
-  if (decision.escalationReason) {
-    return isPolish
-      ? `Sprawa pozostaje w ręcznym przeglądzie dla działu ${departmentLabel}, ponieważ sygnały routingu wskazują na potrzebę dodatkowej kontroli.`
-      : `This case remains in manual review for ${decision.department} because the routing signals indicate that extra review is needed.`;
-  }
-
-  if (decision.signals.length > 0) {
-    return isPolish
-      ? `Najsilniejsze sygnały (${signalList}) wskazują na dział ${departmentLabel}, a pewność routingu wynosi ${decision.confidenceScore}%.`
-      : `The strongest visible signals (${decision.signals.join(", ")}) point to ${decision.department}, with routing confidence at ${decision.confidenceScore}%.`;
-  }
-
-  return isPolish
-    ? `Sprawa obecnie pozostaje w kolejce ${departmentLabel} z pewnością routingu ${decision.confidenceScore}%.`
-    : `This case currently remains in the ${decision.department} queue with routing confidence at ${decision.confidenceScore}%.`;
+  return buildRoutingReasonSummary(
+    {
+      ...decision,
+      routingReasons: decision.routingReasons ?? [],
+    },
+    decision.department,
+    language
+  );
 }
 
 export function getRoutingDestinationLabel(

@@ -51,6 +51,7 @@ export function DashboardShell({
           Inbox: { label: "Skrzynka", shortLabel: "Wszystko" },
           "Knowledge Base": { label: "Baza wiedzy", shortLabel: "Dok." },
           Activity: { label: "Aktywność", shortLabel: "Log" },
+          Admin: { label: "Admin", shortLabel: "Ster." },
           Settings: { label: "Ustawienia", shortLabel: "Opcje" },
         }
         : {};
