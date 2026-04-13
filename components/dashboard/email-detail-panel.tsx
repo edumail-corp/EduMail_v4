@@ -11,9 +11,20 @@ import {
   getEmailDepartment,
   groupEmailSourceCitations,
   staffAssigneeOptions,
+  translateCaseApprovalState,
+  translateDepartment,
+  translateEmailPriority,
+  translateGroundingStrength,
+  translateRoutingConfidence,
+  translateStaffAssignmentSelectValue,
+  translateWorkloadPressure,
   type StaffAssignmentSelectValue,
   type StaffEmail,
 } from "@/lib/email-data";
+import {
+  getLocalizedRoutingDecisionReason,
+  getLocalizedRoutingSignalList,
+} from "@/lib/local-routing";
 import {
   DashboardAvatar,
   dashboardGhostButtonClassName,
@@ -122,27 +133,38 @@ export function EmailDetailPanel({
   onSaveNote?: () => void;
   isSavingNote?: boolean;
 }>) {
-  const { formatDateTime, formatDay } = useUserPreferences();
+  const { formatDateTime, formatDay, preferences } = useUserPreferences();
+  const isPolish = preferences.language === "Polish";
 
   if (!email) {
     return (
       <section className={`${dashboardPanelClassName} border-dashed p-10 text-center text-sm text-slate-500`}>
-        Select a message to inspect the draft and review details.
+        {isPolish
+          ? "Wybierz wiadomość, aby sprawdzić szkic i szczegóły przeglądu."
+          : "Select a message to inspect the draft and review details."}
       </section>
     );
   }
 
   const senderName = email.sender.split(" <")[0] ?? email.sender;
-  const department = getEmailDepartment(email);
-  const approvalState = getEmailApprovalState(email);
+  const rawDepartment = getEmailDepartment(email);
+  const department = translateDepartment(rawDepartment, preferences.language);
+  const rawApprovalState = getEmailApprovalState(email);
+  const approvalState = translateCaseApprovalState(
+    rawApprovalState,
+    preferences.language
+  );
   const routingConfidenceScore =
     email.routingDecision?.confidenceScore ?? email.confidence;
-  const routingConfidenceLabel =
-    email.routingDecision?.confidence ?? (routingConfidenceScore >= 82
-      ? "High"
-      : routingConfidenceScore >= 66
-        ? "Medium"
-        : "Low");
+  const routingConfidenceLabel = translateRoutingConfidence(
+    email.routingDecision?.confidence ??
+      (routingConfidenceScore >= 82
+        ? "High"
+        : routingConfidenceScore >= 66
+          ? "Medium"
+          : "Low"),
+    preferences.language
+  );
   const suggestedOwners = email.routingDecision?.suggestedAssignees ?? [];
   const primaryLibraryHref = email.source
     ? `/dashboard/knowledge-base?document=${encodeURIComponent(
@@ -203,44 +225,93 @@ export function EmailDetailPanel({
     noteValue.trim() !== (email.staffNote ?? "");
 
   let reviewMessage =
-    "Approve this response to move it into the auto-sent queue and persist the decision.";
+    isPolish
+      ? "Zatwierdź tę odpowiedź, aby przenieść ją do kolejki wysłanych i zapisać decyzję."
+      : "Approve this response to move it into the auto-sent queue and persist the decision.";
 
   if (isEditingDraft) {
-    reviewMessage = "Update the draft, save it to the mailbox store, and approve it when the response is ready.";
+    reviewMessage = isPolish
+      ? "Zaktualizuj szkic, zapisz go w skrzynce i zatwierdź, gdy odpowiedź będzie gotowa."
+      : "Update the draft, save it to the mailbox store, and approve it when the response is ready.";
   } else if (isAlreadySent) {
-    reviewMessage = "This message has already been approved and moved into the sent queue.";
+    reviewMessage = isPolish
+      ? "Ta wiadomość została już zatwierdzona i przeniesiona do kolejki wysłanych."
+      : "This message has already been approved and moved into the sent queue.";
   } else if (!hasDraft) {
-    reviewMessage = "No AI draft is available yet, so this case still needs a manual response.";
+    reviewMessage = isPolish
+      ? "Szkic AI nie jest jeszcze dostępny, więc ta sprawa nadal wymaga ręcznej odpowiedzi."
+      : "No AI draft is available yet, so this case still needs a manual response.";
   } else if (email.routingDecision?.escalationReason) {
-    reviewMessage =
-      "The system detected escalation or low-confidence routing signals, so a human should review the draft and final routing before approval.";
+    reviewMessage = isPolish
+      ? "System wykrył sygnały eskalacji albo niskiej pewności routingu, więc człowiek powinien przejrzeć szkic i finalny routing przed zatwierdzeniem."
+      : "The system detected escalation or low-confidence routing signals, so a human should review the draft and final routing before approval.";
   } else if (isApproving || isSavingDraft) {
-    reviewMessage = "Saving the decision and updating the mailbox state.";
+    reviewMessage = isPolish
+      ? "Zapisywanie decyzji i aktualizacja stanu skrzynki."
+      : "Saving the decision and updating the mailbox state.";
   }
 
   const approveLabel = isApproving
-    ? "Sending..."
+    ? isPolish
+      ? "Wysyłanie..."
+      : "Sending..."
     : isAlreadySent
-      ? "Already Sent"
+      ? isPolish
+        ? "Już wysłane"
+        : "Already Sent"
       : !hasDraft
-        ? "Manual Review Required"
-        : "Approve & Send";
+        ? isPolish
+          ? "Wymagany ręczny przegląd"
+          : "Manual Review Required"
+        : isPolish
+          ? "Zatwierdź i wyślij"
+          : "Approve & Send";
   const editLabel = isAlreadySent
-    ? "Locked After Send"
+    ? isPolish
+      ? "Zablokowane po wysłaniu"
+      : "Locked After Send"
     : hasDraft
-      ? "Edit Draft"
-      : "Compose Draft";
-  const saveAssigneeLabel = isSavingAssignee ? "Saving..." : "Save Owner";
-  const saveDraftLabel = isSavingDraft ? "Saving..." : "Save Draft";
+      ? isPolish
+        ? "Edytuj szkic"
+        : "Edit Draft"
+      : isPolish
+        ? "Utwórz szkic"
+        : "Compose Draft";
+  const saveAssigneeLabel = isSavingAssignee
+    ? isPolish
+      ? "Zapisywanie..."
+      : "Saving..."
+    : isPolish
+      ? "Zapisz właściciela"
+      : "Save Owner";
+  const saveDraftLabel = isSavingDraft
+    ? isPolish
+      ? "Zapisywanie..."
+      : "Saving..."
+    : isPolish
+      ? "Zapisz szkic"
+      : "Save Draft";
   const noteLabel =
-    email.staffNote && email.staffNote.length > 0 ? "Edit Note" : "Add Note";
-  const saveNoteLabel = isSavingNote ? "Saving..." : "Save Note";
+    email.staffNote && email.staffNote.length > 0
+      ? isPolish
+        ? "Edytuj notatkę"
+        : "Edit Note"
+      : isPolish
+        ? "Dodaj notatkę"
+        : "Add Note";
+  const saveNoteLabel = isSavingNote
+    ? isPolish
+      ? "Zapisywanie..."
+      : "Saving..."
+    : isPolish
+      ? "Zapisz notatkę"
+      : "Save Note";
   const citationDocumentCount = new Set(
     email.sourceCitations.map((citation) => citation.documentName)
   ).size;
   const citationGroups = groupEmailSourceCitations(email.sourceCitations);
-  const groundingAssessment = assessEmailGrounding(email);
-  const approvalGuidance = getEmailApprovalGuidance(email);
+  const groundingAssessment = assessEmailGrounding(email, preferences.language);
+  const approvalGuidance = getEmailApprovalGuidance(email, preferences.language);
   const draftModeLabel = hasDraft
     ? email.manualReviewReason
       ? "Manual draft saved"
@@ -289,7 +360,7 @@ export function EmailDetailPanel({
           />
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-              {department} Workflow
+              {department} {isPolish ? "workflow" : "Workflow"}
             </p>
             <h3 className="mt-2 text-3xl font-semibold tracking-tight text-[#1E2340]">
               {detailTitle}
@@ -302,7 +373,7 @@ export function EmailDetailPanel({
             {department}
           </span>
           <span
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold shadow-[0_12px_24px_rgba(144,156,182,0.12)] ${approvalStateClasses[approvalState]}`}
+            className={`rounded-full px-3 py-1.5 text-xs font-semibold shadow-[0_12px_24px_rgba(144,156,182,0.12)] ${approvalStateClasses[rawApprovalState]}`}
           >
             {approvalState}
           </span>
@@ -318,18 +389,24 @@ export function EmailDetailPanel({
         </div>
       </div>
 
-      <DetailCard title="Original Message" subtitle={email.sender}>
-        <p className="text-sm text-slate-500">Subject</p>
+      <DetailCard
+        title={isPolish ? "Oryginalna wiadomość" : "Original Message"}
+        subtitle={email.sender}
+      >
+        <p className="text-sm text-slate-500">{isPolish ? "Temat" : "Subject"}</p>
         <p className="mb-4 mt-1 text-base font-semibold text-slate-900">
           {email.subject}
         </p>
-        <p className="text-sm text-slate-500">Message</p>
+        <p className="text-sm text-slate-500">{isPolish ? "Wiadomość" : "Message"}</p>
         <p className="mt-1 whitespace-pre-line text-sm leading-6 text-slate-700">
           {email.body}
         </p>
       </DetailCard>
 
-      <DetailCard title="Case Summary" subtitle="What this case is about">
+      <DetailCard
+        title={isPolish ? "Podsumowanie sprawy" : "Case Summary"}
+        subtitle={isPolish ? "Czego dotyczy ta sprawa" : "What this case is about"}
+      >
         <p className="text-sm leading-6 text-slate-700">{email.summary}</p>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -364,8 +441,8 @@ export function EmailDetailPanel({
             <span
               className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${emailPriorityClasses[email.priority]}`}
             >
-              {email.priority}
-            </span>
+            {translateEmailPriority(email.priority, preferences.language)}
+          </span>
             <p className="mt-2 text-xs text-slate-500">
               {email.assignee
                 ? `Currently owned by ${email.assignee}`
@@ -382,8 +459,12 @@ export function EmailDetailPanel({
             </p>
             <p className="mt-1 text-xs text-slate-500">
               {email.manualReviewReason
-                ? "Manual review is still required."
-                : "Routing and review state are currently clear."}
+                ? isPolish
+                  ? "Ręczny przegląd jest nadal wymagany."
+                  : "Manual review is still required."
+                : isPolish
+                  ? "Stan routingu i przeglądu jest obecnie czysty."
+                  : "Routing and review state are currently clear."}
             </p>
           </div>
         </div>
@@ -395,7 +476,8 @@ export function EmailDetailPanel({
                 Routing Decision
               </p>
               <p className="mt-2 text-sm font-semibold text-slate-900">
-                {department} • {routingConfidenceLabel} confidence
+                {department} • {routingConfidenceLabel}{" "}
+                {isPolish ? "pewność" : "confidence"}
               </p>
             </div>
             <span className="rounded-full bg-white/82 px-3 py-1.5 text-xs font-semibold text-slate-500">
@@ -403,12 +485,22 @@ export function EmailDetailPanel({
             </span>
           </div>
           <p className="mt-3 text-sm leading-6 text-slate-600">
-            {email.routingDecision?.reason ??
-              "This case is following the currently selected department path."}
+            {email.routingDecision
+              ? getLocalizedRoutingDecisionReason(
+                  email.routingDecision,
+                  preferences.language
+                )
+              : isPolish
+                ? "Ta sprawa podąża aktualnie wybraną ścieżką działu."
+                : "This case is following the currently selected department path."}
           </p>
           {email.routingDecision?.signals.length ? (
             <p className="mt-3 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-              Signals: {email.routingDecision.signals.join(", ")}
+              {isPolish ? "Sygnały" : "Signals"}:{" "}
+              {getLocalizedRoutingSignalList(
+                email.routingDecision.signals,
+                preferences.language
+              ).join(", ")}
             </p>
           ) : null}
           {suggestedOwners.length ? (
@@ -468,7 +560,10 @@ export function EmailDetailPanel({
               Grounding
             </p>
             <p className="mt-2 text-sm font-semibold text-slate-900">
-              {groundingAssessment.strength}
+              {translateGroundingStrength(
+                groundingAssessment.strength,
+                preferences.language
+              )}
             </p>
             <p className="mt-1 text-xs text-slate-500">
               {groundingAssessment.score}% support score
@@ -504,7 +599,11 @@ export function EmailDetailPanel({
             <span
               className={`rounded-full px-3 py-1.5 text-xs font-semibold ${groundingStrengthClasses[groundingAssessment.strength]}`}
             >
-              {groundingAssessment.strength} support
+              {translateGroundingStrength(
+                groundingAssessment.strength,
+                preferences.language
+              )}{" "}
+              {isPolish ? "wsparcie" : "support"}
             </span>
           </div>
 
@@ -749,7 +848,10 @@ export function EmailDetailPanel({
               <span
                 className={`rounded-full px-3 py-1.5 text-xs font-semibold ${workloadPressureClasses[assignmentRecommendation.pressure]}`}
               >
-                {assignmentRecommendation.pressure}
+                {translateWorkloadPressure(
+                  assignmentRecommendation.pressure,
+                  preferences.language
+                )}
               </span>
             </div>
 
@@ -797,7 +899,10 @@ export function EmailDetailPanel({
             }`}
           >
             <option value={defaultStaffAssignmentSelection}>
-              {defaultStaffAssignmentSelection}
+              {translateStaffAssignmentSelectValue(
+                defaultStaffAssignmentSelection,
+                preferences.language
+              )}
             </option>
             {staffAssigneeOptions.map((assignee) => (
               <option key={assignee} value={assignee}>

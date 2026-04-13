@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import {
   DashboardAvatar,
   DashboardIcon,
@@ -8,10 +9,20 @@ import {
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { DashboardTopBar } from "@/components/dashboard/dashboard-top-bar";
 import { dashboardCurrentUser, workloadPressureClasses } from "@/lib/dashboard";
-import { summarizeMailboxOperations } from "@/lib/email-data";
+import {
+  summarizeMailboxOperations,
+  translateDepartment,
+  translateWorkloadPressure,
+} from "@/lib/email-data";
 import { listWorkspaceActivity } from "@/lib/server/services/activity-service";
 import { listMailboxEmails } from "@/lib/server/services/mailbox-service";
 import { listKnowledgeLibraryDocuments } from "@/lib/server/services/knowledge-base-service";
+import {
+  getLocaleForLanguage,
+  isLanguagePreference,
+  userPreferencesLanguageCookie,
+  type LanguagePreference,
+} from "@/lib/user-preferences";
 
 const dashboardWeeklyFallbackAnchorIso = "2026-01-07T00:00:00.000Z";
 
@@ -27,7 +38,7 @@ function formatAverageMinutes(minutes: number) {
   return `${(minutes / 60).toFixed(1)}h`;
 }
 
-function getLastSevenSnapshots(anchorIso: string) {
+function getLastSevenSnapshots(anchorIso: string, locale: string) {
   const anchor = new Date(anchorIso);
 
   return Array.from({ length: 7 }, (_, index) => {
@@ -36,12 +47,18 @@ function getLastSevenSnapshots(anchorIso: string) {
 
     return {
       key: date.toISOString().slice(0, 10),
-      label: date.toLocaleDateString(undefined, { weekday: "short" }),
+      label: date.toLocaleDateString(locale, { weekday: "short" }),
     };
   });
 }
 
 export default async function DashboardRootPage() {
+  const languageCookie = (await cookies()).get(userPreferencesLanguageCookie)?.value;
+  const language: LanguagePreference = isLanguagePreference(languageCookie)
+    ? languageCookie
+    : "English";
+  const locale = getLocaleForLanguage(language);
+  const isPolish = language === "Polish";
   const [emails, documents, activityEvents] = await Promise.all([
     listMailboxEmails(),
     listKnowledgeLibraryDocuments(),
@@ -97,7 +114,8 @@ export default async function DashboardRootPage() {
       : new Date(dashboardWeeklyFallbackAnchorIso).getTime();
 
   const weeklySnapshots = getLastSevenSnapshots(
-    new Date(latestTimestamp).toISOString()
+    new Date(latestTimestamp).toISOString(),
+    locale
   );
   const weeklySeries = weeklySnapshots.map((snapshot) => {
     const mailCount = emails.filter(
@@ -120,46 +138,66 @@ export default async function DashboardRootPage() {
 
   const busiestOwner: [string, number] = operationsSnapshot.mostLoadedOwner
     ? [operationsSnapshot.mostLoadedOwner.owner, operationsSnapshot.mostLoadedOwner.activeCount]
-    : ["Unassigned", 0];
+    : [isPolish ? "Nieprzypisane" : "Unassigned", 0];
   const mostPressuredDepartment = operationsSnapshot.mostPressuredDepartment;
 
   const metricCards = [
     {
-      label: "Unassigned",
+      label: isPolish ? "Nieprzypisane" : "Unassigned",
       value: `${unassignedCount}`,
       accent:
         totalMessages === 0
-          ? "No live queue"
+          ? isPolish
+            ? "Brak aktywnej kolejki"
+            : "No live queue"
           : unassignedCount === 0
-            ? "Fully covered"
-            : `${ownerCoverageRate}% owned`,
+            ? isPolish
+              ? "Pełne pokrycie"
+              : "Fully covered"
+            : isPolish
+              ? `${ownerCoverageRate}% przypisanych`
+              : `${ownerCoverageRate}% owned`,
       icon: "mail" as const,
       href: "/dashboard/inbox?assignee=Unassigned",
     },
     {
-      label: "Open Cases",
+      label: isPolish ? "Otwarte sprawy" : "Open Cases",
       value: `${openCases}`,
       accent:
         openCases === 0
-          ? "Queue clear"
-          : `${draftCount} drafts • ${escalatedMessages} escalations`,
+          ? isPolish
+            ? "Kolejka pusta"
+            : "Queue clear"
+          : isPolish
+            ? `${draftCount} szkiców • ${escalatedMessages} eskalacji`
+            : `${draftCount} drafts • ${escalatedMessages} escalations`,
       icon: "document" as const,
       href: "/dashboard/inbox",
     },
     {
-      label: "KB Health",
+      label: isPolish ? "Kondycja KB" : "KB Health",
       value: `${knowledgeHealth}%`,
       accent:
         documents.length === 0
-          ? "No docs yet"
-          : `${referencedDocuments}/${documents.length} linked`,
+          ? isPolish
+            ? "Brak dokumentów"
+            : "No docs yet"
+          : isPolish
+            ? `${referencedDocuments}/${documents.length} powiązanych`
+            : `${referencedDocuments}/${documents.length} linked`,
       icon: "shield" as const,
       href: "/dashboard/knowledge-base",
     },
     {
-      label: "Avg. Response",
+      label: isPolish ? "Śr. odpowiedź" : "Avg. Response",
       value: formatAverageMinutes(averageResponseMinutes),
-      accent: approvedMessages > 0 ? `${approvedMessages} approved` : "Awaiting sent data",
+      accent: approvedMessages > 0
+        ? isPolish
+          ? `${approvedMessages} zatwierdzonych`
+          : `${approvedMessages} approved`
+        : isPolish
+          ? "Oczekuje na dane o wysyłce"
+          : "Awaiting sent data",
       icon: "clock" as const,
       href: "/dashboard/inbox",
     },
@@ -167,19 +205,27 @@ export default async function DashboardRootPage() {
 
   return (
     <>
-      <DashboardTopBar label="Operations Dashboard" />
+      <DashboardTopBar label={isPolish ? "Panel operacyjny" : "Operations Dashboard"} />
 
       <DashboardPageHeader
-        eyebrow="Dashboard Overview"
-        title="Dashboard Overview"
-        description={`Welcome back, ${dashboardCurrentUser.name}. Here is a quick snapshot of queue pressure, ownership, and recent activity.`}
-        meta="Provider-agnostic workspace snapshot"
+        eyebrow={isPolish ? "Przegląd panelu" : "Dashboard Overview"}
+        title={isPolish ? "Przegląd panelu" : "Dashboard Overview"}
+        description={
+          isPolish
+            ? `Witaj ponownie, ${dashboardCurrentUser.name}. Oto szybka migawka presji kolejki, własności i ostatniej aktywności.`
+            : `Welcome back, ${dashboardCurrentUser.name}. Here is a quick snapshot of queue pressure, ownership, and recent activity.`
+        }
+        meta={
+          isPolish
+            ? "Migawka workspace niezależnego od dostawcy"
+            : "Provider-agnostic workspace snapshot"
+        }
         actions={
           <Link
             href="/dashboard/compose"
             className={dashboardSecondaryButtonClassName}
           >
-            Compose New
+            {isPolish ? "Nowa sprawa" : "Compose New"}
           </Link>
         }
       />
@@ -214,23 +260,25 @@ export default async function DashboardRootPage() {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-400">
-                Weekly Activity
+                {isPolish ? "Aktywność tygodniowa" : "Weekly Activity"}
               </p>
               <h3 className="mt-3 text-3xl font-semibold tracking-tight text-[#1E2340]">
-                Weekly Activity
+                {isPolish ? "Aktywność tygodniowa" : "Weekly Activity"}
               </h3>
               <p className="mt-2 text-sm leading-7 text-slate-500">
-                Inbound mail volume versus logged workflow activity across the latest seven active days in the local prototype.
+                {isPolish
+                  ? "Wolumen poczty przychodzącej względem zarejestrowanej aktywności przepływu w ostatnich siedmiu aktywnych dniach lokalnego prototypu."
+                  : "Inbound mail volume versus logged workflow activity across the latest seven active days in the local prototype."}
               </p>
             </div>
             <div className="flex items-center gap-4 text-sm text-slate-500">
               <span className="flex items-center gap-2">
                 <span className="h-3 w-3 rounded-full bg-[#5C61FF]" />
-                Mail
+                {isPolish ? "Poczta" : "Mail"}
               </span>
               <span className="flex items-center gap-2">
                 <span className="h-3 w-3 rounded-full bg-[#B7BDFC]" />
-                Activity
+                {isPolish ? "Aktywność" : "Activity"}
               </span>
             </div>
           </div>
@@ -255,7 +303,9 @@ export default async function DashboardRootPage() {
                 <div className="text-center">
                   <p className="text-sm font-semibold text-slate-700">{entry.label}</p>
                   <p className="mt-1 text-xs text-slate-400">
-                    {entry.mailCount} mail • {entry.activityCount} log
+                    {isPolish
+                      ? `${entry.mailCount} poczta • ${entry.activityCount} log`
+                      : `${entry.mailCount} mail • ${entry.activityCount} log`}
                   </p>
                 </div>
               </div>
@@ -265,13 +315,13 @@ export default async function DashboardRootPage() {
 
         <article className={`${dashboardPanelClassName} p-6`}>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-              Workload & Focus
+              {isPolish ? "Obciążenie i fokus" : "Workload & Focus"}
             </p>
 
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <div className="rounded-[22px] border border-white/80 bg-white/64 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Busiest owner
+                  {isPolish ? "Najbardziej obciążony właściciel" : "Busiest owner"}
                 </p>
                 <div className="mt-3 flex items-center gap-3">
                   <DashboardAvatar
@@ -283,7 +333,9 @@ export default async function DashboardRootPage() {
                       {busiestOwner[0]}
                     </p>
                     <p className="text-sm text-slate-500">
-                      {busiestOwner[1]} active cases currently in queue
+                      {isPolish
+                        ? `${busiestOwner[1]} aktywnych spraw w kolejce`
+                        : `${busiestOwner[1]} active cases currently in queue`}
                     </p>
                   </div>
                 </div>
@@ -291,29 +343,29 @@ export default async function DashboardRootPage() {
 
               <div className="rounded-[22px] border border-white/80 bg-white/64 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Most pressured department
+                  {isPolish ? "Najbardziej obciążony dział" : "Most pressured department"}
                 </p>
                 {mostPressuredDepartment ? (
                   <>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <p className="text-lg font-semibold text-[#1E2340]">
-                        {mostPressuredDepartment.department}
+                        {translateDepartment(mostPressuredDepartment.department, language)}
                       </p>
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs font-semibold ${workloadPressureClasses[mostPressuredDepartment.pressure]}`}
                       >
-                        {mostPressuredDepartment.pressure}
+                        {translateWorkloadPressure(mostPressuredDepartment.pressure, language)}
                       </span>
                     </div>
                     <p className="mt-2 text-sm text-slate-500">
-                      {mostPressuredDepartment.activeCount} active •{" "}
-                      {mostPressuredDepartment.unassignedCount} unassigned •{" "}
-                      {mostPressuredDepartment.weakSupportCount} weak support
+                      {isPolish
+                        ? `${mostPressuredDepartment.activeCount} aktywnych • ${mostPressuredDepartment.unassignedCount} nieprzypisanych • ${mostPressuredDepartment.weakSupportCount} słabe wsparcie`
+                        : `${mostPressuredDepartment.activeCount} active • ${mostPressuredDepartment.unassignedCount} unassigned • ${mostPressuredDepartment.weakSupportCount} weak support`}
                     </p>
                   </>
                 ) : (
                   <p className="mt-3 text-sm text-slate-500">
-                    No live department pressure yet.
+                    {isPolish ? "Brak jeszcze aktywnej presji działów." : "No live department pressure yet."}
                   </p>
                 )}
               </div>
@@ -324,7 +376,9 @@ export default async function DashboardRootPage() {
                 (summary) => summary.totalCount === 0
               ) ? (
                 <div className="rounded-[22px] border border-dashed border-white/80 bg-white/54 px-4 py-6 text-sm text-slate-500">
-                  Owner balancing will appear here once the local queue has more assigned work.
+                  {isPolish
+                    ? "Równoważenie właścicieli pojawi się tutaj, gdy lokalna kolejka będzie miała więcej przypisanej pracy."
+                    : "Owner balancing will appear here once the local queue has more assigned work."}
                 </div>
               ) : (
                 operationsSnapshot.ownerSummaries.map((summary) => (
@@ -338,25 +392,36 @@ export default async function DashboardRootPage() {
                           {summary.owner}
                         </p>
                         <p className="mt-1 text-sm text-slate-500">
-                          {summary.activeCount} active • {summary.weakSupportCount} weak-support •{" "}
-                          {summary.approvalReadyCount} approval-ready
+                          {isPolish
+                            ? `${summary.activeCount} aktywnych • ${summary.weakSupportCount} słabe wsparcie • ${summary.approvalReadyCount} gotowe do zatwierdzenia`
+                            : `${summary.activeCount} active • ${summary.weakSupportCount} weak-support • ${summary.approvalReadyCount} approval-ready`}
                         </p>
                       </div>
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs font-semibold ${workloadPressureClasses[summary.pressure]}`}
                       >
-                        {summary.pressure}
+                        {translateWorkloadPressure(summary.pressure, language)}
                       </span>
                     </div>
                     <p className="mt-3 text-sm leading-6 text-slate-500">
                       {summary.primaryDepartment
-                        ? `Primary load: ${summary.primaryDepartment}.`
-                        : "No active department load yet."}{" "}
+                        ? isPolish
+                          ? `Główne obciążenie: ${translateDepartment(summary.primaryDepartment, language)}.`
+                          : `Primary load: ${summary.primaryDepartment}.`
+                        : isPolish
+                          ? "Brak jeszcze aktywnego obciążenia działu."
+                          : "No active department load yet."}{" "}
                       {summary.pressure === "Overloaded"
-                        ? "Route the next case elsewhere if continuity allows."
+                        ? isPolish
+                          ? "Skieruj następną sprawę gdzie indziej, jeśli ciągłość na to pozwala."
+                          : "Route the next case elsewhere if continuity allows."
                         : summary.pressure === "Busy"
-                          ? "Balance new work carefully."
-                          : "Safe candidate for new work in the current rotation."}
+                          ? isPolish
+                            ? "Ostrożnie równoważ nową pracę."
+                            : "Balance new work carefully."
+                          : isPolish
+                            ? "Bezpieczny kandydat do nowej pracy w bieżącej rotacji."
+                            : "Safe candidate for new work in the current rotation."}
                     </p>
                   </div>
                 ))

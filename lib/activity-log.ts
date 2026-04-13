@@ -1,3 +1,5 @@
+import type { LanguagePreference, TimeFormatPreference } from "@/lib/user-preferences";
+
 export type ActivityAction =
   | "case_created"
   | "email_approved"
@@ -7,8 +9,6 @@ export type ActivityAction =
   | "document_uploaded"
   | "document_deleted";
 export type ActivityFilter = "All" | ActivityAction;
-
-import type { TimeFormatPreference } from "@/lib/user-preferences";
 
 export type ActivityEvent = {
   id: string;
@@ -77,8 +77,36 @@ export function isActivityFilter(value: string): value is ActivityFilter {
   return activityFilters.includes(value as ActivityFilter);
 }
 
-export function getActivityFilterLabel(filter: ActivityFilter) {
-  return filter === "All" ? "All Activity" : activityActionMeta[filter].label;
+export function getActivityActionLabel(
+  action: ActivityAction,
+  language: LanguagePreference = "English"
+) {
+  if (language === "Polish") {
+    const polishLabels: Record<ActivityAction, string> = {
+      case_created: "Utworzono sprawę",
+      email_approved: "Zatwierdzono odpowiedź",
+      assignment_updated: "Zmieniono właściciela",
+      draft_saved: "Zapisano szkic",
+      note_saved: "Zapisano notatkę",
+      document_uploaded: "Dodano dokument",
+      document_deleted: "Usunięto dokument",
+    };
+
+    return polishLabels[action];
+  }
+
+  return activityActionMeta[action].label;
+}
+
+export function getActivityFilterLabel(
+  filter: ActivityFilter,
+  language: LanguagePreference = "English"
+) {
+  if (filter === "All") {
+    return language === "Polish" ? "Cała aktywność" : "All Activity";
+  }
+
+  return getActivityActionLabel(filter, language);
 }
 
 export function getInitialActivityEvents() {

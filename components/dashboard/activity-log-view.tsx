@@ -16,6 +16,7 @@ import {
   activityActionMeta,
   activityFilters,
   formatActivityTimestamp,
+  getActivityActionLabel,
   getActivityFilterLabel,
   isActivityFilter,
   type ActivityEvent,
@@ -24,6 +25,7 @@ import {
 import {
   assessEmailGrounding,
   getEmailDepartment,
+  translateDepartment,
   type StaffEmail,
 } from "@/lib/email-data";
 
@@ -67,8 +69,15 @@ function getActivityCounts(events: ActivityEvent[]) {
   );
 }
 
-function getEventSourceLabel(event: ActivityEvent) {
-  return event.entityType === "document" ? "Knowledge Base" : "EduMailAI";
+function getEventSourceLabel(
+  event: ActivityEvent,
+  isPolish: boolean
+) {
+  if (event.entityType === "document") {
+    return isPolish ? "Baza wiedzy" : "Knowledge Base";
+  }
+
+  return "EduMailAI";
 }
 
 function getLastSevenSnapshots(anchorIso: string, locale: string) {
@@ -93,6 +102,7 @@ export function ActivityLogView({
   emails: StaffEmail[];
 }>) {
   const { locale, preferences } = useUserPreferences();
+  const isPolish = preferences.language === "Polish";
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
@@ -131,7 +141,7 @@ export function ActivityLogView({
         );
   const emailsWithGrounding = emails.map((email) => ({
     email,
-    grounding: assessEmailGrounding(email),
+    grounding: assessEmailGrounding(email, preferences.language),
   }));
   const approvalReadyCount = emailsWithGrounding.filter(
     ({ grounding }) => grounding.approvalReady
@@ -187,27 +197,39 @@ export function ActivityLogView({
       <DashboardTopBar
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
-        searchPlaceholder="Search events, labels, or descriptions..."
+        searchPlaceholder={
+          isPolish
+            ? "Szukaj zdarzeń, etykiet lub opisów..."
+            : "Search events, labels, or descriptions..."
+        }
       />
 
       <DashboardPageHeader
-        eyebrow="Operational History"
-        title="Activity Log"
-        description="Review the latest mailbox decisions and document-library changes so the prototype has a clear, readable trail of what happened."
-        meta={`${events.length} recent events`}
+        eyebrow={isPolish ? "Historia operacyjna" : "Operational History"}
+        title={isPolish ? "Dziennik aktywności" : "Activity Log"}
+        description={
+          isPolish
+            ? "Przeglądaj najnowsze decyzje skrzynki i zmiany w bibliotece dokumentów, aby prototyp miał czytelny ślad tego, co się wydarzyło."
+            : "Review the latest mailbox decisions and document-library changes so the prototype has a clear, readable trail of what happened."
+        }
+        meta={
+          isPolish
+            ? `${events.length} ostatnich zdarzeń`
+            : `${events.length} recent events`
+        }
         actions={
           <div className="flex flex-wrap gap-3">
             <Link
               href="/api/activity/export"
               className={dashboardSecondaryButtonClassName}
             >
-              Download JSON
+              {isPolish ? "Pobierz JSON" : "Download JSON"}
             </Link>
             <Link
               href="/dashboard"
               className={dashboardGhostButtonClassName}
             >
-              Back to Overview
+              {isPolish ? "Wróć do panelu" : "Back to Overview"}
             </Link>
           </div>
         }
@@ -222,10 +244,10 @@ export function ActivityLogView({
               </span>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                  Filter Results
+                  {isPolish ? "Filtry" : "Filter Results"}
                 </p>
                 <h3 className="mt-1 text-2xl font-semibold tracking-tight text-[#1E2340]">
-                  Filter Results
+                  {isPolish ? "Filtruj wyniki" : "Filter Results"}
                 </h3>
               </div>
             </div>
@@ -245,7 +267,7 @@ export function ActivityLogView({
                         : "border-white/80 bg-white/68 text-slate-500 hover:bg-white hover:text-slate-900"
                     }`}
                   >
-                    <span>{getActivityFilterLabel(filter)}</span>
+                    <span>{getActivityFilterLabel(filter, preferences.language)}</span>
                     <span className="rounded-full bg-white/84 px-2.5 py-1 text-xs font-semibold text-slate-400">
                       {counts[filter]}
                     </span>
@@ -256,23 +278,30 @@ export function ActivityLogView({
 
             <p className="mt-5 text-sm leading-7 text-slate-500">
               {activeFilter === "All"
-                ? "Showing every tracked workflow event in the local audit history."
-                : `Focused on ${getActivityFilterLabel(activeFilter).toLowerCase()} events only.`}
+                ? isPolish
+                  ? "Pokazujemy wszystkie śledzone zdarzenia przepływu w lokalnej historii audytu."
+                  : "Showing every tracked workflow event in the local audit history."
+                : isPolish
+                  ? `Widok skupia się wyłącznie na zdarzeniach typu ${getActivityFilterLabel(
+                      activeFilter,
+                      preferences.language
+                    ).toLowerCase()}.`
+                  : `Focused on ${getActivityFilterLabel(activeFilter).toLowerCase()} events only.`}
             </p>
           </div>
 
           <div className={`${dashboardPanelClassName} p-5`}>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-              Activity Health
+              {isPolish ? "Kondycja aktywności" : "Activity Health"}
             </p>
             <h3 className="mt-3 text-2xl font-semibold tracking-tight text-[#1E2340]">
-              Activity Health
+              {isPolish ? "Kondycja aktywności" : "Activity Health"}
             </h3>
 
             <div className="mt-6 space-y-5">
               <div>
                 <div className="mb-2 flex items-center justify-between text-sm text-slate-500">
-                  <span>Approval share</span>
+                  <span>{isPolish ? "Udział zatwierdzeń" : "Approval share"}</span>
                   <span className="font-semibold text-[#4F57E8]">{approvalRate}%</span>
                 </div>
                 <div className="h-2.5 rounded-full bg-[#E7EBF6]">
@@ -285,7 +314,7 @@ export function ActivityLogView({
 
               <div>
                 <div className="mb-2 flex items-center justify-between text-sm text-slate-500">
-                  <span>Document activity</span>
+                  <span>{isPolish ? "Aktywność dokumentów" : "Document activity"}</span>
                   <span className="font-semibold text-[#4F57E8]">
                     {documentChangeRate}%
                   </span>
@@ -301,18 +330,26 @@ export function ActivityLogView({
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
                 <div className="rounded-[22px] border border-white/75 bg-white/64 px-4 py-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                    Search State
+                    {isPolish ? "Stan wyszukiwania" : "Search State"}
                   </p>
                   <p className="mt-2 text-lg font-semibold text-[#1E2340]">
-                    {normalizedSearchQuery.length > 0 ? "Filtered" : "All Events"}
+                    {normalizedSearchQuery.length > 0
+                      ? isPolish
+                        ? "Przefiltrowane"
+                        : "Filtered"
+                      : isPolish
+                        ? "Wszystkie zdarzenia"
+                        : "All Events"}
                   </p>
                 </div>
                 <div className="rounded-[22px] border border-white/75 bg-white/64 px-4 py-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                    Current View
+                    {isPolish ? "Bieżący widok" : "Current View"}
                   </p>
                   <p className="mt-2 text-lg font-semibold text-[#1E2340]">
-                    {visibleEvents.length} shown
+                    {isPolish
+                      ? `${visibleEvents.length} widocznych`
+                      : `${visibleEvents.length} shown`}
                   </p>
                 </div>
               </div>
@@ -321,16 +358,16 @@ export function ActivityLogView({
 
           <div className={`${dashboardPanelClassName} p-5`}>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-              Review Pressure
+              {isPolish ? "Presja przeglądu" : "Review Pressure"}
             </p>
             <h3 className="mt-3 text-2xl font-semibold tracking-tight text-[#1E2340]">
-              Review Pressure
+              {isPolish ? "Presja przeglądu" : "Review Pressure"}
             </h3>
 
             <div className="mt-6 space-y-5">
               <div>
                 <div className="mb-2 flex items-center justify-between text-sm text-slate-500">
-                  <span>Approval-ready share</span>
+                  <span>{isPolish ? "Udział gotowych do zatwierdzenia" : "Approval-ready share"}</span>
                   <span className="font-semibold text-[#4F57E8]">
                     {approvalReadinessRate}%
                   </span>
@@ -345,7 +382,7 @@ export function ActivityLogView({
 
               <div>
                 <div className="mb-2 flex items-center justify-between text-sm text-slate-500">
-                  <span>Weak-support pressure</span>
+                  <span>{isPolish ? "Presja słabego wsparcia" : "Weak-support pressure"}</span>
                   <span className="font-semibold text-[#D43D63]">
                     {weakGroundingRate}%
                   </span>
@@ -361,7 +398,7 @@ export function ActivityLogView({
               <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
                 <div className="rounded-[22px] border border-white/75 bg-white/64 px-4 py-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                    Approval-ready
+                    {isPolish ? "Gotowe do zatwierdzenia" : "Approval-ready"}
                   </p>
                   <p className="mt-2 text-lg font-semibold text-[#1E2340]">
                     {approvalReadyCount}
@@ -369,7 +406,7 @@ export function ActivityLogView({
                 </div>
                 <div className="rounded-[22px] border border-white/75 bg-white/64 px-4 py-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                    Weak support
+                    {isPolish ? "Słabe wsparcie" : "Weak support"}
                   </p>
                   <p className="mt-2 text-lg font-semibold text-[#1E2340]">
                     {weakGroundingCount}
@@ -377,7 +414,7 @@ export function ActivityLogView({
                 </div>
                 <div className="rounded-[22px] border border-white/75 bg-white/64 px-4 py-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                    Unassigned
+                    {isPolish ? "Nieprzypisane" : "Unassigned"}
                   </p>
                   <p className="mt-2 text-lg font-semibold text-[#1E2340]">
                     {unassignedQueueCount}
@@ -387,19 +424,32 @@ export function ActivityLogView({
 
               <div className="rounded-[22px] border border-white/75 bg-white/64 px-4 py-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                  Highest-risk department
+                  {isPolish ? "Dział najwyższego ryzyka" : "Highest-risk department"}
                 </p>
                 <p className="mt-2 text-lg font-semibold text-[#1E2340]">
                   {mostAtRiskDepartment
-                    ? mostAtRiskDepartment[0]
-                    : "No live queue"}
+                    ? translateDepartment(
+                        mostAtRiskDepartment[0] as ReturnType<
+                          typeof getEmailDepartment
+                        >,
+                        preferences.language
+                      )
+                    : isPolish
+                      ? "Brak aktywnej kolejki"
+                      : "No live queue"}
                 </p>
                 <p className="mt-2 text-sm leading-7 text-slate-500">
                   {mostAtRiskDepartment
                     ? mostAtRiskDepartment[1].weak > 0
-                      ? `${mostAtRiskDepartment[1].weak} weakly grounded cases and ${escalatedQueueCount} escalations are currently putting the most review pressure on this workspace.`
-                      : "No department is currently carrying weak-support cases."
-                    : "Review pressure will appear here once cases are flowing through the queue."}
+                      ? isPolish
+                        ? `${mostAtRiskDepartment[1].weak} słabo ugruntowanych spraw i ${escalatedQueueCount} eskalacji wywiera obecnie największą presję przeglądu na ten workspace.`
+                        : `${mostAtRiskDepartment[1].weak} weakly grounded cases and ${escalatedQueueCount} escalations are currently putting the most review pressure on this workspace.`
+                      : isPolish
+                        ? "Żaden dział nie ma obecnie spraw ze słabym wsparciem."
+                        : "No department is currently carrying weak-support cases."
+                    : isPolish
+                      ? "Presja przeglądu pojawi się tutaj, gdy sprawy zaczną płynąć przez kolejkę."
+                      : "Review pressure will appear here once cases are flowing through the queue."}
                 </p>
               </div>
             </div>
@@ -410,19 +460,25 @@ export function ActivityLogView({
           <div className={`${dashboardPanelClassName} overflow-hidden p-5 md:p-6`}>
             <div className="mb-5 grid grid-cols-[minmax(180px,1.2fr)_150px_minmax(0,1.5fr)] gap-4 border-b border-white/80 pb-4 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
               <p>Event</p>
-              <p>Source</p>
-              <p>Description</p>
+              <p>{isPolish ? "Źródło" : "Source"}</p>
+              <p>{isPolish ? "Opis" : "Description"}</p>
             </div>
 
             {events.length === 0 ? (
               <div className="rounded-[24px] border border-dashed border-white/80 bg-white/54 px-6 py-12 text-center text-sm text-slate-500">
-                No activity has been tracked yet. Approvals, ownership changes, drafts, notes, and document updates will appear here as you use the workspace.
+                {isPolish
+                  ? "Nie zarejestrowano jeszcze żadnej aktywności. Zatwierdzenia, zmiany właściciela, szkice, notatki i aktualizacje dokumentów pojawią się tutaj podczas pracy z workspace."
+                  : "No activity has been tracked yet. Approvals, ownership changes, drafts, notes, and document updates will appear here as you use the workspace."}
               </div>
             ) : visibleEvents.length === 0 ? (
               <div className="rounded-[24px] border border-dashed border-white/80 bg-white/54 px-6 py-12 text-center text-sm text-slate-500">
                 {filteredEvents.length === 0
-                  ? "No events match the current activity filter."
-                  : "No events match the current search."}
+                  ? isPolish
+                    ? "Żadne zdarzenia nie pasują do bieżącego filtra aktywności."
+                    : "No events match the current activity filter."
+                  : isPolish
+                    ? "Żadne zdarzenia nie pasują do bieżącego wyszukiwania."
+                    : "No events match the current search."}
               </div>
             ) : (
               <div className="space-y-3">
@@ -449,7 +505,7 @@ export function ActivityLogView({
                             <span
                               className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${activityActionMeta[event.action].classes}`}
                             >
-                              {activityActionMeta[event.action].label}
+                              {getActivityActionLabel(event.action, preferences.language)}
                             </span>
                             <span className="text-xs font-medium text-slate-400">
                               {formatActivityTimestamp(event.timestamp, {
@@ -464,7 +520,7 @@ export function ActivityLogView({
 
                     <div className="flex items-center">
                       <p className="text-sm font-medium text-slate-500">
-                        {getEventSourceLabel(event)}
+                        {getEventSourceLabel(event, isPolish)}
                       </p>
                     </div>
 
@@ -479,7 +535,7 @@ export function ActivityLogView({
                             scroll={false}
                             className={dashboardGhostButtonClassName}
                           >
-                            View Similar
+                            {isPolish ? "Pokaż podobne" : "View Similar"}
                           </Link>
                         ) : null}
                         {event.href ? (
@@ -487,7 +543,7 @@ export function ActivityLogView({
                             href={event.href}
                             className={dashboardSecondaryButtonClassName}
                           >
-                            Open Related Item
+                            {isPolish ? "Otwórz powiązany element" : "Open Related Item"}
                           </Link>
                         ) : null}
                       </div>
@@ -498,7 +554,9 @@ export function ActivityLogView({
             )}
 
             <p className="mt-5 text-sm text-slate-500">
-              Showing {visibleEvents.length} of {filteredEvents.length} events in the current view.
+              {isPolish
+                ? `Widok pokazuje ${visibleEvents.length} z ${filteredEvents.length} zdarzeń.`
+                : `Showing ${visibleEvents.length} of ${filteredEvents.length} events in the current view.`}
             </p>
           </div>
 

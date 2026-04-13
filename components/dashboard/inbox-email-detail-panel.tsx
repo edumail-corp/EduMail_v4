@@ -23,6 +23,11 @@ import {
   getEmailDepartment,
   getEmailReplyEntry,
   staffAssigneeOptions,
+  translateCaseApprovalState,
+  translateDepartment,
+  translateGroundingStrength,
+  translateRoutingConfidence,
+  translateStaffAssignmentSelectValue,
   type AssignmentRecommendation,
   type StaffAssignmentSelectValue,
   type StaffEmail,
@@ -119,34 +124,44 @@ export function InboxEmailDetailPanel({
   onSaveNote?: () => void;
   isSavingNote?: boolean;
 }>) {
-  const { formatDateTime } = useUserPreferences();
+  const { formatDateTime, preferences } = useUserPreferences();
+  const isPolish = preferences.language === "Polish";
 
   if (!email) {
     return (
       <section
         className={`${dashboardPanelClassName} flex min-h-[420px] items-center justify-center border-dashed px-10 py-12 text-center text-sm text-slate-500`}
       >
-        Select a message to open the conversation and review the suggested reply.
+        {isPolish
+          ? "Wybierz wiadomość, aby otworzyć rozmowę i przejrzeć sugerowaną odpowiedź."
+          : "Select a message to open the conversation and review the suggested reply."}
       </section>
     );
   }
 
   const sender = getSenderParts(email.sender);
-  const department = getEmailDepartment(email);
-  const approvalState = getEmailApprovalState(email);
-  const groundingAssessment = assessEmailGrounding(email);
-  const approvalGuidance = getEmailApprovalGuidance(email);
+  const rawDepartment = getEmailDepartment(email);
+  const department = translateDepartment(rawDepartment, preferences.language);
+  const rawApprovalState = getEmailApprovalState(email);
+  const approvalState = translateCaseApprovalState(
+    rawApprovalState,
+    preferences.language
+  );
+  const groundingAssessment = assessEmailGrounding(email, preferences.language);
+  const approvalGuidance = getEmailApprovalGuidance(email, preferences.language);
   const replyEntry = getEmailReplyEntry(email);
   const sourcePreview = email.sourceCitations[0] ?? null;
   const routingConfidenceScore =
     email.routingDecision?.confidenceScore ?? email.confidence;
-  const routingConfidenceLabel =
+  const routingConfidenceLabel = translateRoutingConfidence(
     email.routingDecision?.confidence ??
-    (routingConfidenceScore >= 82
-      ? "High"
-      : routingConfidenceScore >= 66
-        ? "Medium"
-        : "Low");
+      (routingConfidenceScore >= 82
+        ? "High"
+        : routingConfidenceScore >= 66
+          ? "Medium"
+          : "Low"),
+    preferences.language
+  );
   const primaryLibraryHref = email.source
     ? `/dashboard/knowledge-base?document=${encodeURIComponent(
         email.source
@@ -206,28 +221,74 @@ export function InboxEmailDetailPanel({
     noteValue.trim() !== (email.staffNote ?? "");
 
   const approveLabel = isApproving
-    ? "Sending..."
+    ? isPolish
+      ? "Wysyłanie..."
+      : "Sending..."
     : isAlreadySent
-      ? "Already Sent"
+      ? isPolish
+        ? "Już wysłane"
+        : "Already Sent"
       : !hasDraft
-        ? "Manual Review Required"
-        : "Approve & Send";
+        ? isPolish
+          ? "Wymagany ręczny przegląd"
+          : "Manual Review Required"
+        : isPolish
+          ? "Zatwierdź i wyślij"
+          : "Approve & Send";
   const editLabel = isAlreadySent
-    ? "Locked After Send"
+    ? isPolish
+      ? "Zablokowane po wysłaniu"
+      : "Locked After Send"
     : hasDraft
-      ? "Edit Reply"
-      : "Compose Reply";
-  const saveAssigneeLabel = isSavingAssignee ? "Saving..." : "Save Owner";
-  const saveDraftLabel = isSavingDraft ? "Saving..." : "Save Reply";
+      ? isPolish
+        ? "Edytuj odpowiedź"
+        : "Edit Reply"
+      : isPolish
+        ? "Utwórz odpowiedź"
+        : "Compose Reply";
+  const saveAssigneeLabel = isSavingAssignee
+    ? isPolish
+      ? "Zapisywanie..."
+      : "Saving..."
+    : isPolish
+      ? "Zapisz właściciela"
+      : "Save Owner";
+  const saveDraftLabel = isSavingDraft
+    ? isPolish
+      ? "Zapisywanie..."
+      : "Saving..."
+    : isPolish
+      ? "Zapisz odpowiedź"
+      : "Save Reply";
   const noteLabel =
-    email.staffNote && email.staffNote.length > 0 ? "Edit Note" : "Add Note";
-  const saveNoteLabel = isSavingNote ? "Saving..." : "Save Note";
-  const replyDateLabel = isAlreadySent ? "Reply sent" : "Reply generated";
+    email.staffNote && email.staffNote.length > 0
+      ? isPolish
+        ? "Edytuj notatkę"
+        : "Edit Note"
+      : isPolish
+        ? "Dodaj notatkę"
+        : "Add Note";
+  const saveNoteLabel = isSavingNote
+    ? isPolish
+      ? "Zapisywanie..."
+      : "Saving..."
+    : isPolish
+      ? "Zapisz notatkę"
+      : "Save Note";
+  const replyDateLabel = isAlreadySent
+    ? isPolish
+      ? "Odpowiedź wysłana"
+      : "Reply sent"
+    : isPolish
+      ? "Odpowiedź wygenerowana"
+      : "Reply generated";
   const replyDateValue = replyEntry
     ? formatDateTime(replyEntry.sentAt)
     : hasDraft
       ? formatDateTime(email.lastUpdatedAt)
-      : "Not available";
+      : isPolish
+        ? "Niedostępne"
+        : "Not available";
 
   return (
     <section className="space-y-4">
@@ -240,13 +301,13 @@ export function InboxEmailDetailPanel({
             />
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                {department} inbox
+                {department} {isPolish ? "skrzynka" : "inbox"}
               </p>
               <h3 className="mt-2 text-3xl font-semibold tracking-tight text-[#1E2340]">
                 {email.subject}
               </h3>
               <p className="mt-2 text-sm text-slate-500">
-                From {sender.name}
+                {isPolish ? "Od" : "From"} {sender.name}
                 {sender.email ? ` • ${sender.email}` : ""}
               </p>
             </div>
@@ -256,10 +317,10 @@ export function InboxEmailDetailPanel({
             <span className="rounded-full bg-white/82 px-3 py-1.5 text-xs font-semibold text-slate-500 shadow-[0_12px_24px_rgba(144,156,182,0.12)]">
               {formatDateTime(email.receivedAt)}
             </span>
-            <EmailCategoryBadge category={department} />
+            <EmailCategoryBadge category={rawDepartment} />
             <EmailStatusBadge status={email.status} />
             <span
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold ${approvalStateClasses[approvalState]}`}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold ${approvalStateClasses[rawApprovalState]}`}
             >
               {approvalState}
             </span>
@@ -269,7 +330,7 @@ export function InboxEmailDetailPanel({
 
       <article className={`${dashboardPanelClassName} p-5 md:p-6`}>
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-          Original message
+          {isPolish ? "Oryginalna wiadomość" : "Original message"}
         </p>
         <p className="mt-4 whitespace-pre-line text-sm leading-7 text-slate-700">
           {email.body}
@@ -280,19 +341,27 @@ export function InboxEmailDetailPanel({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-              Suggested reply
+              {isPolish ? "Sugerowana odpowiedź" : "Suggested reply"}
             </p>
             <h4 className="mt-2 text-2xl font-semibold tracking-tight text-[#1E2340]">
-              {isAlreadySent ? "Approved response" : "Generated response"}
+              {isAlreadySent
+                ? isPolish
+                  ? "Zatwierdzona odpowiedź"
+                  : "Approved response"
+                : isPolish
+                  ? "Wygenerowana odpowiedź"
+                  : "Generated response"}
             </h4>
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              Open the message, review the prepared response, and send it only after final human review.
+              {isPolish
+                ? "Otwórz wiadomość, przejrzyj przygotowaną odpowiedź i wyślij ją dopiero po końcowym przeglądzie człowieka."
+                : "Open the message, review the prepared response, and send it only after final human review."}
             </p>
           </div>
 
           {email.source ? (
             <Link href={primaryLibraryHref} className={dashboardSecondaryButtonClassName}>
-              Open Source Context
+              {isPolish ? "Otwórz kontekst źródła" : "Open Source Context"}
             </Link>
           ) : null}
         </div>
@@ -303,21 +372,29 @@ export function InboxEmailDetailPanel({
             value={replyDateValue}
             caption={
               replyEntry
-                ? "Timestamp stored with the current suggested reply."
-                : "No stored reply event is available yet."
+                ? isPolish
+                  ? "Znacznik czasu zapisany razem z bieżącą sugerowaną odpowiedzią."
+                  : "Timestamp stored with the current suggested reply."
+                : isPolish
+                  ? "Brak jeszcze zapisanego zdarzenia odpowiedzi."
+                  : "No stored reply event is available yet."
             }
           />
           <MetaCard
-            label="Source"
-            value={email.source ?? "No source linked"}
+            label={isPolish ? "Źródło" : "Source"}
+            value={email.source ?? (isPolish ? "Brak podpiętego źródła" : "No source linked")}
             caption={
               email.sourceCitations.length > 0
-                ? `${email.sourceCitations.length} supporting excerpt${email.sourceCitations.length === 1 ? "" : "s"} available.`
-                : "No source excerpts are attached yet."
+                ? isPolish
+                  ? `${email.sourceCitations.length} dostępnych fragmentów wspierających.`
+                  : `${email.sourceCitations.length} supporting excerpt${email.sourceCitations.length === 1 ? "" : "s"} available.`
+                : isPolish
+                  ? "Nie dołączono jeszcze żadnych fragmentów źródłowych."
+                  : "No source excerpts are attached yet."
             }
           />
           <MetaCard
-            label="Confidence"
+            label={isPolish ? "Pewność" : "Confidence"}
             value={`${routingConfidenceLabel} • ${routingConfidenceScore}%`}
             caption={groundingAssessment.summary}
           />
@@ -326,7 +403,7 @@ export function InboxEmailDetailPanel({
         {email.manualReviewReason ? (
           <div className="mt-5 rounded-[24px] border border-[#FFE1E8] bg-[#FFF6F8] p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#B4375C]">
-              Review warning
+              {isPolish ? "Ostrzeżenie przeglądu" : "Review warning"}
             </p>
             <p className="mt-2 text-sm leading-6 text-[#7A2440]">
               {email.manualReviewReason}
@@ -342,10 +419,16 @@ export function InboxEmailDetailPanel({
                 onChange={(event) => onDraftChange?.(event.target.value)}
                 rows={12}
                 className="w-full rounded-[28px] border border-white/75 bg-white/82 px-4 py-4 text-sm leading-7 text-slate-700 shadow-[0_14px_36px_rgba(143,155,181,0.12)] outline-none transition focus:border-[#6A6CFF]/35 focus:bg-white"
-                placeholder="Write the reply that should be sent to the student or staff member."
+                placeholder={
+                  isPolish
+                    ? "Napisz odpowiedź, która powinna zostać wysłana do studenta lub pracownika."
+                    : "Write the reply that should be sent to the student or staff member."
+                }
               />
               <p className="text-xs font-medium text-slate-500">
-                Saving updates the prepared reply stored in the local mailbox workflow.
+                {isPolish
+                  ? "Zapis aktualizuje przygotowaną odpowiedź przechowywaną w lokalnym przepływie skrzynki."
+                  : "Saving updates the prepared reply stored in the local mailbox workflow."}
               </p>
             </div>
           ) : email.aiDraft ? (
@@ -356,7 +439,9 @@ export function InboxEmailDetailPanel({
             </div>
           ) : (
             <div className="rounded-[26px] border border-dashed border-white/80 bg-white/58 p-5 text-sm leading-6 text-slate-500">
-              No generated reply is stored for this message yet. This case still needs manual review.
+              {isPolish
+                ? "Dla tej wiadomości nie zapisano jeszcze wygenerowanej odpowiedzi. Ta sprawa nadal wymaga ręcznego przeglądu."
+                : "No generated reply is stored for this message yet. This case still needs manual review."}
             </div>
           )}
         </div>
@@ -364,7 +449,7 @@ export function InboxEmailDetailPanel({
         {sourcePreview ? (
           <div className="mt-5 rounded-[24px] border border-[#DCE1FF] bg-[#F5F6FF] p-4 shadow-[0_14px_32px_rgba(143,155,181,0.1)]">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#2E5FA3]">
-              Source preview
+              {isPolish ? "Podgląd źródła" : "Source preview"}
             </p>
             <p className="mt-2 text-sm font-semibold text-slate-900">
               {sourcePreview.documentName}
@@ -373,7 +458,7 @@ export function InboxEmailDetailPanel({
               {sourcePreview.excerpt}
             </p>
             <p className="mt-2 text-xs text-slate-500">
-              Why it matters: {sourcePreview.reason}
+              {isPolish ? "Dlaczego to ważne" : "Why it matters"}: {sourcePreview.reason}
             </p>
           </div>
         ) : null}
@@ -403,7 +488,7 @@ export function InboxEmailDetailPanel({
                     : dashboardSecondaryButtonClassName
                 }`}
               >
-                Cancel
+                {isPolish ? "Anuluj" : "Cancel"}
               </button>
             </>
           ) : (
@@ -441,8 +526,8 @@ export function InboxEmailDetailPanel({
         open={email.status === "Escalated" || !groundingAssessment.approvalReady}
         className={`${dashboardPanelClassName} overflow-hidden`}
       >
-        <summary className="cursor-pointer list-none px-5 py-4 text-sm font-semibold text-[#1E2340] md:px-6">
-          Internal workflow tools
+          <summary className="cursor-pointer list-none px-5 py-4 text-sm font-semibold text-[#1E2340] md:px-6">
+          {isPolish ? "Wewnętrzne narzędzia przepływu" : "Internal workflow tools"}
         </summary>
 
         <div className="border-t border-white/70 px-5 py-5 md:px-6">
@@ -450,17 +535,19 @@ export function InboxEmailDetailPanel({
             <div className="space-y-4">
               <div className="rounded-[24px] border border-white/75 bg-white/64 p-4 shadow-[0_14px_32px_rgba(143,155,181,0.1)]">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Ownership
+                  {isPolish ? "Własność" : "Ownership"}
                 </p>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Keep assignment available, but out of the way of the core email reading flow.
+                  {isPolish
+                    ? "Zachowaj przypisanie dostępne, ale poza głównym torem czytania wiadomości."
+                    : "Keep assignment available, but out of the way of the core email reading flow."}
                 </p>
 
                 <label
                   className="mt-4 block text-sm font-medium text-slate-600"
                   htmlFor="message-owner"
                 >
-                  Current owner
+                  {isPolish ? "Aktualny właściciel" : "Current owner"}
                 </label>
                 <select
                   id="message-owner"
@@ -478,7 +565,10 @@ export function InboxEmailDetailPanel({
                   }`}
                 >
                   <option value={defaultStaffAssignmentSelection}>
-                    {defaultStaffAssignmentSelection}
+                    {translateStaffAssignmentSelectValue(
+                      defaultStaffAssignmentSelection,
+                      preferences.language
+                    )}
                   </option>
                   {staffAssigneeOptions.map((assignee) => (
                     <option key={assignee} value={assignee}>
@@ -489,7 +579,8 @@ export function InboxEmailDetailPanel({
 
                 {assignmentRecommendation ? (
                   <p className="mt-3 text-xs leading-5 text-[#4F57E8]">
-                    Suggested owner: {assignmentRecommendation.assignee}.{" "}
+                    {isPolish ? "Sugerowany właściciel" : "Suggested owner"}:{" "}
+                    {assignmentRecommendation.assignee}.{" "}
                     {assignmentRecommendation.reason}
                   </p>
                 ) : null}
@@ -503,7 +594,7 @@ export function InboxEmailDetailPanel({
                       }
                       className={`text-sm ${dashboardSecondaryButtonClassName}`}
                     >
-                      Use Recommendation
+                      {isPolish ? "Użyj rekomendacji" : "Use Recommendation"}
                     </button>
                   ) : null}
                   <button
@@ -523,15 +614,18 @@ export function InboxEmailDetailPanel({
 
               <div className="rounded-[24px] border border-white/75 bg-white/64 p-4 shadow-[0_14px_32px_rgba(143,155,181,0.1)]">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Routing note
+                  {isPolish ? "Notatka routingu" : "Routing note"}
                 </p>
                 <p className="mt-2 text-sm leading-6 text-slate-700">
                   {email.routingDecision?.reason ??
-                    "This message is following the currently selected workflow path."}
+                    (isPolish
+                      ? "Ta wiadomość podąża obecnie wybraną ścieżką przepływu."
+                      : "This message is following the currently selected workflow path.")}
                 </p>
                 {email.routingDecision?.signals.length ? (
                   <p className="mt-3 text-xs text-slate-500">
-                    Signals: {email.routingDecision.signals.join(", ")}
+                    {isPolish ? "Sygnały" : "Signals"}:{" "}
+                    {email.routingDecision.signals.join(", ")}
                   </p>
                 ) : null}
               </div>
@@ -542,16 +636,22 @@ export function InboxEmailDetailPanel({
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                      Internal note
+                      {isPolish ? "Notatka wewnętrzna" : "Internal note"}
                     </p>
                     <p className="mt-2 text-sm leading-6 text-slate-500">
-                      Staff-only follow-up context.
+                      {isPolish
+                        ? "Kontekst dalszych działań tylko dla pracowników."
+                        : "Staff-only follow-up context."}
                     </p>
                   </div>
                   <span
                     className={`rounded-full px-3 py-1.5 text-xs font-semibold ${groundingStrengthClasses[groundingAssessment.strength]}`}
                   >
-                    {groundingAssessment.strength} support
+                    {translateGroundingStrength(
+                      groundingAssessment.strength,
+                      preferences.language
+                    )}{" "}
+                    {isPolish ? "wsparcie" : "support"}
                   </span>
                 </div>
 
@@ -562,7 +662,11 @@ export function InboxEmailDetailPanel({
                       onChange={(event) => onNoteChange?.(event.target.value)}
                       rows={6}
                       className="w-full rounded-[28px] border border-white/75 bg-white/82 px-4 py-4 text-sm leading-7 text-slate-700 shadow-[0_14px_36px_rgba(143,155,181,0.12)] outline-none transition focus:border-[#6A6CFF]/35 focus:bg-white"
-                      placeholder="Capture staff-only context, follow-up reminders, or escalation notes."
+                      placeholder={
+                        isPolish
+                          ? "Zapisz kontekst tylko dla pracowników, przypomnienia do dalszych działań albo notatki eskalacyjne."
+                          : "Capture staff-only context, follow-up reminders, or escalation notes."
+                      }
                     />
                     <div className="flex flex-wrap gap-3">
                       <button
@@ -587,14 +691,17 @@ export function InboxEmailDetailPanel({
                             : dashboardSecondaryButtonClassName
                         }`}
                       >
-                        Cancel
+                        {isPolish ? "Anuluj" : "Cancel"}
                       </button>
                     </div>
                   </div>
                 ) : (
                   <>
                     <p className="mt-4 whitespace-pre-line text-sm leading-6 text-slate-700">
-                      {email.staffNote ?? "No internal note has been saved for this message yet."}
+                      {email.staffNote ??
+                        (isPolish
+                          ? "Dla tej wiadomości nie zapisano jeszcze notatki wewnętrznej."
+                          : "No internal note has been saved for this message yet.")}
                     </p>
                     <div className="mt-4">
                       <button
@@ -616,7 +723,7 @@ export function InboxEmailDetailPanel({
 
               <div className="rounded-[24px] border border-white/75 bg-white/64 p-4 shadow-[0_14px_32px_rgba(143,155,181,0.1)]">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Review reminders
+                  {isPolish ? "Przypomnienia do przeglądu" : "Review reminders"}
                 </p>
                 <div className="mt-3 space-y-2">
                   {approvalGuidance.blockers.length > 0 ? (
@@ -627,7 +734,9 @@ export function InboxEmailDetailPanel({
                     ))
                   ) : (
                     <p className="text-sm leading-6 text-slate-700">
-                      No active blockers are flagged for this message right now.
+                      {isPolish
+                        ? "Dla tej wiadomości nie ma obecnie aktywnych blokad."
+                        : "No active blockers are flagged for this message right now."}
                     </p>
                   )}
                 </div>

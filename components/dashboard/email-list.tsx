@@ -10,9 +10,15 @@ import {
   getEmailAssignmentRecommendation,
   getEmailApprovalState,
   getEmailDepartment,
+  translateCaseApprovalState,
+  translateDepartment,
+  translateEmailPriority,
+  translateGroundingStrength,
+  translateRoutingConfidence,
   type MailboxOperationsSnapshot,
   type StaffEmail,
 } from "@/lib/email-data";
+import { getLocalizedRoutingDecisionReason } from "@/lib/local-routing";
 import {
   DashboardAvatar,
   dashboardPanelClassName,
@@ -44,7 +50,8 @@ export function EmailList({
   emptyActionLabel?: string;
 }>) {
   const queueSnapshot = operationsSnapshot;
-  const { formatDateTime } = useUserPreferences();
+  const { formatDateTime, preferences } = useUserPreferences();
+  const isPolish = preferences.language === "Polish";
 
   return (
     <section className={`${dashboardPanelClassName} overflow-hidden p-5 md:p-6`}>
@@ -70,26 +77,54 @@ export function EmailList({
           {emails.map((email) => {
             const isSelected = email.id === selectedId;
             const senderName = email.sender.split(" <")[0] ?? email.sender;
-            const department = getEmailDepartment(email);
-            const approvalState = getEmailApprovalState(email);
-            const groundingAssessment = assessEmailGrounding(email);
+            const department = translateDepartment(
+              getEmailDepartment(email),
+              preferences.language
+            );
+            const rawApprovalState = getEmailApprovalState(email);
+            const approvalState = translateCaseApprovalState(
+              rawApprovalState,
+              preferences.language
+            );
+            const groundingAssessment = assessEmailGrounding(
+              email,
+              preferences.language
+            );
             const assignmentRecommendation = queueSnapshot
-              ? getEmailAssignmentRecommendation(email, queueSnapshot)
+              ? getEmailAssignmentRecommendation(
+                  email,
+                  queueSnapshot,
+                  preferences.language
+                )
               : null;
             const footerActionLabel =
               email.status === "Auto-sent"
-                ? "View Sent Reply"
+                ? isPolish
+                  ? "Zobacz wysłaną odpowiedź"
+                  : "View Sent Reply"
                 : email.status === "Escalated"
-                  ? "Review Escalation"
+                  ? isPolish
+                    ? "Przejrzyj eskalację"
+                    : "Review Escalation"
                   : email.assignee
-                    ? `Review ${department}`
-                    : `Claim ${department}`;
+                    ? isPolish
+                      ? `Przejrzyj ${department}`
+                      : `Review ${department}`
+                    : isPolish
+                      ? `Przejmij ${department}`
+                      : `Claim ${department}`;
             const citationMetaLabel =
               email.sourceCitations.length > 0
-                ? `${email.sourceCitations.length} citations`
+                ? isPolish
+                  ? `${email.sourceCitations.length} cytatów`
+                  : `${email.sourceCitations.length} citations`
                 : email.source
-                  ? "Source linked"
-                  : "No citations yet";
+                  ? isPolish
+                    ? "Źródło podpięte"
+                    : "Source linked"
+                  : isPolish
+                    ? "Brak cytatów"
+                    : "No citations yet";
 
             return (
               <button
@@ -134,25 +169,34 @@ export function EmailList({
                   <EmailStatusBadge status={email.status} />
                   <EmailCategoryBadge category={email.category} />
                   <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${approvalStateClasses[approvalState]}`}
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${approvalStateClasses[rawApprovalState]}`}
                   >
                     {approvalState}
                   </span>
                   <span
                     className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${emailPriorityClasses[email.priority]}`}
                   >
-                    {email.priority} Priority
+                    {translateEmailPriority(email.priority, preferences.language)}{" "}
+                    {isPolish ? "priorytet" : "Priority"}
                   </span>
                   {email.routingDecision ? (
                     <span className="rounded-full bg-white/86 px-2.5 py-1 text-xs font-semibold text-slate-500">
-                      {email.routingDecision.confidence} routing •{" "}
+                      {translateRoutingConfidence(
+                        email.routingDecision.confidence,
+                        preferences.language
+                      )}{" "}
+                      routing •{" "}
                       {email.routingDecision.confidenceScore}%
                     </span>
                   ) : null}
                   <span
                     className={`rounded-full px-2.5 py-1 text-xs font-semibold ${groundingStrengthClasses[groundingAssessment.strength]}`}
                   >
-                    {groundingAssessment.strength} support
+                    {translateGroundingStrength(
+                      groundingAssessment.strength,
+                      preferences.language
+                    )}{" "}
+                    {isPolish ? "wsparcie" : "support"}
                   </span>
                   {email.source ? (
                     <span className="rounded-full bg-[#EEF0FF] px-2.5 py-1 text-xs font-semibold text-[#5C61FF]">
@@ -163,7 +207,10 @@ export function EmailList({
 
                 {email.routingDecision ? (
                   <p className="mt-3 text-sm leading-6 text-slate-500">
-                    {email.routingDecision.reason}
+                    {getLocalizedRoutingDecisionReason(
+                      email.routingDecision,
+                      preferences.language
+                    )}
                   </p>
                 ) : null}
 
@@ -175,14 +222,19 @@ export function EmailList({
 
                 {email.routingDecision?.suggestedAssignees.length ? (
                   <p className="mt-3 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-                    Suggested owners: {email.routingDecision.suggestedAssignees.join(", ")}
+                    {isPolish ? "Sugerowani właściciele" : "Suggested owners"}:{" "}
+                    {email.routingDecision.suggestedAssignees.join(", ")}
                   </p>
                 ) : null}
                 {assignmentRecommendation ? (
                   <p className="mt-3 text-xs font-medium uppercase tracking-[0.16em] text-[#4F57E8]">
                     {email.assignee === assignmentRecommendation.assignee
-                      ? `Best-fit owner: ${assignmentRecommendation.assignee}`
-                      : `Rebalance suggestion: ${assignmentRecommendation.assignee}`}
+                      ? isPolish
+                        ? `Najlepszy właściciel: ${assignmentRecommendation.assignee}`
+                        : `Best-fit owner: ${assignmentRecommendation.assignee}`
+                      : isPolish
+                        ? `Sugestia równoważenia: ${assignmentRecommendation.assignee}`
+                        : `Rebalance suggestion: ${assignmentRecommendation.assignee}`}
                   </p>
                 ) : null}
 
@@ -190,11 +242,18 @@ export function EmailList({
                   <div className="flex flex-wrap items-center gap-2">
                     <span>
                       {email.assignee
-                        ? `Assigned to ${email.assignee}`
-                        : "Unassigned"}
+                        ? isPolish
+                          ? `Przypisane do ${email.assignee}`
+                          : `Assigned to ${email.assignee}`
+                        : isPolish
+                          ? "Nieprzypisane"
+                          : "Unassigned"}
                     </span>
                     <span className="text-slate-300">•</span>
-                    <span>Updated {formatDateTime(email.lastUpdatedAt)}</span>
+                    <span>
+                      {isPolish ? "Zaktualizowano" : "Updated"}{" "}
+                      {formatDateTime(email.lastUpdatedAt)}
+                    </span>
                     <span className="text-slate-300">•</span>
                     <span>{citationMetaLabel}</span>
                     {assignmentRecommendation ? (

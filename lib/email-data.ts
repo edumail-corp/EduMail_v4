@@ -1,3 +1,5 @@
+import type { LanguagePreference } from "@/lib/user-preferences";
+
 export type EmailCategory = "Admissions" | "Finance" | "Registrar" | "Academic";
 export type EmailStatus = "Draft" | "Auto-sent" | "Escalated";
 export type EmailFilter = "All" | EmailStatus;
@@ -166,6 +168,265 @@ export type AssignmentRecommendation = {
   pressure: WorkloadPressure;
 };
 
+function isPolishLanguage(language: LanguagePreference) {
+  return language === "Polish";
+}
+
+export function translateDepartment(
+  department: Department,
+  language: LanguagePreference = "English"
+) {
+  if (language === "Polish") {
+    const labels: Record<Department, string> = {
+      Admissions: "Rekrutacja",
+      Finance: "Finanse",
+      Registrar: "Dziekanat",
+      Academic: "Akademickie",
+    };
+
+    return labels[department];
+  }
+
+  return department;
+}
+
+export function translateEmailCategory(
+  category: EmailCategory,
+  language: LanguagePreference = "English"
+) {
+  return translateDepartment(category, language);
+}
+
+export function translateEmailStatus(
+  status: EmailStatus,
+  language: LanguagePreference = "English"
+) {
+  if (language === "Polish") {
+    const labels: Record<EmailStatus, string> = {
+      Draft: "Szkic",
+      "Auto-sent": "Wysłano",
+      Escalated: "Eskalacja",
+    };
+
+    return labels[status];
+  }
+
+  return status;
+}
+
+export function translateEmailPriority(
+  priority: EmailPriority,
+  language: LanguagePreference = "English"
+) {
+  if (language === "Polish") {
+    const labels: Record<EmailPriority, string> = {
+      Low: "Niski",
+      Medium: "Średni",
+      High: "Wysoki",
+    };
+
+    return labels[priority];
+  }
+
+  return priority;
+}
+
+export function translateRoutingConfidence(
+  confidence: RoutingConfidence,
+  language: LanguagePreference = "English"
+) {
+  if (language === "Polish") {
+    const labels: Record<RoutingConfidence, string> = {
+      Low: "Niska",
+      Medium: "Średnia",
+      High: "Wysoka",
+    };
+
+    return labels[confidence];
+  }
+
+  return confidence;
+}
+
+export function translateGroundingStrength(
+  strength: GroundingStrength,
+  language: LanguagePreference = "English"
+) {
+  if (language === "Polish") {
+    const labels: Record<GroundingStrength, string> = {
+      Weak: "Słabe",
+      Moderate: "Umiarkowane",
+      Strong: "Silne",
+    };
+
+    return labels[strength];
+  }
+
+  return strength;
+}
+
+export function translateCaseApprovalState(
+  state: CaseApprovalState,
+  language: LanguagePreference = "English"
+) {
+  if (language === "Polish") {
+    const labels: Record<CaseApprovalState, string> = {
+      "Awaiting Draft": "Oczekuje na szkic",
+      "Needs Review": "Wymaga przeglądu",
+      Approved: "Zatwierdzone",
+      Escalated: "Eskalacja",
+    };
+
+    return labels[state];
+  }
+
+  return state;
+}
+
+export function translateWorkloadPressure(
+  pressure: WorkloadPressure,
+  language: LanguagePreference = "English"
+) {
+  if (language === "Polish") {
+    const labels: Record<WorkloadPressure, string> = {
+      Balanced: "Zrównoważone",
+      Busy: "Obciążone",
+      Overloaded: "Przeciążone",
+    };
+
+    return labels[pressure];
+  }
+
+  return pressure;
+}
+
+export function translateCaseOrigin(
+  origin: CaseOrigin,
+  language: LanguagePreference = "English"
+) {
+  if (language === "Polish") {
+    const labels: Record<CaseOrigin, string> = {
+      "Email intake": "Wpływ email",
+      "Manual intake": "Wpis ręczny",
+    };
+
+    return labels[origin];
+  }
+
+  return origin;
+}
+
+export function translateThreadEntryKind(
+  kind: EmailThreadEntryKind,
+  language: LanguagePreference = "English"
+) {
+  if (language === "Polish") {
+    const labels: Record<EmailThreadEntryKind, string> = {
+      Inbound: "Przychodzące",
+      Outbound: "Wychodzące",
+      Internal: "Wewnętrzne",
+      System: "Systemowe",
+    };
+
+    return labels[kind];
+  }
+
+  return kind;
+}
+
+export function translateRoutingSignal(
+  signal: string,
+  language: LanguagePreference = "English"
+) {
+  if (!isPolishLanguage(language)) {
+    return signal;
+  }
+
+  const labels: Record<string, string> = {
+    admission: "rekrutacja",
+    apply: "aplikacja",
+    application: "wniosek",
+    enrollment: "rejestracja",
+    scholarship: "stypendium",
+    international: "międzynarodowe",
+    deadline: "termin",
+    acceptance: "przyjęcie",
+    billing: "rozliczenia",
+    tuition: "czesne",
+    payment: "płatność",
+    refund: "zwrot",
+    invoice: "faktura",
+    balance: "saldo",
+    fee: "opłata",
+    "financial aid": "pomoc finansowa",
+    transcript: "transkrypt",
+    registration: "rejestracja",
+    records: "dokumentacja",
+    "enrollment verification": "potwierdzenie zapisu",
+    drop: "rezygnacja",
+    withdrawal: "wycofanie",
+    calendar: "kalendarz",
+    "name change": "zmiana nazwiska",
+    credit: "punkty",
+    grade: "ocena",
+    faculty: "kadra",
+    course: "kurs",
+    appeal: "odwołanie",
+    "academic advising": "doradztwo akademickie",
+    degree: "dyplom",
+    curriculum: "program",
+    dispute: "spór",
+    error: "błąd",
+    urgent: "pilne",
+    complaint: "skarga",
+    legal: "prawne",
+    grievance: "zażalenie",
+    exception: "wyjątek",
+    mismatch: "niezgodność",
+    "manual review required": "wymagany ręczny przegląd",
+    "workflow summary": "podsumowanie przepływu",
+  };
+
+  return labels[signal] ?? signal;
+}
+
+export function translateStaffAssignmentFilterLabel(
+  filter: StaffAssignmentFilter,
+  language: LanguagePreference = "English"
+) {
+  if (filter === "All") {
+    return language === "Polish" ? "Wszyscy właściciele" : "All Owners";
+  }
+
+  if (filter === "Unassigned") {
+    return language === "Polish" ? "Nieprzypisane" : "Unassigned";
+  }
+
+  return filter;
+}
+
+export function translateStaffAssignmentSelectValue(
+  value: StaffAssignmentSelectValue,
+  language: LanguagePreference = "English"
+) {
+  if (value === "Unassigned") {
+    return language === "Polish" ? "Nieprzypisane" : "Unassigned";
+  }
+
+  return value;
+}
+
+export function translateDepartmentFilterLabel(
+  filter: DepartmentFilter,
+  language: LanguagePreference = "English"
+) {
+  if (filter === "All") {
+    return language === "Polish" ? "Wszystkie działy" : "All Departments";
+  }
+
+  return translateDepartment(filter, language);
+}
+
 export const minimumSenderNameLength = 2;
 export const minimumEmailSubjectLength = 3;
 export const minimumEmailBodyLength = 10;
@@ -293,8 +554,10 @@ export function assessEmailGrounding(
   email: Pick<
     StaffEmail,
     "aiDraft" | "source" | "sourceCitations" | "manualReviewReason" | "routingDecision" | "assignee"
-  >
+  >,
+  language: LanguagePreference = "English"
 ): EmailGroundingAssessment {
+  const isPolish = isPolishLanguage(language);
   const positives: string[] = [];
   const risks: string[] = [];
   const uniqueDocumentCount = new Set(
@@ -306,55 +569,111 @@ export function assessEmailGrounding(
 
   if (email.aiDraft) {
     score += 24;
-    positives.push("A draft is already available for human review.");
+    positives.push(
+      isPolish
+        ? "Szkic jest już dostępny do przeglądu przez człowieka."
+        : "A draft is already available for human review."
+    );
   } else {
-    risks.push("No draft is available yet, so a human response is still required.");
+    risks.push(
+      isPolish
+        ? "Brak szkicu, więc nadal wymagana jest ręczna odpowiedź."
+        : "No draft is available yet, so a human response is still required."
+    );
   }
 
   if (email.source) {
     score += 20;
-    positives.push(`A source document is linked to this case (${email.source}).`);
+    positives.push(
+      isPolish
+        ? `Do tej sprawy podłączono dokument źródłowy (${email.source}).`
+        : `A source document is linked to this case (${email.source}).`
+    );
   } else {
-    risks.push("No source document is linked to this case yet.");
+    risks.push(
+      isPolish
+        ? "Do tej sprawy nie podłączono jeszcze dokumentu źródłowego."
+        : "No source document is linked to this case yet."
+    );
   }
 
   if (email.sourceCitations.length > 0) {
     score += 18;
     positives.push(
-      `${email.sourceCitations.length} cited passage${email.sourceCitations.length === 1 ? "" : "s"} support the draft.`
+      isPolish
+        ? `${email.sourceCitations.length} cytowany fragment${email.sourceCitations.length === 1 ? "" : "y"} wspiera szkic.`
+        : `${email.sourceCitations.length} cited passage${email.sourceCitations.length === 1 ? "" : "s"} support the draft.`
     );
   } else if (email.source) {
     score += 6;
-    risks.push("A source is linked, but no supporting excerpts are attached to the draft.");
+    risks.push(
+      isPolish
+        ? "Źródło jest podłączone, ale do szkicu nie dołączono wspierających fragmentów."
+        : "A source is linked, but no supporting excerpts are attached to the draft."
+    );
   } else {
-    risks.push("The draft does not include stored supporting excerpts.");
+    risks.push(
+      isPolish
+        ? "Szkic nie zawiera zapisanych fragmentów potwierdzających treść."
+        : "The draft does not include stored supporting excerpts."
+    );
   }
 
   if (uniqueDocumentCount >= 2) {
     score += 12;
-    positives.push(`Support is distributed across ${uniqueDocumentCount} source documents.`);
+    positives.push(
+      isPolish
+        ? `Wsparcie jest rozłożone na ${uniqueDocumentCount} dokumenty źródłowe.`
+        : `Support is distributed across ${uniqueDocumentCount} source documents.`
+    );
   } else if (uniqueDocumentCount === 1 && email.sourceCitations.length > 0) {
     score += 6;
-    positives.push("At least one source document is grounded into the draft.");
+    positives.push(
+      isPolish
+        ? "Co najmniej jeden dokument źródłowy został osadzony w szkicu."
+        : "At least one source document is grounded into the draft."
+    );
   }
 
   if (routingConfidenceScore >= 85) {
     score += 12;
-    positives.push(`Routing confidence is high at ${routingConfidenceScore}%.`);
+    positives.push(
+      isPolish
+        ? `Pewność routingu jest wysoka i wynosi ${routingConfidenceScore}%.`
+        : `Routing confidence is high at ${routingConfidenceScore}%.`
+    );
   } else if (routingConfidenceScore >= 70) {
     score += 6;
-    positives.push(`Routing confidence is acceptable at ${routingConfidenceScore}%.`);
+    positives.push(
+      isPolish
+        ? `Pewność routingu jest akceptowalna i wynosi ${routingConfidenceScore}%.`
+        : `Routing confidence is acceptable at ${routingConfidenceScore}%.`
+    );
   } else if (routingConfidenceScore > 0) {
-    risks.push(`Routing confidence is only ${routingConfidenceScore}%, so the queue placement should be checked carefully.`);
+    risks.push(
+      isPolish
+        ? `Pewność routingu wynosi tylko ${routingConfidenceScore}%, więc przypisanie do kolejki trzeba uważnie sprawdzić.`
+        : `Routing confidence is only ${routingConfidenceScore}%, so the queue placement should be checked carefully.`
+    );
   } else {
-    risks.push("No routing confidence score is attached to this case.");
+    risks.push(
+      isPolish
+        ? "Do tej sprawy nie dołączono wyniku pewności routingu."
+        : "No routing confidence score is attached to this case."
+    );
   }
 
   if (email.assignee) {
     score += 4;
-    positives.push(`An owner is assigned (${email.assignee}).`);
+    positives.push(
+      isPolish
+        ? `Przypisano właściciela (${email.assignee}).`
+        : `An owner is assigned (${email.assignee}).`
+    );
   } else {
-    risks.push("No owner is assigned yet.");
+    risks.push(
+      isPolish ? "Nie przypisano jeszcze właściciela." : "No owner is assigned yet."
+    );
   }
 
   if (email.manualReviewReason) {
@@ -374,17 +693,25 @@ export function assessEmailGrounding(
     routingConfidenceScore >= 70;
 
   let summary =
-    "This draft still needs a human to validate the routing and policy support before approval.";
+    isPolish
+      ? "Ten szkic nadal wymaga weryfikacji człowieka przed zatwierdzeniem routingu i wsparcia źródłowego."
+      : "This draft still needs a human to validate the routing and policy support before approval.";
 
   if (approvalReady) {
     summary =
-      "This draft has enough visible support to move into final human review and approval.";
+      isPolish
+        ? "Ten szkic ma wystarczające widoczne wsparcie, aby przejść do końcowego przeglądu i zatwierdzenia przez człowieka."
+        : "This draft has enough visible support to move into final human review and approval.";
   } else if (strength === "Moderate") {
     summary =
-      "This draft has partial support, but a reviewer should confirm the routing logic or add stronger cited evidence before approval.";
+      isPolish
+        ? "Ten szkic ma częściowe wsparcie, ale przed zatwierdzeniem należy potwierdzić logikę routingu lub dodać mocniejsze dowody."
+        : "This draft has partial support, but a reviewer should confirm the routing logic or add stronger cited evidence before approval.";
   } else if (strength === "Weak") {
     summary =
-      "This draft is weakly grounded and should be treated as a manual-review case until stronger support is attached.";
+      isPolish
+        ? "Ten szkic ma słabe podstawy i powinien pozostać w ręcznym przeglądzie, dopóki nie zostanie wzmocniony lepszym wsparciem."
+        : "This draft is weakly grounded and should be treated as a manual-review case until stronger support is attached.";
   }
 
   return {
@@ -401,51 +728,103 @@ export function getEmailApprovalGuidance(
   email: Pick<
     StaffEmail,
     "aiDraft" | "source" | "sourceCitations" | "manualReviewReason" | "routingDecision" | "assignee"
-  >
+  >,
+  language: LanguagePreference = "English"
 ): EmailApprovalGuidance {
+  const isPolish = isPolishLanguage(language);
   const blockers: string[] = [];
   const nextActions: string[] = [];
-  const grounding = assessEmailGrounding(email);
+  const grounding = assessEmailGrounding(email, language);
   const routingConfidenceScore = email.routingDecision?.confidenceScore ?? 0;
 
   if (!email.aiDraft) {
-    blockers.push("No draft is ready, so the case cannot move into approval.");
-    nextActions.push("Write or save a draft response before final review.");
+    blockers.push(
+      isPolish
+        ? "Brak gotowego szkicu, więc sprawa nie może przejść do zatwierdzenia."
+        : "No draft is ready, so the case cannot move into approval."
+    );
+    nextActions.push(
+      isPolish
+        ? "Napisz lub zapisz szkic odpowiedzi przed końcowym przeglądem."
+        : "Write or save a draft response before final review."
+    );
   }
 
   if (!email.assignee) {
-    blockers.push("The case does not have a current owner.");
-    nextActions.push("Assign the case to the best-fit department owner.");
+    blockers.push(
+      isPolish
+        ? "Sprawa nie ma obecnie przypisanego właściciela."
+        : "The case does not have a current owner."
+    );
+    nextActions.push(
+      isPolish
+        ? "Przypisz sprawę do najlepiej dopasowanego właściciela działowego."
+        : "Assign the case to the best-fit department owner."
+    );
   }
 
   if (!email.source) {
-    blockers.push("No primary policy source is linked to the case.");
-    nextActions.push("Attach the most relevant knowledge-base source before approval.");
+    blockers.push(
+      isPolish
+        ? "Do sprawy nie podłączono głównego źródła polityki."
+        : "No primary policy source is linked to the case."
+    );
+    nextActions.push(
+      isPolish
+        ? "Przed zatwierdzeniem dołącz najbardziej trafne źródło z bazy wiedzy."
+        : "Attach the most relevant knowledge-base source before approval."
+    );
   }
 
   if (email.source && email.sourceCitations.length === 0) {
-    blockers.push("The draft references a source, but no stored cited passages are attached.");
-    nextActions.push("Add at least one cited excerpt showing which policy line supports the response.");
+    blockers.push(
+      isPolish
+        ? "Szkic odwołuje się do źródła, ale nie ma dołączonych zapisanych cytatów."
+        : "The draft references a source, but no stored cited passages are attached."
+    );
+    nextActions.push(
+      isPolish
+        ? "Dodaj co najmniej jeden cytowany fragment pokazujący, która zasada wspiera odpowiedź."
+        : "Add at least one cited excerpt showing which policy line supports the response."
+    );
   }
 
   if (routingConfidenceScore > 0 && routingConfidenceScore < 70) {
     blockers.push(
-      `Routing confidence is only ${routingConfidenceScore}%, so the department placement should be confirmed.`
+      isPolish
+        ? `Pewność routingu wynosi tylko ${routingConfidenceScore}%, więc przypisanie działu trzeba potwierdzić.`
+        : `Routing confidence is only ${routingConfidenceScore}%, so the department placement should be confirmed.`
     );
-    nextActions.push("Verify the routed department or manually reassign the case if needed.");
+    nextActions.push(
+      isPolish
+        ? "Zweryfikuj przypisany dział lub ręcznie prześlij sprawę do właściwego miejsca."
+        : "Verify the routed department or manually reassign the case if needed."
+    );
   }
 
   if (email.manualReviewReason) {
     blockers.push(email.manualReviewReason);
-    nextActions.push("Resolve the manual-review hold before sending anything outward.");
+    nextActions.push(
+      isPolish
+        ? "Rozwiąż blokadę ręcznego przeglądu przed wysłaniem czegokolwiek na zewnątrz."
+        : "Resolve the manual-review hold before sending anything outward."
+    );
   }
 
   if (!grounding.approvalReady && blockers.length === 0) {
-    blockers.push("The case still needs stronger evidence before it is safe to approve.");
+    blockers.push(
+      isPolish
+        ? "Sprawa nadal wymaga mocniejszych dowodów, zanim będzie bezpieczna do zatwierdzenia."
+        : "The case still needs stronger evidence before it is safe to approve."
+    );
   }
 
   if (nextActions.length === 0) {
-    nextActions.push("Complete a final human review and approve the reply when ready.");
+    nextActions.push(
+      isPolish
+        ? "Wykonaj końcowy przegląd przez człowieka i zatwierdź odpowiedź, gdy będzie gotowa."
+        : "Complete a final human review and approve the reply when ready."
+    );
   }
 
   return {
@@ -739,9 +1118,12 @@ export function getEmailAssignmentRecommendation(
     StaffEmail,
     "assignee" | "category" | "department" | "routingDecision"
   >,
-  snapshot: MailboxOperationsSnapshot
+  snapshot: MailboxOperationsSnapshot,
+  language: LanguagePreference = "English"
 ): AssignmentRecommendation | null {
+  const isPolish = isPolishLanguage(language);
   const department = getEmailDepartment(email);
+  const departmentLabel = translateDepartment(department, language);
   const candidateOwners =
     email.routingDecision?.suggestedAssignees.length
       ? email.routingDecision.suggestedAssignees
@@ -797,19 +1179,33 @@ export function getEmailAssignmentRecommendation(
   const departmentSummary = snapshot.departmentSummaries.find(
     (summary) => summary.department === department
   );
-  const queueSummary = `${recommendedSummary.activeCount} active • ${recommendedSummary.weakSupportCount} weak-support • ${recommendedSummary.approvalReadyCount} approval-ready`;
+  const queueSummary = isPolish
+    ? `${recommendedSummary.activeCount} aktywne • ${recommendedSummary.weakSupportCount} słabe wsparcie • ${recommendedSummary.approvalReadyCount} gotowe do zatwierdzenia`
+    : `${recommendedSummary.activeCount} active • ${recommendedSummary.weakSupportCount} weak-support • ${recommendedSummary.approvalReadyCount} approval-ready`;
   const departmentSummaryText = departmentSummary
-    ? `${departmentSummary.activeCount} active in ${department} • ${departmentSummary.unassignedCount} unassigned • ${departmentSummary.weakSupportCount} weak-support`
-    : `${department} workload summary is not available yet.`;
+    ? isPolish
+      ? `${departmentSummary.activeCount} aktywne w dziale ${departmentLabel} • ${departmentSummary.unassignedCount} nieprzypisane • ${departmentSummary.weakSupportCount} słabe wsparcie`
+      : `${departmentSummary.activeCount} active in ${department} • ${departmentSummary.unassignedCount} unassigned • ${departmentSummary.weakSupportCount} weak-support`
+    : isPolish
+      ? `Podsumowanie obciążenia dla działu ${departmentLabel} nie jest jeszcze dostępne.`
+      : `${department} workload summary is not available yet.`;
 
-  let reason = `${recommendedSummary.owner} is in the ${department} rotation and currently has the lightest visible workload.`;
+  let reason = isPolish
+    ? `${recommendedSummary.owner} należy do rotacji ${departmentLabel} i ma obecnie najlżejsze widoczne obciążenie.`
+    : `${recommendedSummary.owner} is in the ${department} rotation and currently has the lightest visible workload.`;
 
   if (email.assignee === recommendedSummary.owner) {
-    reason = `${recommendedSummary.owner} already owns this case and still looks like the best-fit owner for the current ${department} workload.`;
+    reason = isPolish
+      ? `${recommendedSummary.owner} już prowadzi tę sprawę i nadal wygląda na najlepiej dopasowanego właściciela dla obecnego obciążenia działu ${departmentLabel}.`
+      : `${recommendedSummary.owner} already owns this case and still looks like the best-fit owner for the current ${department} workload.`;
   } else if (email.assignee && currentOwnerSummary) {
-    reason = `${recommendedSummary.owner} has a lighter ${department} queue than ${email.assignee}, so this case is a better fit there right now.`;
+    reason = isPolish
+      ? `${recommendedSummary.owner} ma lżejszą kolejkę ${departmentLabel} niż ${email.assignee}, więc ta sprawa jest teraz tam lepiej dopasowana.`
+      : `${recommendedSummary.owner} has a lighter ${department} queue than ${email.assignee}, so this case is a better fit there right now.`;
   } else if (recommendedSummary.activeCount === 0) {
-    reason = `${recommendedSummary.owner} is part of the ${department} rotation and has no active cases in this queue slice yet.`;
+    reason = isPolish
+      ? `${recommendedSummary.owner} należy do rotacji ${departmentLabel} i nie ma jeszcze aktywnych spraw w tym wycinku kolejki.`
+      : `${recommendedSummary.owner} is part of the ${department} rotation and has no active cases in this queue slice yet.`;
   }
 
   return {
@@ -1179,20 +1575,18 @@ export function filterEmailsByDepartment(
   return emails.filter((email) => getEmailDepartment(email) === filter);
 }
 
-export function getStaffAssignmentFilterLabel(filter: StaffAssignmentFilter) {
-  if (filter === "All") {
-    return "All Owners";
-  }
-
-  return filter;
+export function getStaffAssignmentFilterLabel(
+  filter: StaffAssignmentFilter,
+  language: LanguagePreference = "English"
+) {
+  return translateStaffAssignmentFilterLabel(filter, language);
 }
 
-export function getDepartmentFilterLabel(filter: DepartmentFilter) {
-  if (filter === "All") {
-    return "All Departments";
-  }
-
-  return filter;
+export function getDepartmentFilterLabel(
+  filter: DepartmentFilter,
+  language: LanguagePreference = "English"
+) {
+  return translateDepartmentFilterLabel(filter, language);
 }
 
 export function getInitialSelectedEmailId(emails: StaffEmail[]) {

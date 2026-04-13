@@ -2,7 +2,11 @@ import Link from "next/link";
 import { DashboardAvatar, dashboardPanelClassName } from "@/components/dashboard/dashboard-chrome";
 import { useUserPreferences } from "@/components/dashboard/user-preferences-provider";
 import { EmailStatusBadge } from "@/components/dashboard/email-badges";
-import { getEmailDepartment, type StaffEmail } from "@/lib/email-data";
+import {
+  getEmailDepartment,
+  translateDepartment,
+  type StaffEmail,
+} from "@/lib/email-data";
 
 function getMessagePreview(email: StaffEmail) {
   return email.body.replace(/\s+/g, " ").trim();
@@ -24,15 +28,20 @@ export function InboxEmailList({
   emptyActionLabel?: string;
 }>) {
   const { formatDateTime, preferences } = useUserPreferences();
+  const isPolish = preferences.language === "Polish";
   const isCompact = preferences.inboxDensity === "compact";
 
   return (
     <section className={`${dashboardPanelClassName} overflow-hidden`}>
       <div className="flex items-center justify-between border-b border-white/70 px-5 py-4">
         <div>
-          <h3 className="text-base font-semibold text-slate-900">Messages</h3>
+          <h3 className="text-base font-semibold text-slate-900">
+            {isPolish ? "Wiadomości" : "Messages"}
+          </h3>
           <p className="mt-1 text-sm text-slate-500">
-            Open a message to review the suggested reply.
+            {isPolish
+              ? "Otwórz wiadomość, aby przejrzeć sugerowaną odpowiedź."
+              : "Open a message to review the suggested reply."}
           </p>
         </div>
         <span className="rounded-full bg-[#F3F5FF] px-3 py-1 text-xs font-semibold text-[#4F57E8]">
@@ -105,11 +114,17 @@ export function InboxEmailList({
 
                       <div className={`flex flex-wrap items-center gap-2 ${isCompact ? "mt-2" : "mt-3"}`}>
                         <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                          {department}
+                          {translateDepartment(department, preferences.language)}
                         </span>
                         <span className="text-slate-300">•</span>
                         <span className="text-xs text-slate-500">
-                          {hasDraft ? "Suggested reply ready" : "Needs reply"}
+                          {hasDraft
+                            ? isPolish
+                              ? "Sugerowana odpowiedź gotowa"
+                              : "Suggested reply ready"
+                            : isPolish
+                              ? "Wymaga odpowiedzi"
+                              : "Needs reply"}
                         </span>
                         {email.status !== "Draft" ? (
                           <EmailStatusBadge status={email.status} />

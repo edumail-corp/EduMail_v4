@@ -23,40 +23,36 @@ export function DashboardShell({
   const isComposePage = pathname === "/dashboard/compose";
   const { preferences } = useUserPreferences();
   const composeLabel = preferences.language === "Polish"
-    ? "Nowa wiadomosc"
-    : preferences.language === "Spanish"
-      ? "Nuevo mensaje"
+    ? "Nowa wiadomość"
       : "Compose New";
   const localPrototypeLabel = preferences.language === "Polish"
     ? "Lokalny prototyp"
-    : preferences.language === "Spanish"
-      ? "Prototipo local"
       : "Local Prototype";
   const localPrototypeDescription = preferences.language === "Polish"
-    ? "Skrzynka, decyzje i dokumenty dzialaja lokalnie, a produkt pozostaje niezalezny od dostawcy."
-    : preferences.language === "Spanish"
-      ? "El buzón, las decisiones y los documentos funcionan localmente mientras el producto sigue siendo agnóstico al proveedor."
+    ? "Skrzynka, decyzje i dokumenty działają lokalnie, a produkt pozostaje niezależny od dostawcy."
       : "Mailbox decisions, new-case intake, and document uploads persist locally while the product stays provider-agnostic.";
   const localPrototypeAction = preferences.language === "Polish"
-    ? "Otworz ustawienia"
-    : preferences.language === "Spanish"
-      ? "Abrir ajustes"
+    ? "Otwórz ustawienia"
       : "Open Settings";
-  const navLabelOverrides: Record<string, string> =
+  const assistantLabel =
+    preferences.language === "Polish" ? "Asystent AI" : "AI Assistant";
+  const workspaceDescription =
+    preferences.language === "Polish"
+      ? "Przeglądaj uczelnianą korespondencję, zarządzaj źródłami zasad i utrzymuj przepływ prototypu w jednym miejscu."
+      : "Review university communications, manage policy sources, and keep the prototype workflow moving in one place.";
+  const roleLabel =
+    preferences.language === "Polish"
+      ? "Właściciel prototypu"
+      : dashboardCurrentUser.role;
+  const navLabelOverrides: Record<string, { label: string; shortLabel: string }> =
     preferences.language === "Polish"
       ? {
-          Dashboard: "Panel",
-          Inbox: "Skrzynka",
-          "Knowledge Base": "Baza wiedzy",
-          Settings: "Ustawienia",
+          Dashboard: { label: "Panel", shortLabel: "Start" },
+          Inbox: { label: "Skrzynka", shortLabel: "Wszystko" },
+          "Knowledge Base": { label: "Baza wiedzy", shortLabel: "Dok." },
+          Activity: { label: "Aktywność", shortLabel: "Log" },
+          Settings: { label: "Ustawienia", shortLabel: "Opcje" },
         }
-      : preferences.language === "Spanish"
-        ? {
-            Dashboard: "Panel",
-            Inbox: "Bandeja",
-            "Knowledge Base": "Base de conocimiento",
-            Settings: "Ajustes",
-          }
         : {};
 
   return (
@@ -74,7 +70,7 @@ export function DashboardShell({
                   </div>
                   <div>
                     <p className="text-[12px] font-semibold uppercase tracking-[0.24em] text-slate-400">
-                      AI Assistant
+                      {assistantLabel}
                     </p>
                     <h1 className="mt-1 text-[1.8rem] font-semibold tracking-tight text-[#4F57E8]">
                       EduMailAI
@@ -83,7 +79,7 @@ export function DashboardShell({
                 </div>
 
                 <p className="max-w-xs text-sm leading-6 text-slate-500">
-                  Review university communications, manage policy sources, and keep the prototype workflow moving in one place.
+                  {workspaceDescription}
                 </p>
 
                 <Link
@@ -126,7 +122,7 @@ export function DashboardShell({
                           <DashboardIcon name={item.icon} className="h-[18px] w-[18px]" />
                         </span>
                         <span className="truncate">
-                          {navLabelOverrides[item.label] ?? item.label}
+                          {navLabelOverrides[item.label]?.label ?? item.label}
                         </span>
                       </span>
                       <span
@@ -134,7 +130,7 @@ export function DashboardShell({
                           isActive ? "text-[#8D95C2]" : "text-slate-300"
                         }`}
                       >
-                        {item.shortLabel}
+                        {navLabelOverrides[item.label]?.shortLabel ?? item.shortLabel}
                       </span>
                     </Link>
                   );
@@ -168,7 +164,7 @@ export function DashboardShell({
                     {dashboardCurrentUser.name}
                   </p>
                   <p className="truncate text-xs font-medium text-slate-500">
-                    {dashboardCurrentUser.role}
+                    {roleLabel}
                   </p>
                   <p className="truncate text-xs text-slate-400">
                     {dashboardCurrentUser.email}

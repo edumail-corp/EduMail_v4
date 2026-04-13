@@ -5,6 +5,7 @@ import type {
   GroundingStrength,
   StaffAssignee,
 } from "@/lib/email-data";
+import type { LanguagePreference } from "@/lib/user-preferences";
 
 export type KnowledgeBaseCategory = EmailCategory;
 export type KnowledgeBaseFilter = "All" | KnowledgeBaseCategory;
@@ -236,9 +237,22 @@ export function formatKnowledgeMimeType(mimeType: string) {
 }
 
 export function getKnowledgeDocumentOriginLabel(
-  origin: KnowledgeDocumentOrigin
+  origin: KnowledgeDocumentOrigin,
+  language: LanguagePreference = "English"
 ) {
+  if (language === "Polish") {
+    return origin === "uploaded" ? "Zapisany plik" : "Dane testowe";
+  }
+
   return origin === "uploaded" ? "Stored File" : "Seeded Metadata";
+}
+
+export function getKnowledgeCategorySelectionLabel(
+  language: LanguagePreference = "English"
+) {
+  return language === "Polish"
+    ? "Wybierz kategorię"
+    : defaultKnowledgeCategorySelection;
 }
 
 export function buildKnowledgeDocumentSummary(

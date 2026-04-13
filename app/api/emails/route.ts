@@ -16,6 +16,9 @@ import {
   type StaffAssignmentFilter,
 } from "@/lib/email-data";
 import {
+  isLanguagePreference,
+} from "@/lib/user-preferences";
+import {
   createMailboxEmail,
   listMailboxEmails,
 } from "@/lib/server/services/mailbox-service";
@@ -105,7 +108,14 @@ export async function POST(request: Request) {
     body: payload.body.trim(),
     category: payload.category,
     priority: payload.priority,
-  });
+  },
+  (() => {
+    const requestedLanguage = (payload as { language?: unknown })?.language;
+
+    return isLanguagePreference(requestedLanguage)
+      ? requestedLanguage
+      : "English";
+  })());
 
   return NextResponse.json({ email }, { status: 201 });
 }

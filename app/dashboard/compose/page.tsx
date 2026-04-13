@@ -21,12 +21,16 @@ import {
   type EmailCategory,
   type EmailPriority,
   type StaffEmail,
+  translateDepartment,
+  translateEmailPriority,
+  translateRoutingConfidence,
 } from "@/lib/email-data";
 import {
   getDraftPathLabel,
   getRoutingDestinationLabel,
   inferLocalRoutingDecision,
 } from "@/lib/local-routing";
+import { useUserPreferences } from "@/components/dashboard/user-preferences-provider";
 
 type ComposeResponse = {
   email: StaffEmail;
@@ -49,6 +53,8 @@ function getComposeErrorMessage(data: unknown) {
 }
 
 export default function ComposePage() {
+  const { preferences } = useUserPreferences();
+  const isPolish = preferences.language === "Polish";
   const router = useRouter();
   const [senderName, setSenderName] = useState("");
   const [senderEmail, setSenderEmail] = useState("");
@@ -74,9 +80,15 @@ export default function ComposePage() {
     priority,
     subject,
     body,
-  });
-  const likelyDestination = getRoutingDestinationLabel(routingPreview);
-  const likelyDraftMode = getDraftPathLabel(routingPreview);
+  }, preferences.language);
+  const likelyDestination = getRoutingDestinationLabel(
+    routingPreview,
+    preferences.language
+  );
+  const likelyDraftMode = getDraftPathLabel(
+    routingPreview,
+    preferences.language
+  );
   const canSubmit =
     composeChecks.senderName &&
     composeChecks.senderEmail &&
@@ -92,7 +104,11 @@ export default function ComposePage() {
     event.preventDefault();
 
     if (!canSubmit) {
-      setSubmitError("Fill out all fields before creating the case.");
+      setSubmitError(
+        isPolish
+          ? "Uzupełnij wszystkie pola przed utworzeniem sprawy."
+          : "Fill out all fields before creating the case."
+      );
       return;
     }
 
@@ -112,13 +128,17 @@ export default function ComposePage() {
           priority,
           subject: trimmedSubject,
           body: trimmedBody,
+          language: preferences.language,
         }),
       });
       const data = (await response.json()) as ComposeResponse | ComposeErrorResponse;
 
       if (!response.ok || !("email" in data)) {
         throw new Error(
-          getComposeErrorMessage(data) ?? "Unable to create the case."
+          getComposeErrorMessage(data) ??
+            (isPolish
+              ? "Nie udało się utworzyć sprawy."
+              : "Unable to create the case.")
         );
       }
 
@@ -130,7 +150,11 @@ export default function ComposePage() {
       router.push(destination);
     } catch (error) {
       setSubmitError(
-        error instanceof Error ? error.message : "Unable to create the case."
+        error instanceof Error
+          ? error.message
+          : isPolish
+            ? "Nie udało się utworzyć sprawy."
+            : "Unable to create the case."
       );
     } finally {
       setIsSubmitting(false);
@@ -139,19 +163,23 @@ export default function ComposePage() {
 
   return (
     <>
-      <DashboardTopBar label="Compose New Case" />
+      <DashboardTopBar label={isPolish ? "Nowa sprawa" : "Compose New Case"} />
 
       <DashboardPageHeader
-        eyebrow="Manual Intake"
-        title="Compose New Case"
-        description="Create a new local mailbox case, generate the first workflow record, and route it into review or escalation based on the content."
-        meta="Local creation flow"
+        eyebrow={isPolish ? "Ręczne przyjęcie" : "Manual Intake"}
+        title={isPolish ? "Utwórz nową sprawę" : "Compose New Case"}
+        description={
+          isPolish
+            ? "Utwórz nową lokalną sprawę mailową, zapisz pierwszy rekord przepływu i skieruj ją do przeglądu lub eskalacji na podstawie treści."
+            : "Create a new local mailbox case, generate the first workflow record, and route it into review or escalation based on the content."
+        }
+        meta={isPolish ? "Lokalny przepływ tworzenia" : "Local creation flow"}
         actions={
           <Link
             href="/dashboard/inbox"
             className={dashboardSecondaryButtonClassName}
           >
-            Back to Inbox
+            {isPolish ? "Wróć do skrzynki" : "Back to Inbox"}
           </Link>
         }
       />
@@ -163,32 +191,34 @@ export default function ComposePage() {
         >
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-              Intake Details
+              {isPolish ? "Szczegóły przyjęcia" : "Intake Details"}
             </p>
             <h3 className="mt-3 text-3xl font-semibold tracking-tight text-[#1E2340]">
-              Create a new message case
+              {isPolish ? "Utwórz nową sprawę wiadomości" : "Create a new message case"}
             </h3>
             <p className="mt-3 text-sm leading-7 text-slate-500">
-              This creates a new local case, adds it to the mailbox store, and writes an activity event immediately.
+              {isPolish
+                ? "To tworzy nową lokalną sprawę, dodaje ją do skrzynki i natychmiast zapisuje zdarzenie aktywności."
+                : "This creates a new local case, adds it to the mailbox store, and writes an activity event immediately."}
             </p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block">
               <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Sender name
+                {isPolish ? "Nazwa nadawcy" : "Sender name"}
               </span>
               <input
                 value={senderName}
                 onChange={(event) => setSenderName(event.target.value)}
                 className="w-full rounded-[22px] border border-white/80 bg-white/82 px-4 py-3.5 text-sm text-slate-700 shadow-[0_14px_36px_rgba(143,155,181,0.12)] outline-none transition focus:border-[#6A6CFF]/35 focus:bg-white"
-                placeholder="Maya Thompson"
+                placeholder={isPolish ? "Jan Kowalski" : "Maya Thompson"}
               />
             </label>
 
             <label className="block">
               <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Sender email
+                {isPolish ? "Email nadawcy" : "Sender email"}
               </span>
               <input
                 type="email"
@@ -203,7 +233,7 @@ export default function ComposePage() {
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block">
               <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Category
+                {isPolish ? "Kategoria" : "Category"}
               </span>
               <select
                 value={category}
@@ -212,7 +242,7 @@ export default function ComposePage() {
               >
                 {emailCategoryOptions.map((option) => (
                   <option key={option} value={option}>
-                    {option}
+                    {translateDepartment(option, preferences.language)}
                   </option>
                 ))}
               </select>
@@ -220,7 +250,7 @@ export default function ComposePage() {
 
             <label className="block">
               <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Priority
+                {isPolish ? "Priorytet" : "Priority"}
               </span>
               <select
                 value={priority}
@@ -229,7 +259,7 @@ export default function ComposePage() {
               >
                 {emailPriorityOptions.map((option) => (
                   <option key={option} value={option}>
-                    {option}
+                    {translateEmailPriority(option, preferences.language)}
                   </option>
                 ))}
               </select>
@@ -238,26 +268,34 @@ export default function ComposePage() {
 
           <label className="block">
             <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-              Subject
+              {isPolish ? "Temat" : "Subject"}
             </span>
             <input
               value={subject}
               onChange={(event) => setSubject(event.target.value)}
               className="w-full rounded-[22px] border border-white/80 bg-white/82 px-4 py-3.5 text-sm text-slate-700 shadow-[0_14px_36px_rgba(143,155,181,0.12)] outline-none transition focus:border-[#6A6CFF]/35 focus:bg-white"
-              placeholder="Question about scholarship deadline"
+              placeholder={
+                isPolish
+                  ? "Pytanie o termin stypendium"
+                  : "Question about scholarship deadline"
+              }
             />
           </label>
 
           <label className="block">
             <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-              Message body
+              {isPolish ? "Treść wiadomości" : "Message body"}
             </span>
             <textarea
               value={body}
               onChange={(event) => setBody(event.target.value)}
               rows={10}
               className="w-full rounded-[28px] border border-white/80 bg-white/82 px-4 py-4 text-sm leading-7 text-slate-700 shadow-[0_14px_36px_rgba(143,155,181,0.12)] outline-none transition focus:border-[#6A6CFF]/35 focus:bg-white"
-              placeholder="Paste or write the incoming message content here."
+              placeholder={
+                isPolish
+                  ? "Wklej lub wpisz tutaj treść przychodzącej wiadomości."
+                  : "Paste or write the incoming message content here."
+              }
             />
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
               <span
@@ -265,7 +303,9 @@ export default function ComposePage() {
                   composeChecks.body ? "text-[#4F57E8]" : "text-slate-400"
                 }
               >
-                Message body should be at least {minimumEmailBodyLength} characters.
+                {isPolish
+                  ? `Treść wiadomości powinna mieć co najmniej ${minimumEmailBodyLength} znaków.`
+                  : `Message body should be at least ${minimumEmailBodyLength} characters.`}
               </span>
               <span
                 className={
@@ -273,8 +313,12 @@ export default function ComposePage() {
                 }
               >
                 {composeChecks.body
-                  ? "Ready"
-                  : `${remainingBodyCharacters} more characters needed`}
+                  ? isPolish
+                    ? "Gotowe"
+                    : "Ready"
+                  : isPolish
+                    ? `Brakuje jeszcze ${remainingBodyCharacters} znaków`
+                    : `${remainingBodyCharacters} more characters needed`}
               </span>
             </div>
           </label>
@@ -287,41 +331,56 @@ export default function ComposePage() {
 
           {!canSubmit ? (
             <div className="rounded-[24px] border border-white/75 bg-white/62 px-4 py-3 text-sm text-slate-500 shadow-[0_14px_32px_rgba(143,155,181,0.1)]">
-              Complete all fields to enable case creation.
+              {isPolish
+                ? "Uzupełnij wszystkie pola, aby włączyć tworzenie sprawy."
+                : "Complete all fields to enable case creation."}
             </div>
           ) : null}
 
           <div className="rounded-[24px] border border-white/75 bg-white/62 px-4 py-4 shadow-[0_14px_32px_rgba(143,155,181,0.1)]">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-              Live Routing Preview
+              {isPolish ? "Podgląd routingu na żywo" : "Live Routing Preview"}
             </p>
             <p className="mt-2 text-sm font-semibold text-[#1E2340]">
               {routingPreview.escalationReason
-                ? "Manual-review signals detected in the intake text."
-                : `This intake currently aligns with the ${routingPreview.department} workflow.`}
+                ? isPolish
+                  ? "Wykryto sygnały ręcznego przeglądu w treści zgłoszenia."
+                  : "Manual-review signals detected in the intake text."
+                : isPolish
+                  ? `To zgłoszenie obecnie pasuje do przepływu ${translateDepartment(
+                      routingPreview.department,
+                      preferences.language
+                    )}.`
+                  : `This intake currently aligns with the ${routingPreview.department} workflow.`}
             </p>
             <p className="mt-2 text-sm leading-6 text-slate-500">
               {routingPreview.reason}
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <span className="rounded-full bg-white/86 px-3 py-1.5 text-xs font-semibold text-[#4F57E8]">
-                Suggested dept: {routingPreview.department}
+                {isPolish ? "Sugerowany dział" : "Suggested dept"}:{" "}
+                {translateDepartment(routingPreview.department, preferences.language)}
               </span>
               <span className="rounded-full bg-white/86 px-3 py-1.5 text-xs font-semibold text-slate-500">
-                {routingPreview.confidence} confidence • {routingPreview.confidenceScore}%
+                {translateRoutingConfidence(
+                  routingPreview.confidence,
+                  preferences.language
+                )}{" "}
+                {isPolish ? "pewność" : "confidence"} • {routingPreview.confidenceScore}%
               </span>
               <span className="rounded-full bg-white/86 px-3 py-1.5 text-xs font-semibold text-slate-500">
-                Destination: {likelyDestination}
+                {isPolish ? "Miejsce docelowe" : "Destination"}: {likelyDestination}
               </span>
               {routingPreview.suggestedAssignees.length > 0 ? (
                 <span className="rounded-full bg-white/86 px-3 py-1.5 text-xs font-semibold text-slate-500">
-                  Suggested owners: {routingPreview.suggestedAssignees.join(", ")}
+                  {isPolish ? "Sugerowani właściciele" : "Suggested owners"}:{" "}
+                  {routingPreview.suggestedAssignees.join(", ")}
                 </span>
               ) : null}
             </div>
             {routingPreview.signals.length > 0 ? (
               <p className="mt-4 text-xs leading-6 text-slate-500">
-                Signals: {routingPreview.signals.join(", ")}
+                {isPolish ? "Sygnały" : "Signals"}: {routingPreview.signals.join(", ")}
               </p>
             ) : null}
             {routingPreview.escalationReason ? (
@@ -341,13 +400,19 @@ export default function ComposePage() {
                   : "inline-flex items-center justify-center rounded-full bg-slate-200 px-5 py-3 text-sm font-semibold text-slate-500"
               }
             >
-              {isSubmitting ? "Creating..." : "Create Case"}
+              {isSubmitting
+                ? isPolish
+                  ? "Tworzenie..."
+                  : "Creating..."
+                : isPolish
+                  ? "Utwórz sprawę"
+                  : "Create Case"}
             </button>
             <Link
               href="/dashboard/inbox"
               className={dashboardSecondaryButtonClassName}
             >
-              Cancel
+              {isPolish ? "Anuluj" : "Cancel"}
             </Link>
           </div>
         </form>
@@ -360,59 +425,69 @@ export default function ComposePage() {
               </span>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                  Workflow Preview
+                  {isPolish ? "Podgląd przepływu" : "Workflow Preview"}
                 </p>
                 <h3 className="mt-1 text-2xl font-semibold tracking-tight text-[#1E2340]">
-                  What happens next
+                  {isPolish ? "Co stanie się dalej" : "What happens next"}
                 </h3>
               </div>
             </div>
 
             <div className="mt-5 space-y-3 text-sm leading-7 text-slate-600">
               <p>
-                New cases are saved into the local mailbox immediately and added to the activity log.
+                {isPolish
+                  ? "Nowe sprawy są natychmiast zapisywane w lokalnej skrzynce i dodawane do dziennika aktywności."
+                  : "New cases are saved into the local mailbox immediately and added to the activity log."}
               </p>
               <p>
-                Standard requests are routed into the inbox with a seeded local draft for review.
+                {isPolish
+                  ? "Standardowe zgłoszenia trafiają do skrzynki z lokalnym szkicem do przeglądu."
+                  : "Standard requests are routed into the inbox with a seeded local draft for review."}
               </p>
               <p>
-                Exception-style language like appeals, disputes, or legal issues routes the case into Escalations instead.
+                {isPolish
+                  ? "Treść typu odwołania, spory lub kwestie prawne kieruje sprawę do Eskalacji."
+                  : "Exception-style language like appeals, disputes, or legal issues routes the case into Escalations instead."}
               </p>
             </div>
           </article>
 
           <article className={`${dashboardPanelClassName} p-5 md:p-6`}>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-              Routing Snapshot
+              {isPolish ? "Migawka routingu" : "Routing Snapshot"}
             </p>
             <div className="mt-5 space-y-3">
               <div className="rounded-[22px] border border-white/75 bg-white/62 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Suggested department
+                  {isPolish ? "Sugerowany dział" : "Suggested department"}
                 </p>
                 <p className="mt-2 text-lg font-semibold text-[#1E2340]">
-                  {routingPreview.department}
+                  {translateDepartment(routingPreview.department, preferences.language)}
                 </p>
               </div>
               <div className="rounded-[22px] border border-white/75 bg-white/62 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Intake category
+                  {isPolish ? "Kategoria zgłoszenia" : "Intake category"}
                 </p>
                 <p className="mt-2 text-lg font-semibold text-[#1E2340]">
-                  {category}
+                  {translateDepartment(category, preferences.language)}
                 </p>
               </div>
               <div className="rounded-[22px] border border-white/75 bg-white/62 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Routing confidence
+                  {isPolish ? "Pewność routingu" : "Routing confidence"}
                 </p>
                 <p className="mt-2 text-lg font-semibold text-[#1E2340]">
-                  {routingPreview.confidence} ({routingPreview.confidenceScore}%)
+                  {translateRoutingConfidence(
+                    routingPreview.confidence,
+                    preferences.language
+                  )}{" "}
+                  ({routingPreview.confidenceScore}%)
                 </p>
               </div>
               <div className="rounded-[22px] border border-white/75 bg-white/62 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Destination
+                  {isPolish ? "Miejsce docelowe" : "Destination"}
                 </p>
                 <p className="mt-2 text-lg font-semibold text-[#1E2340]">
                   {likelyDestination}
@@ -420,7 +495,7 @@ export default function ComposePage() {
               </div>
               <div className="rounded-[22px] border border-white/75 bg-white/62 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Draft path
+                  {isPolish ? "Ścieżka szkicu" : "Draft path"}
                 </p>
                 <p className="mt-2 text-lg font-semibold text-[#1E2340]">
                   {likelyDraftMode}
@@ -428,7 +503,7 @@ export default function ComposePage() {
               </div>
               <div className="rounded-[22px] border border-white/75 bg-white/62 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Suggested owners
+                  {isPolish ? "Sugerowani właściciele" : "Suggested owners"}
                 </p>
                 <p className="mt-2 text-lg font-semibold text-[#1E2340]">
                   {routingPreview.suggestedAssignees.join(", ")}

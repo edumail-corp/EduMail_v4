@@ -112,6 +112,7 @@ export function MailboxView({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { preferences, sendDesktopNotification } = useUserPreferences();
+  const isPolish = preferences.language === "Polish";
   const [emails, setEmails] = useState<StaffEmail[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -150,21 +151,35 @@ export function MailboxView({
   const operationsSnapshot = summarizeMailboxOperations(queueEmails);
   const selectedEmail = getSelectedEmail(visibleEmails, selectedId);
   const selectedAssignmentRecommendation = selectedEmail
-    ? getEmailAssignmentRecommendation(selectedEmail, operationsSnapshot)
+    ? getEmailAssignmentRecommendation(
+        selectedEmail,
+        operationsSnapshot,
+        preferences.language
+      )
     : null;
   const selectedDepartmentSummary = selectedEmail
     ? operationsSnapshot.departmentSummaries.find(
         (summary) => summary.department === getEmailDepartment(selectedEmail)
       ) ?? null
     : null;
-  const assignmentLabel = getStaffAssignmentFilterLabel(assignmentFilter);
-  const departmentLabel = getDepartmentFilterLabel(departmentFilter);
+  const assignmentLabel = getStaffAssignmentFilterLabel(
+    assignmentFilter,
+    preferences.language
+  );
+  const departmentLabel = getDepartmentFilterLabel(
+    departmentFilter,
+    preferences.language
+  );
   const isEmailMode = interfaceMode === "email";
   const meta = isLoading
-    ? "Loading messages..."
+    ? isPolish
+      ? "Ładowanie wiadomości..."
+      : "Loading messages..."
     : assignmentFilter === defaultStaffAssignmentFilter && departmentFilter === "All"
       ? `${queueEmails.length} ${metaSuffix}`
-      : `${queueEmails.length} ${metaSuffix} for ${assignmentLabel} in ${departmentLabel}`;
+      : isPolish
+        ? `${queueEmails.length} ${metaSuffix} dla ${assignmentLabel} w ${departmentLabel}`
+        : `${queueEmails.length} ${metaSuffix} for ${assignmentLabel} in ${departmentLabel}`;
 
   function applyMailboxFilters(nextEmails: StaffEmail[]) {
     return filterEmailsByDepartment(
@@ -237,14 +252,21 @@ export function MailboxView({
 
         if (!response.ok || !("emails" in data)) {
           throw new Error(
-            getMailboxErrorMessage(data) ?? "Unable to load the mailbox."
+            getMailboxErrorMessage(data) ??
+              (isPolish
+                ? "Nie udało się załadować skrzynki."
+                : "Unable to load the mailbox.")
           );
         }
 
         setEmails(data.emails);
       } catch (error) {
         setLoadError(
-          error instanceof Error ? error.message : "Unable to load the mailbox."
+          error instanceof Error
+            ? error.message
+            : isPolish
+              ? "Nie udało się załadować skrzynki."
+              : "Unable to load the mailbox."
         );
       } finally {
         setIsLoading(false);
@@ -252,7 +274,7 @@ export function MailboxView({
     }
 
     void loadEmails();
-  }, [filter]);
+  }, [filter, isPolish]);
 
   useEffect(() => {
     setSelectedId((currentId) => {
@@ -339,7 +361,10 @@ export function MailboxView({
 
       if (!response.ok || !("email" in data)) {
         throw new Error(
-          getMailboxErrorMessage(data) ?? "Unable to update the message."
+          getMailboxErrorMessage(data) ??
+            (isPolish
+              ? "Nie udało się zaktualizować wiadomości."
+              : "Unable to update the message.")
         );
       }
 
@@ -349,12 +374,18 @@ export function MailboxView({
         )
       );
       publishActionFeedback(
-        "Reply approved",
-        `"${data.email.subject}" moved to Auto-sent.`
+        isPolish ? "Odpowiedź zatwierdzona" : "Reply approved",
+        isPolish
+          ? `"${data.email.subject}" przeniesiono do Wysłanych.`
+          : `"${data.email.subject}" moved to Auto-sent.`
       );
     } catch (error) {
       setActionError(
-        error instanceof Error ? error.message : "Unable to update the message."
+        error instanceof Error
+          ? error.message
+          : isPolish
+            ? "Nie udało się zaktualizować wiadomości."
+            : "Unable to update the message."
       );
     } finally {
       setApprovingId(null);
@@ -394,7 +425,10 @@ export function MailboxView({
 
       if (!response.ok || !("email" in data)) {
         throw new Error(
-          getMailboxErrorMessage(data) ?? "Unable to update the message owner."
+          getMailboxErrorMessage(data) ??
+            (isPolish
+              ? "Nie udało się zaktualizować właściciela wiadomości."
+              : "Unable to update the message owner.")
         );
       }
 
@@ -404,16 +438,22 @@ export function MailboxView({
         )
       );
       publishActionFeedback(
-        "Owner updated",
+        isPolish ? "Właściciel zaktualizowany" : "Owner updated",
         data.email.assignee
-          ? `"${data.email.subject}" is now assigned to ${data.email.assignee}.`
-          : `Ownership cleared for "${data.email.subject}".`
+          ? isPolish
+            ? `"${data.email.subject}" jest teraz przypisana do ${data.email.assignee}.`
+            : `"${data.email.subject}" is now assigned to ${data.email.assignee}.`
+          : isPolish
+            ? `Własność została wyczyszczona dla "${data.email.subject}".`
+            : `Ownership cleared for "${data.email.subject}".`
       );
     } catch (error) {
       setActionError(
         error instanceof Error
           ? error.message
-          : "Unable to update the message owner."
+          : isPolish
+            ? "Nie udało się zaktualizować właściciela wiadomości."
+            : "Unable to update the message owner."
       );
     } finally {
       setIsSavingAssignee(false);
@@ -445,7 +485,11 @@ export function MailboxView({
     const nextDraft = draftValue.trim();
 
     if (nextDraft.length === 0) {
-      setActionError("Write a response before saving the draft.");
+      setActionError(
+        isPolish
+          ? "Napisz odpowiedź przed zapisaniem szkicu."
+          : "Write a response before saving the draft."
+      );
       return;
     }
 
@@ -471,7 +515,10 @@ export function MailboxView({
 
       if (!response.ok || !("email" in data)) {
         throw new Error(
-          getMailboxErrorMessage(data) ?? "Unable to save the draft."
+          getMailboxErrorMessage(data) ??
+            (isPolish
+              ? "Nie udało się zapisać szkicu."
+              : "Unable to save the draft.")
         );
       }
 
@@ -482,14 +529,22 @@ export function MailboxView({
       );
       setIsEditingDraft(false);
       publishActionFeedback(
-        "Reply saved",
+        isPolish ? "Odpowiedź zapisana" : "Reply saved",
         selectedEmail.status === "Escalated"
-          ? `"${data.email.subject}" now has a saved draft and moved to Draft.`
-          : `Draft for "${data.email.subject}" was saved.`
+          ? isPolish
+            ? `"${data.email.subject}" ma teraz zapisany szkic i wróciła do Szkicu.`
+            : `"${data.email.subject}" now has a saved draft and moved to Draft.`
+          : isPolish
+            ? `Szkic dla "${data.email.subject}" został zapisany.`
+            : `Draft for "${data.email.subject}" was saved.`
       );
     } catch (error) {
       setActionError(
-        error instanceof Error ? error.message : "Unable to save the draft."
+        error instanceof Error
+          ? error.message
+          : isPolish
+            ? "Nie udało się zapisać szkicu."
+            : "Unable to save the draft."
       );
     } finally {
       setIsSavingDraft(false);
@@ -544,7 +599,10 @@ export function MailboxView({
 
       if (!response.ok || !("email" in data)) {
         throw new Error(
-          getMailboxErrorMessage(data) ?? "Unable to save the internal note."
+          getMailboxErrorMessage(data) ??
+            (isPolish
+              ? "Nie udało się zapisać notatki wewnętrznej."
+              : "Unable to save the internal note.")
         );
       }
 
@@ -555,16 +613,22 @@ export function MailboxView({
       );
       setIsEditingNote(false);
       publishActionFeedback(
-        "Note updated",
+        isPolish ? "Notatka zaktualizowana" : "Note updated",
         data.email.staffNote
-          ? `Internal note saved for "${data.email.subject}".`
-          : `Internal note cleared for "${data.email.subject}".`
+          ? isPolish
+            ? `Notatka wewnętrzna dla "${data.email.subject}" została zapisana.`
+            : `Internal note saved for "${data.email.subject}".`
+          : isPolish
+            ? `Notatka wewnętrzna dla "${data.email.subject}" została wyczyszczona.`
+            : `Internal note cleared for "${data.email.subject}".`
       );
     } catch (error) {
       setActionError(
         error instanceof Error
           ? error.message
-          : "Unable to save the internal note."
+          : isPolish
+            ? "Nie udało się zapisać notatki wewnętrznej."
+            : "Unable to save the internal note."
       );
     } finally {
       setIsSavingNote(false);
@@ -573,18 +637,28 @@ export function MailboxView({
 
   const resolvedEmptyMessage =
     normalizedSearchQuery.length > 0
-      ? "No messages match the current search."
+      ? isPolish
+        ? "Żadne wiadomości nie pasują do bieżącego wyszukiwania."
+        : "No messages match the current search."
       : assignmentFilter !== defaultStaffAssignmentFilter || departmentFilter !== "All"
-        ? "No messages match the selected queue filters."
+        ? isPolish
+          ? "Żadne wiadomości nie pasują do wybranych filtrów kolejki."
+          : "No messages match the selected queue filters."
         : emptyMessage;
   const showHiddenQueueFiltersNotice =
     isEmailMode &&
     (assignmentFilter !== defaultStaffAssignmentFilter || departmentFilter !== "All");
   const compactMeta = isLoading
-    ? "Loading messages..."
+    ? isPolish
+      ? "Ładowanie wiadomości..."
+      : "Loading messages..."
     : normalizedSearchQuery.length > 0
-      ? `${visibleEmails.length} of ${queueEmails.length} shown`
-      : `${queueEmails.length} messages`;
+      ? isPolish
+        ? `${visibleEmails.length} z ${queueEmails.length} widocznych`
+        : `${visibleEmails.length} of ${queueEmails.length} shown`
+      : isPolish
+        ? `${queueEmails.length} wiadomości`
+        : `${queueEmails.length} messages`;
 
   return (
     <>
@@ -593,8 +667,12 @@ export function MailboxView({
         onSearchChange={setSearchQuery}
         searchPlaceholder={
           isEmailMode
-            ? "Search mail by sender, subject, source, or reply..."
-            : "Search inquiries, owners, source docs, or draft text..."
+            ? isPolish
+              ? "Szukaj poczty po nadawcy, temacie, źródle lub odpowiedzi..."
+              : "Search mail by sender, subject, source, or reply..."
+            : isPolish
+              ? "Szukaj zgłoszeń, właścicieli, dokumentów źródłowych lub tekstu szkicu..."
+              : "Search inquiries, owners, source docs, or draft text..."
         }
       />
 
@@ -627,7 +705,9 @@ export function MailboxView({
                 {title}
               </h2>
               <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-500">
-                Open a message to review the original inquiry and the suggested reply.
+                {isPolish
+                  ? "Otwórz wiadomość, aby przejrzeć oryginalne zapytanie i sugerowaną odpowiedź."
+                  : "Open a message to review the original inquiry and the suggested reply."}
               </p>
             </div>
 
@@ -645,20 +725,22 @@ export function MailboxView({
                     : "inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-400"
                 }
               >
-                Clear Search
+                {isPolish ? "Wyczyść wyszukiwanie" : "Clear Search"}
               </button>
             </div>
           </div>
 
           {showHiddenQueueFiltersNotice ? (
             <div className="mb-4 rounded-[24px] border border-[#DCE1FF] bg-[#F5F6FF] px-4 py-3 text-sm text-slate-600 shadow-[0_14px_32px_rgba(143,155,181,0.1)]">
-              Showing a filtered inbox slice for {assignmentLabel} in {departmentLabel}.{" "}
+              {isPolish
+                ? `Pokazujemy przefiltrowany wycinek skrzynki dla ${assignmentLabel} w ${departmentLabel}. `
+                : `Showing a filtered inbox slice for ${assignmentLabel} in ${departmentLabel}. `}
               <Link
                 href={buildResetMailboxFiltersHref()}
                 scroll={false}
                 className="font-semibold text-[#4F57E8] transition hover:text-[#3139D2]"
               >
-                Show full inbox
+                {isPolish ? "Pokaż pełną skrzynkę" : "Show full inbox"}
               </Link>
             </div>
           ) : null}
@@ -669,7 +751,7 @@ export function MailboxView({
               selectedId={selectedEmail?.id ?? ""}
               onSelect={setSelectedId}
               emptyActionHref="/dashboard/compose"
-              emptyActionLabel="Compose New Case"
+              emptyActionLabel={isPolish ? "Utwórz nową sprawę" : "Compose New Case"}
               emptyMessage={resolvedEmptyMessage}
             />
             <InboxEmailDetailPanel
@@ -711,10 +793,12 @@ export function MailboxView({
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                  Queue Filters
+                  {isPolish ? "Filtry kolejki" : "Queue Filters"}
                 </p>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Review the right slice of the queue by combining owner filters with the shared mailbox search.
+                  {isPolish
+                    ? "Przeglądaj właściwy wycinek kolejki, łącząc filtry właścicieli ze wspólnym wyszukiwaniem skrzynki."
+                    : "Review the right slice of the queue by combining owner filters with the shared mailbox search."}
                 </p>
               </div>
 
@@ -728,7 +812,7 @@ export function MailboxView({
                     : "inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-400"
                 }
               >
-                Clear Search
+                {isPolish ? "Wyczyść wyszukiwanie" : "Clear Search"}
               </button>
             </div>
 
@@ -747,7 +831,7 @@ export function MailboxView({
                         : "border border-white/80 bg-white/70 text-slate-500 hover:bg-white hover:text-[#4F57E8]"
                     }`}
                   >
-                    {getStaffAssignmentFilterLabel(ownerFilter)}
+                    {getStaffAssignmentFilterLabel(ownerFilter, preferences.language)}
                   </Link>
                 );
               })}
@@ -768,7 +852,10 @@ export function MailboxView({
                         : "border border-white/80 bg-white/70 text-slate-500 hover:bg-white hover:text-[#4F57E8]"
                     }`}
                   >
-                    {getDepartmentFilterLabel(nextDepartmentFilter)}
+                    {getDepartmentFilterLabel(
+                      nextDepartmentFilter,
+                      preferences.language
+                    )}
                   </Link>
                 );
               })}
@@ -777,7 +864,7 @@ export function MailboxView({
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
               <div className="rounded-[22px] border border-white/75 bg-white/62 px-4 py-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                  Owner View
+                  {isPolish ? "Widok właściciela" : "Owner View"}
                 </p>
                 <p className="mt-2 text-lg font-semibold text-[#1E2340]">
                   {assignmentLabel}
@@ -785,7 +872,7 @@ export function MailboxView({
               </div>
               <div className="rounded-[22px] border border-white/75 bg-white/62 px-4 py-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                  Department Focus
+                  {isPolish ? "Fokus działu" : "Department Focus"}
                 </p>
                 <p className="mt-2 text-lg font-semibold text-[#1E2340]">
                   {departmentLabel}
@@ -793,7 +880,7 @@ export function MailboxView({
               </div>
               <div className="rounded-[22px] border border-white/75 bg-white/62 px-4 py-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                  Visible Cases
+                  {isPolish ? "Widoczne sprawy" : "Visible Cases"}
                 </p>
                 <p className="mt-2 text-lg font-semibold text-[#1E2340]">
                   {visibleEmails.length}
@@ -803,12 +890,20 @@ export function MailboxView({
 
             <p className="mt-4 text-sm text-slate-500">
               {assignmentFilter === defaultStaffAssignmentFilter && departmentFilter === "All"
-                ? "Showing every owner across every department in the current queue."
+                ? isPolish
+                  ? "Pokazujemy każdego właściciela we wszystkich działach bieżącej kolejki."
+                  : "Showing every owner across every department in the current queue."
                 : assignmentFilter === "Unassigned" && departmentFilter === "All"
-                  ? "Showing only messages that still need an owner, regardless of department."
+                  ? isPolish
+                    ? "Pokazujemy tylko wiadomości, które nadal potrzebują właściciela, niezależnie od działu."
+                    : "Showing only messages that still need an owner, regardless of department."
                   : assignmentFilter === defaultStaffAssignmentFilter
-                    ? `Showing every owner inside the ${departmentLabel} workflow.`
-                    : `Showing ${departmentLabel} messages currently owned by ${assignmentLabel}.`}
+                    ? isPolish
+                      ? `Pokazujemy wszystkich właścicieli w przepływie ${departmentLabel}.`
+                      : `Showing every owner inside the ${departmentLabel} workflow.`
+                    : isPolish
+                      ? `Pokazujemy wiadomości ${departmentLabel}, które są obecnie własnością ${assignmentLabel}.`
+                      : `Showing ${departmentLabel} messages currently owned by ${assignmentLabel}.`}
             </p>
           </section>
 

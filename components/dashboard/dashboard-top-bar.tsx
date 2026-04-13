@@ -7,6 +7,7 @@ import {
   DashboardIcon,
   dashboardInputClassName,
 } from "@/components/dashboard/dashboard-chrome";
+import { useUserPreferences } from "@/components/dashboard/user-preferences-provider";
 import { dashboardCurrentUser } from "@/lib/dashboard";
 
 export function DashboardTopBar({
@@ -20,6 +21,14 @@ export function DashboardTopBar({
   onSearchChange?: (value: string) => void;
   searchPlaceholder?: string;
 }>) {
+  const { preferences } = useUserPreferences();
+  const openSettingsLabel =
+    preferences.language === "Polish" ? "Otwórz ustawienia" : "Open settings";
+  const roleLabel =
+    preferences.language === "Polish"
+      ? "Właściciel prototypu"
+      : dashboardCurrentUser.role;
+
   return (
     <div className="mb-7 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div className="min-w-0 flex-1">
@@ -53,7 +62,7 @@ export function DashboardTopBar({
         <Link
           href="/dashboard/settings"
           className="grid h-12 w-12 place-items-center rounded-full border border-white/80 bg-white/78 text-slate-500 shadow-[0_14px_36px_rgba(140,153,179,0.16)] transition hover:bg-white hover:text-[#5C61FF]"
-          aria-label="Open settings"
+          aria-label={openSettingsLabel}
         >
           <DashboardIcon name="settings" />
         </Link>
@@ -63,7 +72,7 @@ export function DashboardTopBar({
               {dashboardCurrentUser.name}
             </p>
             <p className="text-xs font-medium text-slate-500">
-              {dashboardCurrentUser.role}
+              {roleLabel}
             </p>
           </div>
           <DashboardAvatar

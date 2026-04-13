@@ -12,6 +12,8 @@ import {
   defaultUserPreferences,
   getHtmlLangForLanguage,
   getLocaleForLanguage,
+  sanitizeUserPreferences,
+  userPreferencesLanguageCookie,
   userPreferencesStorageKey,
   type UserPreferences,
 } from "@/lib/user-preferences";
@@ -82,10 +84,7 @@ export function UserPreferencesProvider({
 
       if (storedValue) {
         const parsed = JSON.parse(storedValue) as Partial<UserPreferences>;
-        setPreferences((current) => ({
-          ...current,
-          ...parsed,
-        }));
+        setPreferences(sanitizeUserPreferences(parsed));
       }
     } catch {
       window.localStorage.removeItem(userPreferencesStorageKey);
@@ -114,6 +113,16 @@ export function UserPreferencesProvider({
       JSON.stringify(preferences)
     );
   }, [hasHydrated, preferences]);
+
+  useEffect(() => {
+    if (!hasHydrated || typeof document === "undefined") {
+      return;
+    }
+
+    document.cookie = `${userPreferencesLanguageCookie}=${encodeURIComponent(
+      preferences.language
+    )}; path=/; max-age=31536000; samesite=lax`;
+  }, [hasHydrated, preferences.language]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
