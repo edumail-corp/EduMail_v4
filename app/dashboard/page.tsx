@@ -59,11 +59,19 @@ export default async function DashboardRootPage() {
     : "English";
   const locale = getLocaleForLanguage(language);
   const isPolish = language === "Polish";
-  const [emails, documents, activityEvents] = await Promise.all([
-    listMailboxEmails(),
-    listKnowledgeLibraryDocuments(),
-    listWorkspaceActivity(40),
-  ]);
+  let emails: Awaited<ReturnType<typeof listMailboxEmails>> = [];
+  let documents: Awaited<ReturnType<typeof listKnowledgeLibraryDocuments>> = [];
+  let activityEvents: Awaited<ReturnType<typeof listWorkspaceActivity>> = [];
+
+  try {
+    [emails, documents, activityEvents] = await Promise.all([
+      listMailboxEmails(),
+      listKnowledgeLibraryDocuments(),
+      listWorkspaceActivity(40),
+    ]);
+  } catch (error) {
+    console.error("Failed to load dashboard data. Falling back to empty state.", error);
+  }
 
   const totalMessages = emails.length;
   const draftCount = emails.filter((email) => email.status === "Draft").length;

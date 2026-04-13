@@ -1,36 +1,25 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
   getInitialActivityEvents,
   type ActivityEvent,
   type ActivityEventCreateInput,
 } from "@/lib/activity-log";
+import {
+  readJsonFileWithFallback,
+  writeJsonFileAtomically,
+} from "@/lib/server/json-file-store";
 
 const activityLogPath = path.join(process.cwd(), "data", "activity-log.json");
 
 async function writeActivityEvents(events: ActivityEvent[]) {
-  await writeFile(activityLogPath, `${JSON.stringify(events, null, 2)}\n`, "utf8");
-}
-
-async function ensureActivityLog() {
-  await mkdir(path.dirname(activityLogPath), { recursive: true });
-
-  try {
-    await readFile(activityLogPath, "utf8");
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-      throw error;
-    }
-
-    await writeActivityEvents(getInitialActivityEvents());
-  }
+  await writeJsonFileAtomically(activityLogPath, events);
 }
 
 async function readActivityEvents() {
-  await ensureActivityLog();
-  const fileContents = await readFile(activityLogPath, "utf8");
-  return JSON.parse(fileContents) as ActivityEvent[];
+  return readJsonFileWithFallback<ActivityEvent[]>(activityLogPath, {
+    fallback: getInitialActivityEvents,
+  });
 }
 
 export async function listActivityEvents(limit?: number) {

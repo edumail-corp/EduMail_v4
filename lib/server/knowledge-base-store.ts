@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import { readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
   buildKnowledgeDocumentPreview,
@@ -8,6 +8,12 @@ import {
   type KnowledgeDocument,
 } from "@/lib/knowledge-base-data";
 import { appendActivityEvent } from "@/lib/server/activity-log-store";
+import {
+  ensureDirectory,
+  ensureStoreDirectory,
+  readJsonFileWithFallback,
+  writeJsonFileAtomically,
+} from "@/lib/server/json-file-store";
 
 const knowledgeBaseStorePath = path.join(
   process.cwd(),
@@ -105,48 +111,38 @@ function sanitizeKnowledgeFileName(name: string) {
 
 async function ensureKnowledgeBaseDirectories() {
   await Promise.all([
-    mkdir(path.dirname(knowledgeBaseStorePath), { recursive: true }),
-    mkdir(knowledgeBaseFilesDirectory, { recursive: true }),
+    ensureStoreDirectory(knowledgeBaseStorePath),
+    ensureDirectory(knowledgeBaseFilesDirectory),
   ]);
 }
 
-async function ensureKnowledgeBaseStore() {
-  await ensureKnowledgeBaseDirectories();
-
-  try {
-    await readFile(knowledgeBaseStorePath, "utf8");
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-      throw error;
-    }
-
-    await writeKnowledgeBaseDocuments(getInitialKnowledgeDocuments());
-  }
-}
-
 async function writeKnowledgeBaseDocuments(documents: StoredKnowledgeDocument[]) {
-  await writeFile(
-    knowledgeBaseStorePath,
-    `${JSON.stringify(documents, null, 2)}\n`,
-    "utf8"
-  );
+  await writeJsonFileAtomically(knowledgeBaseStorePath, documents);
 }
 
 export async function listKnowledgeBaseDocuments() {
-  await ensureKnowledgeBaseStore();
-
-  const fileContents = await readFile(knowledgeBaseStorePath, "utf8");
-  const documents = JSON.parse(fileContents) as Partial<StoredKnowledgeDocument>[];
+  const documents = await readJsonFileWithFallback<Partial<StoredKnowledgeDocument>[]>(
+    knowledgeBaseStorePath,
+    {
+      fallback: getInitialKnowledgeDocuments,
+    }
+  );
   return documents.map((document) => toKnowledgeDocument(normalizeStoredDocument(document)));
 }
 
 export async function createKnowledgeBaseDocument(
   input: CreateKnowledgeBaseStoredDocumentInput
 ) {
-  await ensureKnowledgeBaseStore();
+  await ensureKnowledgeBaseDirectories();
 
-  const fileContents = await readFile(knowledgeBaseStorePath, "utf8");
-  const documents = JSON.parse(fileContents) as StoredKnowledgeDocument[];
+  const documents = (
+    await readJsonFileWithFallback<StoredKnowledgeDocument[]>(
+      knowledgeBaseStorePath,
+      {
+        fallback: getInitialKnowledgeDocuments as () => StoredKnowledgeDocument[],
+      }
+    )
+  ).map(normalizeStoredDocument);
   const documentId = `DOC-${randomUUID().slice(0, 8)}`;
   const storedFileName = `${documentId}-${sanitizeKnowledgeFileName(input.name)}`;
 
@@ -184,12 +180,16 @@ export async function createKnowledgeBaseDocument(
 }
 
 export async function deleteKnowledgeBaseDocument(id: string) {
-  await ensureKnowledgeBaseStore();
+  await ensureKnowledgeBaseDirectories();
 
-  const fileContents = await readFile(knowledgeBaseStorePath, "utf8");
-  const documents = (JSON.parse(fileContents) as Partial<StoredKnowledgeDocument>[]).map(
-    normalizeStoredDocument
-  );
+  const documents = (
+    await readJsonFileWithFallback<Partial<StoredKnowledgeDocument>[]>(
+      knowledgeBaseStorePath,
+      {
+        fallback: getInitialKnowledgeDocuments,
+      }
+    )
+  ).map(normalizeStoredDocument);
   const documentToDelete = documents.find((document) => document.id === id);
   const nextDocuments = documents.filter((document) => document.id !== id);
 
@@ -224,12 +224,16 @@ export async function deleteKnowledgeBaseDocument(id: string) {
 }
 
 export async function getKnowledgeBaseDocumentFile(id: string) {
-  await ensureKnowledgeBaseStore();
+  await ensureKnowledgeBaseDirectories();
 
-  const fileContents = await readFile(knowledgeBaseStorePath, "utf8");
-  const documents = (JSON.parse(fileContents) as Partial<StoredKnowledgeDocument>[]).map(
-    normalizeStoredDocument
-  );
+  const documents = (
+    await readJsonFileWithFallback<Partial<StoredKnowledgeDocument>[]>(
+      knowledgeBaseStorePath,
+      {
+        fallback: getInitialKnowledgeDocuments,
+      }
+    )
+  ).map(normalizeStoredDocument);
   const document = documents.find((candidate) => candidate.id === id);
 
   if (!document?.storedFileName) {

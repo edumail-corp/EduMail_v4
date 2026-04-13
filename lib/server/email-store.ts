@@ -1,4 +1,3 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
   filterEmails,
@@ -19,6 +18,10 @@ import {
   type StaffEmailUpdateInput,
 } from "@/lib/email-data";
 import { appendActivityEvent } from "@/lib/server/activity-log-store";
+import {
+  readJsonFileWithFallback,
+  writeJsonFileAtomically,
+} from "@/lib/server/json-file-store";
 
 const emailStorePath = path.join(process.cwd(), "data", "staff-emails.json");
 const seedEmailMap = new Map(
@@ -257,27 +260,16 @@ function getEmailActivityDescription(previousEmail: StaffEmail, nextEmail: Staff
 }
 
 async function writeStaffEmails(emails: StaffEmail[]) {
-  await writeFile(emailStorePath, `${JSON.stringify(emails, null, 2)}\n`, "utf8");
-}
-
-async function ensureEmailStore() {
-  await mkdir(path.dirname(emailStorePath), { recursive: true });
-
-  try {
-    await readFile(emailStorePath, "utf8");
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-      throw error;
-    }
-
-    await writeStaffEmails(getInitialStaffEmails());
-  }
+  await writeJsonFileAtomically(emailStorePath, emails);
 }
 
 async function readStaffEmails() {
-  await ensureEmailStore();
-  const fileContents = await readFile(emailStorePath, "utf8");
-  const emails = JSON.parse(fileContents) as Partial<StaffEmail>[];
+  const emails = await readJsonFileWithFallback<Partial<StaffEmail>[]>(
+    emailStorePath,
+    {
+      fallback: getInitialStaffEmails,
+    }
+  );
   return emails.map(normalizeStoredEmail);
 }
 
