@@ -6,13 +6,13 @@ import {
   dashboardPrimaryButtonClassName,
   dashboardSecondaryButtonClassName,
 } from "@/components/dashboard/dashboard-chrome";
+import { useUserPreferences } from "@/components/dashboard/user-preferences-provider";
 import {
   EmailCategoryBadge,
   EmailStatusBadge,
 } from "@/components/dashboard/email-badges";
 import {
   approvalStateClasses,
-  formatEmailDate,
   groundingStrengthClasses,
 } from "@/lib/dashboard";
 import {
@@ -119,6 +119,8 @@ export function InboxEmailDetailPanel({
   onSaveNote?: () => void;
   isSavingNote?: boolean;
 }>) {
+  const { formatDateTime } = useUserPreferences();
+
   if (!email) {
     return (
       <section
@@ -222,9 +224,9 @@ export function InboxEmailDetailPanel({
   const saveNoteLabel = isSavingNote ? "Saving..." : "Save Note";
   const replyDateLabel = isAlreadySent ? "Reply sent" : "Reply generated";
   const replyDateValue = replyEntry
-    ? formatEmailDate(replyEntry.sentAt)
+    ? formatDateTime(replyEntry.sentAt)
     : hasDraft
-      ? formatEmailDate(email.lastUpdatedAt)
+      ? formatDateTime(email.lastUpdatedAt)
       : "Not available";
 
   return (
@@ -252,7 +254,7 @@ export function InboxEmailDetailPanel({
 
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-white/82 px-3 py-1.5 text-xs font-semibold text-slate-500 shadow-[0_12px_24px_rgba(144,156,182,0.12)]">
-              {formatEmailDate(email.receivedAt)}
+              {formatDateTime(email.receivedAt)}
             </span>
             <EmailCategoryBadge category={department} />
             <EmailStatusBadge status={email.status} />

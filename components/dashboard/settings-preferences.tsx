@@ -1,39 +1,19 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
 import {
   dashboardGhostButtonClassName,
   dashboardPanelClassName,
   dashboardPrimaryButtonClassName,
 } from "@/components/dashboard/dashboard-chrome";
-
-type ThemePreference = "light" | "system" | "dark";
-type LanguagePreference = "English" | "Polish" | "Spanish";
-type TimeFormatPreference = "12h" | "24h";
-type InboxDensityPreference = "comfortable" | "compact";
-
-type UserPreferences = {
-  theme: ThemePreference;
-  language: LanguagePreference;
-  timeFormat: TimeFormatPreference;
-  inboxDensity: InboxDensityPreference;
-  desktopNotifications: boolean;
-  sendConfirmations: boolean;
-};
-
-const preferencesStorageKey = "edumailai.user-preferences";
-
-const defaultPreferences: UserPreferences = {
-  theme: "light",
-  language: "English",
-  timeFormat: "24h",
-  inboxDensity: "comfortable",
-  desktopNotifications: true,
-  sendConfirmations: true,
-};
-
-const languageOptions: LanguagePreference[] = ["English", "Polish", "Spanish"];
+import { useUserPreferences } from "@/components/dashboard/user-preferences-provider";
+import {
+  languageOptions,
+  type InboxDensityPreference,
+  type LanguagePreference,
+  type ThemePreference,
+  type TimeFormatPreference,
+} from "@/lib/user-preferences";
 const themeOptions: Array<{ value: ThemePreference; label: string }> = [
   { value: "light", label: "Light" },
   { value: "system", label: "System" },
@@ -52,23 +32,6 @@ const densityOptions: Array<{ value: InboxDensityPreference; label: string; hint
       hint: "Tighter message rows for denser inbox browsing.",
     },
   ];
-
-function applyThemePreference(theme: ThemePreference) {
-  if (typeof document === "undefined") {
-    return;
-  }
-
-  const root = document.documentElement;
-  const prefersDark =
-    typeof window !== "undefined" &&
-    window.matchMedia?.("(prefers-color-scheme: dark)").matches;
-  const resolvedTheme =
-    theme === "system" ? (prefersDark ? "dark" : "light") : theme;
-
-  root.dataset.themePreference = theme;
-  root.style.colorScheme = resolvedTheme;
-  root.classList.toggle("dark", resolvedTheme === "dark");
-}
 
 function PreferencesCard({
   eyebrow,
@@ -133,66 +96,20 @@ function PreferenceToggle({
 }
 
 export function SettingsPreferences() {
-  const [preferences, setPreferences] =
-    useState<UserPreferences>(defaultPreferences);
-  const [hasHydrated, setHasHydrated] = useState(false);
-
-  useEffect(() => {
-    try {
-      const storedValue = window.localStorage.getItem(preferencesStorageKey);
-
-      if (storedValue) {
-        const parsed = JSON.parse(storedValue) as Partial<UserPreferences>;
-        setPreferences((current) => ({
-          ...current,
-          ...parsed,
-        }));
-      }
-    } catch {
-      window.localStorage.removeItem(preferencesStorageKey);
-    } finally {
-      setHasHydrated(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!hasHydrated) {
-      return;
-    }
-
-    window.localStorage.setItem(
-      preferencesStorageKey,
-      JSON.stringify(preferences)
-    );
-    applyThemePreference(preferences.theme);
-  }, [hasHydrated, preferences]);
-
-  useEffect(() => {
-    applyThemePreference(defaultPreferences.theme);
-  }, []);
-
-  function updatePreference<K extends keyof UserPreferences>(
-    key: K,
-    value: UserPreferences[K]
-  ) {
-    setPreferences((current) => ({
-      ...current,
-      [key]: value,
-    }));
-  }
-
-  function resetPreferences() {
-    setPreferences(defaultPreferences);
-    window.localStorage.removeItem(preferencesStorageKey);
-    applyThemePreference(defaultPreferences.theme);
-  }
+  const {
+    hasHydrated,
+    preferences,
+    resetPreferences,
+    resolvedTheme,
+    updatePreference,
+  } = useUserPreferences();
 
   const previewCardClassName =
-    preferences.theme === "dark"
+    resolvedTheme === "dark"
       ? "border-slate-700 bg-[#10172A] text-slate-100"
       : "border-white/75 bg-white/68 text-slate-900";
   const previewMutedClassName =
-    preferences.theme === "dark" ? "text-slate-400" : "text-slate-500";
+    resolvedTheme === "dark" ? "text-slate-400" : "text-slate-500";
 
   return (
     <section className="grid gap-4 xl:grid-cols-[minmax(0,1.08fr)_minmax(320px,0.92fr)]">
@@ -226,7 +143,7 @@ export function SettingsPreferences() {
                 })}
               </div>
               <p className="mt-3 text-sm leading-6 text-slate-500">
-                Dark mode is saved as a local preference for this device.
+                Dark mode now updates the live dashboard theme for this device.
               </p>
             </div>
 
@@ -316,7 +233,7 @@ export function SettingsPreferences() {
           <div className="space-y-3">
             <PreferenceToggle
               label="Desktop notifications"
-              description="Get a local reminder when new cases or escalations need attention."
+              description="Show a browser notification after saves and approvals complete in this workspace."
               checked={preferences.desktopNotifications}
               onChange={(checked) =>
                 updatePreference("desktopNotifications", checked)
@@ -398,6 +315,7 @@ export function SettingsPreferences() {
             <button
               type="button"
               onClick={resetPreferences}
+              disabled={!hasHydrated}
               className={dashboardGhostButtonClassName}
             >
               Reset to Defaults

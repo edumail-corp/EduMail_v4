@@ -1,8 +1,8 @@
 import Link from "next/link";
+import { useUserPreferences } from "@/components/dashboard/user-preferences-provider";
 import {
   approvalStateClasses,
   emailPriorityClasses,
-  formatEmailDate,
   groundingStrengthClasses,
 } from "@/lib/dashboard";
 import {
@@ -44,6 +44,7 @@ export function EmailList({
   emptyActionLabel?: string;
 }>) {
   const queueSnapshot = operationsSnapshot;
+  const { formatDateTime } = useUserPreferences();
 
   return (
     <section className={`${dashboardPanelClassName} overflow-hidden p-5 md:p-6`}>
@@ -117,7 +118,7 @@ export function EmailList({
                     </div>
                   </div>
                   <span className="shrink-0 rounded-full bg-white/82 px-3 py-1.5 text-xs font-semibold text-slate-400 shadow-[0_12px_24px_rgba(144,156,182,0.12)]">
-                    {formatEmailDate(email.receivedAt)}
+                    {formatDateTime(email.receivedAt)}
                   </span>
                 </div>
 
@@ -193,7 +194,7 @@ export function EmailList({
                         : "Unassigned"}
                     </span>
                     <span className="text-slate-300">•</span>
-                    <span>Updated {formatEmailDate(email.lastUpdatedAt)}</span>
+                    <span>Updated {formatDateTime(email.lastUpdatedAt)}</span>
                     <span className="text-slate-300">•</span>
                     <span>{citationMetaLabel}</span>
                     {assignmentRecommendation ? (

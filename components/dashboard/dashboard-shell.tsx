@@ -11,6 +11,7 @@ import {
   dashboardSubtlePanelClassName,
   dashboardGhostButtonClassName,
 } from "@/components/dashboard/dashboard-chrome";
+import { useUserPreferences } from "@/components/dashboard/user-preferences-provider";
 import { dashboardCurrentUser, dashboardNavItems } from "@/lib/dashboard";
 
 export function DashboardShell({
@@ -20,9 +21,46 @@ export function DashboardShell({
 }>) {
   const pathname = usePathname();
   const isComposePage = pathname === "/dashboard/compose";
+  const { preferences } = useUserPreferences();
+  const composeLabel = preferences.language === "Polish"
+    ? "Nowa wiadomosc"
+    : preferences.language === "Spanish"
+      ? "Nuevo mensaje"
+      : "Compose New";
+  const localPrototypeLabel = preferences.language === "Polish"
+    ? "Lokalny prototyp"
+    : preferences.language === "Spanish"
+      ? "Prototipo local"
+      : "Local Prototype";
+  const localPrototypeDescription = preferences.language === "Polish"
+    ? "Skrzynka, decyzje i dokumenty dzialaja lokalnie, a produkt pozostaje niezalezny od dostawcy."
+    : preferences.language === "Spanish"
+      ? "El buzón, las decisiones y los documentos funcionan localmente mientras el producto sigue siendo agnóstico al proveedor."
+      : "Mailbox decisions, new-case intake, and document uploads persist locally while the product stays provider-agnostic.";
+  const localPrototypeAction = preferences.language === "Polish"
+    ? "Otworz ustawienia"
+    : preferences.language === "Spanish"
+      ? "Abrir ajustes"
+      : "Open Settings";
+  const navLabelOverrides: Record<string, string> =
+    preferences.language === "Polish"
+      ? {
+          Dashboard: "Panel",
+          Inbox: "Skrzynka",
+          "Knowledge Base": "Baza wiedzy",
+          Settings: "Ustawienia",
+        }
+      : preferences.language === "Spanish"
+        ? {
+            Dashboard: "Panel",
+            Inbox: "Bandeja",
+            "Knowledge Base": "Base de conocimiento",
+            Settings: "Ajustes",
+          }
+        : {};
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(120,129,255,0.22),_transparent_24%),radial-gradient(circle_at_top_right,_rgba(179,221,255,0.35),_transparent_28%),linear-gradient(180deg,#eef2fb_0%,#f5f7fd_44%,#f7f8fd_100%)] text-slate-900">
+    <div className="dashboard-shell min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(120,129,255,0.22),_transparent_24%),radial-gradient(circle_at_top_right,_rgba(179,221,255,0.35),_transparent_28%),linear-gradient(180deg,#eef2fb_0%,#f5f7fd_44%,#f7f8fd_100%)] text-slate-900">
       <div className="mx-auto flex min-h-screen max-w-[1720px] flex-col gap-4 px-3 py-3 lg:flex-row lg:px-5 lg:py-5">
         <aside className="w-full shrink-0 lg:sticky lg:top-5 lg:h-[calc(100vh-2.5rem)] lg:w-[292px]">
           <div
@@ -58,7 +96,7 @@ export function DashboardShell({
                   }`}
                 >
                   <DashboardIcon name="compose" className="h-[18px] w-[18px]" />
-                  Compose New
+                  {composeLabel}
                 </Link>
               </div>
 
@@ -87,7 +125,9 @@ export function DashboardShell({
                         >
                           <DashboardIcon name={item.icon} className="h-[18px] w-[18px]" />
                         </span>
-                        <span className="truncate">{item.label}</span>
+                        <span className="truncate">
+                          {navLabelOverrides[item.label] ?? item.label}
+                        </span>
                       </span>
                       <span
                         className={`ml-3 shrink-0 text-[10px] uppercase tracking-[0.22em] ${
@@ -103,16 +143,16 @@ export function DashboardShell({
 
               <div className={`${dashboardSubtlePanelClassName} mt-5 px-4 py-4`}>
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                  Local Prototype
+                  {localPrototypeLabel}
                 </p>
                 <p className="mt-3 text-sm leading-6 text-slate-600">
-                  Mailbox decisions, new-case intake, and document uploads persist locally while the product stays provider-agnostic.
+                  {localPrototypeDescription}
                 </p>
                 <Link
                   href="/dashboard/settings"
                   className={`${dashboardGhostButtonClassName} mt-4 w-full`}
                 >
-                  View Readiness
+                  {localPrototypeAction}
                 </Link>
               </div>
             </div>
@@ -140,7 +180,7 @@ export function DashboardShell({
         </aside>
 
         <main className="min-w-0 flex-1">
-          <div className="min-h-full rounded-[36px] border border-white/55 bg-white/22 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.38)] sm:px-5 sm:py-5 lg:min-h-[calc(100vh-2.5rem)] lg:px-6 lg:py-6">
+          <div className="dashboard-main-surface min-h-full rounded-[36px] border border-white/55 bg-white/22 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.38)] sm:px-5 sm:py-5 lg:min-h-[calc(100vh-2.5rem)] lg:px-6 lg:py-6">
             {children}
           </div>
         </main>

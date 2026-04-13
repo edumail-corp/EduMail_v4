@@ -9,6 +9,7 @@ import {
   dashboardPanelClassName,
   dashboardSecondaryButtonClassName,
 } from "@/components/dashboard/dashboard-chrome";
+import { useUserPreferences } from "@/components/dashboard/user-preferences-provider";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { DashboardTopBar } from "@/components/dashboard/dashboard-top-bar";
 import {
@@ -70,7 +71,7 @@ function getEventSourceLabel(event: ActivityEvent) {
   return event.entityType === "document" ? "Knowledge Base" : "EduMailAI";
 }
 
-function getLastSevenSnapshots(anchorIso: string) {
+function getLastSevenSnapshots(anchorIso: string, locale: string) {
   const anchor = new Date(anchorIso);
 
   return Array.from({ length: 7 }, (_, index) => {
@@ -79,7 +80,7 @@ function getLastSevenSnapshots(anchorIso: string) {
 
     return {
       key: date.toISOString().slice(0, 10),
-      label: date.toLocaleDateString(undefined, { weekday: "short" }),
+      label: date.toLocaleDateString(locale, { weekday: "short" }),
     };
   });
 }
@@ -91,6 +92,7 @@ export function ActivityLogView({
   events: ActivityEvent[];
   emails: StaffEmail[];
 }>) {
+  const { locale, preferences } = useUserPreferences();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
@@ -110,7 +112,7 @@ export function ActivityLogView({
     matchesActivitySearch(event, normalizedSearchQuery)
   );
   const latestTimestamp = events[0]?.timestamp ?? new Date().toISOString();
-  const weeklySnapshots = getLastSevenSnapshots(latestTimestamp);
+  const weeklySnapshots = getLastSevenSnapshots(latestTimestamp, locale);
   const weeklySeries = weeklySnapshots.map((snapshot) => ({
     ...snapshot,
     count: events.filter((event) => event.timestamp.slice(0, 10) === snapshot.key).length,
@@ -450,7 +452,10 @@ export function ActivityLogView({
                               {activityActionMeta[event.action].label}
                             </span>
                             <span className="text-xs font-medium text-slate-400">
-                              {formatActivityTimestamp(event.timestamp)}
+                              {formatActivityTimestamp(event.timestamp, {
+                                locale,
+                                timeFormat: preferences.timeFormat,
+                              })}
                             </span>
                           </div>
                         </div>

@@ -6,6 +6,7 @@ import type {
   GroundingStrength,
   WorkloadPressure,
 } from "@/lib/email-data";
+import type { TimeFormatPreference } from "@/lib/user-preferences";
 
 export const dashboardNavItems = [
   { label: "Dashboard", shortLabel: "Home", href: "/dashboard", icon: "overview" },
@@ -68,17 +69,32 @@ export const workloadPressureClasses: Record<WorkloadPressure, string> = {
   Overloaded: "bg-[#FFE9EE] text-[#D43D63]",
 };
 
-export function formatEmailDate(iso: string) {
-  return new Date(iso).toLocaleString(undefined, {
+export function formatEmailDate(
+  iso: string,
+  options?: Readonly<{
+    locale?: string;
+    timeFormat?: TimeFormatPreference;
+  }>
+) {
+  return new Date(iso).toLocaleString(options?.locale, {
     month: "short",
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    hour12:
+      options?.timeFormat === undefined
+        ? undefined
+        : options.timeFormat === "12h",
   });
 }
 
-export function formatEmailDay(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
+export function formatEmailDay(
+  iso: string,
+  options?: Readonly<{
+    locale?: string;
+  }>
+) {
+  return new Date(iso).toLocaleDateString(options?.locale, {
     month: "short",
     day: "2-digit",
     year: "numeric",

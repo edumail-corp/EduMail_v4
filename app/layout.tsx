@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { UserPreferencesProvider } from "@/components/dashboard/user-preferences-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -19,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full antialiased" suppressHydrationWarning>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        {children}
+        <UserPreferencesProvider>{children}</UserPreferencesProvider>
       </body>
     </html>
   );

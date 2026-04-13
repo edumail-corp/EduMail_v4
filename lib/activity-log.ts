@@ -8,6 +8,8 @@ export type ActivityAction =
   | "document_deleted";
 export type ActivityFilter = "All" | ActivityAction;
 
+import type { TimeFormatPreference } from "@/lib/user-preferences";
+
 export type ActivityEvent = {
   id: string;
   timestamp: string;
@@ -83,11 +85,21 @@ export function getInitialActivityEvents() {
   return [] as ActivityEvent[];
 }
 
-export function formatActivityTimestamp(iso: string) {
-  return new Date(iso).toLocaleString(undefined, {
+export function formatActivityTimestamp(
+  iso: string,
+  options?: Readonly<{
+    locale?: string;
+    timeFormat?: TimeFormatPreference;
+  }>
+) {
+  return new Date(iso).toLocaleString(options?.locale, {
     month: "short",
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    hour12:
+      options?.timeFormat === undefined
+        ? undefined
+        : options.timeFormat === "12h",
   });
 }

@@ -24,22 +24,22 @@ export type DashboardIconName =
   | "mail";
 
 export const dashboardPanelClassName =
-  "rounded-[30px] border border-white/75 bg-white/76 shadow-[0_24px_70px_rgba(137,152,181,0.18)] backdrop-blur-xl";
+  "dashboard-panel rounded-[30px] border border-white/75 bg-white/76 shadow-[0_24px_70px_rgba(137,152,181,0.18)] backdrop-blur-xl";
 
 export const dashboardSubtlePanelClassName =
-  "rounded-[24px] border border-white/70 bg-white/58 shadow-[0_16px_40px_rgba(141,156,186,0.12)] backdrop-blur-xl";
+  "dashboard-subtle-panel rounded-[24px] border border-white/70 bg-white/58 shadow-[0_16px_40px_rgba(141,156,186,0.12)] backdrop-blur-xl";
 
 export const dashboardInputClassName =
-  "w-full rounded-full border border-white/75 bg-white/86 px-5 py-3.5 text-sm text-slate-700 shadow-[0_14px_38px_rgba(140,153,179,0.16)] outline-none transition placeholder:text-slate-400 focus:border-[#6A6CFF]/35 focus:bg-white";
+  "dashboard-input w-full rounded-full border border-white/75 bg-white/86 px-5 py-3.5 text-sm text-slate-700 shadow-[0_14px_38px_rgba(140,153,179,0.16)] outline-none transition placeholder:text-slate-400 focus:border-[#6A6CFF]/35 focus:bg-white";
 
 export const dashboardPrimaryButtonClassName =
-  "inline-flex items-center justify-center rounded-full bg-[#5C61FF] px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(92,97,255,0.28)] transition hover:bg-[#4E54F6]";
+  "dashboard-primary-button inline-flex items-center justify-center rounded-full bg-[#5C61FF] px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(92,97,255,0.28)] transition hover:bg-[#4E54F6]";
 
 export const dashboardSecondaryButtonClassName =
-  "inline-flex items-center justify-center rounded-full border border-white/80 bg-white/82 px-5 py-3 text-sm font-semibold text-[#4F57E8] shadow-[0_14px_38px_rgba(141,156,186,0.14)] transition hover:bg-white";
+  "dashboard-secondary-button inline-flex items-center justify-center rounded-full border border-white/80 bg-white/82 px-5 py-3 text-sm font-semibold text-[#4F57E8] shadow-[0_14px_38px_rgba(141,156,186,0.14)] transition hover:bg-white";
 
 export const dashboardGhostButtonClassName =
-  "inline-flex items-center justify-center rounded-full border border-[#5C61FF]/12 bg-[#F3F4FF] px-4 py-2.5 text-sm font-semibold text-[#4F57E8] transition hover:bg-[#ECEEFF]";
+  "dashboard-ghost-button inline-flex items-center justify-center rounded-full border border-[#5C61FF]/12 bg-[#F3F4FF] px-4 py-2.5 text-sm font-semibold text-[#4F57E8] transition hover:bg-[#ECEEFF]";
 
 function joinClasses(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { useUserPreferences } from "@/components/dashboard/user-preferences-provider";
 import {
   assessEmailGrounding,
   type AssignmentRecommendation,
@@ -24,8 +25,6 @@ import { EmailStatusBadge } from "@/components/dashboard/email-badges";
 import {
   approvalStateClasses,
   emailPriorityClasses,
-  formatEmailDate,
-  formatEmailDay,
   groundingStrengthClasses,
   workloadPressureClasses,
 } from "@/lib/dashboard";
@@ -123,6 +122,8 @@ export function EmailDetailPanel({
   onSaveNote?: () => void;
   isSavingNote?: boolean;
 }>) {
+  const { formatDateTime, formatDay } = useUserPreferences();
+
   if (!email) {
     return (
       <section className={`${dashboardPanelClassName} border-dashed p-10 text-center text-sm text-slate-500`}>
@@ -337,10 +338,10 @@ export function EmailDetailPanel({
               Received
             </p>
             <p className="mt-2 text-sm font-semibold text-slate-900">
-              {formatEmailDay(email.receivedAt)}
+              {formatDay(email.receivedAt)}
             </p>
             <p className="mt-1 text-xs text-slate-500">
-              {formatEmailDate(email.receivedAt)}
+              {formatDateTime(email.receivedAt)}
             </p>
           </div>
 
@@ -349,10 +350,10 @@ export function EmailDetailPanel({
               Last Updated
             </p>
             <p className="mt-2 text-sm font-semibold text-slate-900">
-              {formatEmailDay(email.lastUpdatedAt)}
+              {formatDay(email.lastUpdatedAt)}
             </p>
             <p className="mt-1 text-xs text-slate-500">
-              {formatEmailDate(email.lastUpdatedAt)}
+              {formatDateTime(email.lastUpdatedAt)}
             </p>
           </div>
 
@@ -721,7 +722,7 @@ export function EmailDetailPanel({
                     </p>
                   </div>
                   <span className="text-xs font-medium text-slate-500">
-                    {formatEmailDate(entry.sentAt)}
+                    {formatDateTime(entry.sentAt)}
                   </span>
                 </div>
                 <p className="mt-3 whitespace-pre-line text-sm leading-6 text-slate-700">

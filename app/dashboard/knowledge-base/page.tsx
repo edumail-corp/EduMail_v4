@@ -20,9 +20,9 @@ import {
 } from "@/components/dashboard/dashboard-chrome";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { DashboardTopBar } from "@/components/dashboard/dashboard-top-bar";
+import { useUserPreferences } from "@/components/dashboard/user-preferences-provider";
 import {
   approvalStateClasses,
-  formatEmailDate,
   groundingStrengthClasses,
 } from "@/lib/dashboard";
 import {
@@ -113,6 +113,7 @@ function getUniqueLinkedCases(documents: KnowledgeDocument[]) {
 }
 
 function KnowledgeBasePageContent() {
+  const { formatDateTime } = useUserPreferences();
   const searchParams = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -837,7 +838,7 @@ function KnowledgeBasePageContent() {
                                 {caseItem.assignee
                                   ? `Owner: ${caseItem.assignee}`
                                   : "Currently unassigned"}{" "}
-                                • Updated {formatEmailDate(caseItem.updatedAt)}
+                                • Updated {formatDateTime(caseItem.updatedAt)}
                               </p>
                             </div>
                           ))}

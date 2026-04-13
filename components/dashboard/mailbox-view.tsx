@@ -7,6 +7,7 @@ import {
   dashboardGhostButtonClassName,
   dashboardPanelClassName,
 } from "@/components/dashboard/dashboard-chrome";
+import { useUserPreferences } from "@/components/dashboard/user-preferences-provider";
 import { DashboardTopBar } from "@/components/dashboard/dashboard-top-bar";
 import {
   departmentFilterOptions,
@@ -110,6 +111,7 @@ export function MailboxView({
 }>) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { preferences, sendDesktopNotification } = useUserPreferences();
   const [emails, setEmails] = useState<StaffEmail[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -297,6 +299,20 @@ export function MailboxView({
     }
   }, [isEditingNote, selectedEmail?.staffNote]);
 
+  useEffect(() => {
+    if (!preferences.sendConfirmations) {
+      setActionMessage(null);
+    }
+  }, [preferences.sendConfirmations]);
+
+  function publishActionFeedback(title: string, message: string) {
+    if (preferences.sendConfirmations) {
+      setActionMessage(message);
+    }
+
+    sendDesktopNotification(title, message);
+  }
+
   async function handleApprove() {
     if (!selectedEmail || !selectedEmail.aiDraft || selectedEmail.status === "Auto-sent") {
       return;
@@ -332,7 +348,10 @@ export function MailboxView({
           email.id === data.email.id ? data.email : email
         )
       );
-      setActionMessage(`"${data.email.subject}" moved to Auto-sent.`);
+      publishActionFeedback(
+        "Reply approved",
+        `"${data.email.subject}" moved to Auto-sent.`
+      );
     } catch (error) {
       setActionError(
         error instanceof Error ? error.message : "Unable to update the message."
@@ -384,7 +403,8 @@ export function MailboxView({
           email.id === data.email.id ? data.email : email
         )
       );
-      setActionMessage(
+      publishActionFeedback(
+        "Owner updated",
         data.email.assignee
           ? `"${data.email.subject}" is now assigned to ${data.email.assignee}.`
           : `Ownership cleared for "${data.email.subject}".`
@@ -461,7 +481,8 @@ export function MailboxView({
         )
       );
       setIsEditingDraft(false);
-      setActionMessage(
+      publishActionFeedback(
+        "Reply saved",
         selectedEmail.status === "Escalated"
           ? `"${data.email.subject}" now has a saved draft and moved to Draft.`
           : `Draft for "${data.email.subject}" was saved.`
@@ -533,7 +554,8 @@ export function MailboxView({
         )
       );
       setIsEditingNote(false);
-      setActionMessage(
+      publishActionFeedback(
+        "Note updated",
         data.email.staffNote
           ? `Internal note saved for "${data.email.subject}".`
           : `Internal note cleared for "${data.email.subject}".`

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { DashboardAvatar, dashboardPanelClassName } from "@/components/dashboard/dashboard-chrome";
+import { useUserPreferences } from "@/components/dashboard/user-preferences-provider";
 import { EmailStatusBadge } from "@/components/dashboard/email-badges";
-import { formatEmailDate } from "@/lib/dashboard";
 import { getEmailDepartment, type StaffEmail } from "@/lib/email-data";
 
 function getMessagePreview(email: StaffEmail) {
@@ -23,6 +23,9 @@ export function InboxEmailList({
   emptyActionHref?: string;
   emptyActionLabel?: string;
 }>) {
+  const { formatDateTime, preferences } = useUserPreferences();
+  const isCompact = preferences.inboxDensity === "compact";
+
   return (
     <section className={`${dashboardPanelClassName} overflow-hidden`}>
       <div className="flex items-center justify-between border-b border-white/70 px-5 py-4">
@@ -51,7 +54,7 @@ export function InboxEmailList({
         </div>
       ) : (
         <div className="max-h-[calc(100vh-15rem)] overflow-y-auto px-3 py-3">
-          <div className="space-y-2.5">
+          <div className={isCompact ? "space-y-2" : "space-y-2.5"}>
             {emails.map((email) => {
               const senderName = email.sender.split(" <")[0] ?? email.sender;
               const isSelected = email.id === selectedId;
@@ -63,7 +66,9 @@ export function InboxEmailList({
                   key={email.id}
                   type="button"
                   onClick={() => onSelect(email.id)}
-                  className={`w-full rounded-[24px] border px-4 py-4 text-left transition ${
+                  className={`w-full rounded-[24px] border px-4 text-left transition ${
+                    isCompact ? "py-3" : "py-4"
+                  } ${
                     isSelected
                       ? "border-[#C7CEFF] bg-[#F7F8FF] shadow-[0_18px_42px_rgba(120,129,255,0.16)]"
                       : "border-transparent bg-white/68 hover:border-white/80 hover:bg-white"
@@ -86,15 +91,19 @@ export function InboxEmailList({
                           </p>
                         </div>
                         <span className="shrink-0 text-xs font-medium text-slate-400">
-                          {formatEmailDate(email.receivedAt)}
+                          {formatDateTime(email.receivedAt)}
                         </span>
                       </div>
 
-                      <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-500">
+                      <p
+                        className={`mt-2 text-sm text-slate-500 ${
+                          isCompact ? "line-clamp-1 leading-5" : "line-clamp-2 leading-6"
+                        }`}
+                      >
                         {getMessagePreview(email)}
                       </p>
 
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <div className={`flex flex-wrap items-center gap-2 ${isCompact ? "mt-2" : "mt-3"}`}>
                         <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
                           {department}
                         </span>
