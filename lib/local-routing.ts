@@ -1,6 +1,5 @@
 import type {
   Department,
-  EmailPriority,
   RoutingConfidence,
   RoutingDecision,
   StaffEmailCreateInput,
