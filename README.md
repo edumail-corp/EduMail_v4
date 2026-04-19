@@ -7,11 +7,12 @@ EduMailAI is a Next.js prototype for a university staff workflow tool. The app h
 - Staff dashboard shell with shared navigation and layout
 - Manual compose flow for creating new local cases
 - Inbox with a single standard mailbox view; escalated cases still appear there without a separate sub-view
-- AI draft detail view with confidence indicators, ownership routing, and staff notes
-- Workflow events still append to the local activity store in the background for audit/export needs
-- Downloadable JSON export of the local activity trail
-- Knowledge Base document library with locally persisted PDF and DOCX uploads plus download support
-- Settings surface for integration readiness, future data model, and manual setup tracking
+- AI draft detail view with confidence indicators, routing context, generated reply support, and staff notes
+- Workflow events still append behind the scenes for audit/export needs
+- Downloadable JSON export of the audit trail
+- Knowledge Base document library with adapter-backed PDF and DOCX uploads, download support, and visible storage details for uploaded files
+- Admin surface focused on staff directory plus data footprint and storage locations
+- Settings surface limited to simple personal preferences such as language, appearance, and notifications
 
 ## App Routes
 
@@ -22,9 +23,10 @@ EduMailAI is a Next.js prototype for a university staff workflow tool. The app h
 - `/dashboard/drafts` - redirects to `/dashboard/inbox` (preserves `emailId` when present)
 - `/dashboard/escalations` - redirects to `/dashboard/inbox` (preserves `emailId` when present)
 - `/dashboard/activity` - redirects to `/dashboard`
+- `/dashboard/admin` - staff directory plus storage footprint and locations
 - `/dashboard/knowledge-base` - knowledge document management
 - `/dashboard/settings` - personal language, appearance, and notification preferences
-- `/api/activity/export` - download the persisted local activity log as JSON
+- `/api/activity/export` - download the persisted audit trail as JSON
 
 ## Local Development
 
@@ -52,9 +54,12 @@ npm run typecheck
 npm run lint
 npm run build
 npm run verify
+npm run verify:adapter-modes
 ```
 
 Note: the production build uses `next/font` with Geist, so it may need network access the first time the build fetches the font files.
+
+`npm run verify:knowledge-base` exercises the real upload, list, download, and delete flow through the current adapter stack. The adapter-mode variant also repeats that workflow against `json_file`, `sqlite`, and the generic `database` mode on an isolated temporary writable root. When `EDUMAILAI_DATABASE_URL` is already configured, the `database` pass uses that live target instead of the SQLite fallback while still forcing knowledge-base file storage to local temp paths for cleanup.
 
 ## Tech Stack
 
@@ -68,7 +73,8 @@ Note: the production build uses `next/font` with Geist, so it may need network a
 - The message, activity, and document data can now persist through `local`, `json_file`, `sqlite`, or the generic `database` adapter mode for mailbox, activity, and knowledge-base metadata.
 - The `database` adapter is driven by `EDUMAILAI_DATABASE_URL` and now supports both SQLite/file paths and PostgreSQL-compatible connection strings such as Supabase.
 - On first boot against an empty Postgres database, EduMailAI seeds mailbox, activity, and knowledge-base metadata from the current local JSON/SQLite sources so the workflow can move over without route or page changes.
-- Knowledge-base binaries can now also move behind a production file-storage adapter, with Supabase Storage support ready once server-side storage credentials are added.
-- This is still a prototype, so there is no real authentication or live external email integration yet, but the persistence layer is now ready to point at a real database and storage service.
-- The current product focus is stabilizing the local review workflow, grounding surfaces, and oversight dashboard before swapping in real providers.
-- The next implementation phase is formalizing swappable adapters for persistence, inbox ingestion, storage, and AI providers without changing the current workflow shape.
+- Knowledge-base binaries can now persist through the file-storage adapter as either local files or Supabase Storage objects, and uploaded cards surface the active provider plus object path in the UI.
+- The current production-ready persistence split is: mailbox/activity/knowledge-base metadata through the database adapter, and knowledge-base binaries through the file-storage adapter.
+- This is still a human-in-the-loop prototype, so there is no real authentication, live inbox sync, or production AI provider yet.
+- The current product focus is keeping the local-first operator workflow stable while hardening persistence, storage transparency, and adapter parity.
+- The next implementation phase is identity and inbox operations first, then a real AI retrieval/drafting adapter behind the existing service layer.

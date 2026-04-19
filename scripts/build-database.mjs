@@ -1,8 +1,12 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
+import nextEnv from "@next/env";
 
 const projectRoot = process.cwd();
 const nextCliPath = path.join(projectRoot, "node_modules", "next", "dist", "bin", "next");
+const { loadEnvConfig } = nextEnv;
+
+loadEnvConfig(projectRoot);
 
 const child = spawn(
   process.execPath,
@@ -16,7 +20,7 @@ const child = spawn(
       EDUMAILAI_KNOWLEDGE_BASE_ADAPTER: "database",
       EDUMAILAI_ACTIVITY_ADAPTER: "database",
       EDUMAILAI_DATABASE_URL:
-        process.env.EDUMAILAI_DATABASE_URL ??
+        process.env.EDUMAILAI_DATABASE_URL?.trim() ||
         "sqlite:edumailai.database.sqlite",
     },
   }

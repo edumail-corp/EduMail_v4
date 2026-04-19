@@ -3,6 +3,7 @@ import type {
   WorkspaceProviderStatus,
   WorkspaceReadinessCategory,
 } from "@/lib/workspace-config";
+import { getConfiguredAdapterBinding } from "@/lib/server/adapters/provider-config";
 import { hasConfiguredSupabaseStorage } from "@/lib/server/adapters/supabase/supabase-config";
 import type { LanguagePreference } from "@/lib/user-preferences";
 
@@ -33,6 +34,18 @@ function getSignalStatus(
   return "manual_required";
 }
 
+function hasOperationalDatabaseAdapterBinding() {
+  return (
+    getConfiguredAdapterBinding("mailbox").activeProvider === "database" &&
+    getConfiguredAdapterBinding("knowledge-base").activeProvider === "database" &&
+    getConfiguredAdapterBinding("activity").activeProvider === "database"
+  );
+}
+
+function hasActiveSupabaseStorageBinding() {
+  return getConfiguredAdapterBinding("file-storage").activeProvider === "supabase_storage";
+}
+
 const environmentSignalDefinitions: readonly EnvironmentSignalDefinition[] = [
   {
     id: "database-contract",
@@ -40,6 +53,12 @@ const environmentSignalDefinitions: readonly EnvironmentSignalDefinition[] = [
     category: "data",
     requiredEnvVars: ["EDUMAILAI_DATABASE_URL"],
     getSummary(configuredEnvVars, language) {
+      if (configuredEnvVars.length > 0 && hasOperationalDatabaseAdapterBinding()) {
+        return language === "Polish"
+          ? "Skrzynka, aktywność i metadane bazy wiedzy działają już przez aktywny adapter database bez zmiany tras ani stron."
+          : "Mailbox, activity, and knowledge-base metadata are already running through the active database adapter without route or page changes.";
+      }
+
       if (configuredEnvVars.length > 0) {
         return language === "Polish"
           ? "Wykryto URL bazy danych. Wspólny adapter database może teraz uruchamiać skrzynkę, aktywność i metadane na SQLite albo PostgreSQL/Supabase bez zmian w trasach."
@@ -51,6 +70,12 @@ const environmentSignalDefinitions: readonly EnvironmentSignalDefinition[] = [
         : "No production database connection is configured yet. Mailbox, activity, and metadata are still running locally.";
     },
     getNextStep(configuredEnvVars, language) {
+      if (configuredEnvVars.length > 0 && hasOperationalDatabaseAdapterBinding()) {
+        return language === "Polish"
+          ? "Utrzymaj parzystość workflow za adapterami, a następnie dołóż auth i prawdziwy ingest inbox bez naruszania warstwy usług."
+          : "Keep workflow parity behind the adapters, then add auth and real inbox ingestion without disturbing the service layer.";
+      }
+
       if (configuredEnvVars.length > 0) {
         return language === "Polish"
           ? "Przełącz odpowiednie adaptery na tryb database, zweryfikuj parzystość workflow i utrzymaj pliki bazy wiedzy na osobnym adapterze storage."
@@ -124,6 +149,12 @@ const environmentSignalDefinitions: readonly EnvironmentSignalDefinition[] = [
     category: "storage",
     requiredEnvVars: ["EDUMAILAI_FILE_STORAGE_BUCKET", "EDUMAILAI_SUPABASE_SERVICE_KEY"],
     getSummary(configuredEnvVars, language) {
+      if (hasConfiguredSupabaseStorage() && hasActiveSupabaseStorageBinding()) {
+        return language === "Polish"
+          ? "Pliki dokumentów bazy wiedzy są już zapisywane przez aktywny adapter Supabase Storage zamiast lokalnego dysku."
+          : "Knowledge-base document files are already being written through the active Supabase Storage adapter instead of the local disk.";
+      }
+
       if (hasConfiguredSupabaseStorage()) {
         return language === "Polish"
           ? "Wykryto bucket i klucz usługowy Supabase. Adapter storage może teraz przenieść pliki bazy wiedzy poza lokalny dysk."
@@ -141,6 +172,12 @@ const environmentSignalDefinitions: readonly EnvironmentSignalDefinition[] = [
         : "Knowledge-base document binaries are still stored on this environment's local disk.";
     },
     getNextStep(configuredEnvVars, language) {
+      if (hasConfiguredSupabaseStorage() && hasActiveSupabaseStorageBinding()) {
+        return language === "Polish"
+          ? "Utrzymaj zweryfikowaną parzystość uploadu, pobierania i usuwania, a potem przenieś pozostałe pliki lokalne, jeśli nadal istnieją."
+          : "Keep upload, download, and delete parity verified, then migrate any remaining local files if they still exist.";
+      }
+
       if (hasConfiguredSupabaseStorage()) {
         return language === "Polish"
           ? "Ustaw EDUMAILAI_FILE_STORAGE_ADAPTER=supabase_storage, zweryfikuj upload/download dokumentów i zaplanuj migrację istniejących plików lokalnych."

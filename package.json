@@ -19,7 +19,12 @@
     "check:architecture": "node scripts/check-architecture.mjs",
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
     "verify": "npm run lint && npm run lint:eslint && npm run check:architecture && npm run typecheck && npm run build",
-    "verify:adapter-modes": "npm run verify && npm run build:json-file && npm run build:sqlite && npm run build:database"
+    "verify:knowledge-base": "node scripts/verify-knowledge-base-workflow.mjs",
+    "verify:knowledge-base:json-file": "cross-env EDUMAILAI_MAILBOX_ADAPTER=json_file EDUMAILAI_KNOWLEDGE_BASE_ADAPTER=json_file EDUMAILAI_ACTIVITY_ADAPTER=json_file EDUMAILAI_FILE_STORAGE_ADAPTER=local node scripts/verify-knowledge-base-workflow.mjs",
+    "verify:knowledge-base:sqlite": "cross-env EDUMAILAI_MAILBOX_ADAPTER=sqlite EDUMAILAI_KNOWLEDGE_BASE_ADAPTER=sqlite EDUMAILAI_ACTIVITY_ADAPTER=sqlite EDUMAILAI_FILE_STORAGE_ADAPTER=local node scripts/verify-knowledge-base-workflow.mjs",
+    "verify:knowledge-base:database": "node scripts/verify-knowledge-base-database.mjs",
+    "verify:knowledge-base:adapters": "npm run verify:knowledge-base:json-file && npm run verify:knowledge-base:sqlite && npm run verify:knowledge-base:database",
+    "verify:adapter-modes": "npm run verify && npm run verify:knowledge-base:adapters && npm run build:json-file && npm run build:sqlite && npm run build:database"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.103.3",
