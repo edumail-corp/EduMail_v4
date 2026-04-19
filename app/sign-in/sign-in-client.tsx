@@ -11,11 +11,48 @@ import {
 } from "@/components/dashboard/dashboard-chrome";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser-client";
 import { useUserPreferences } from "@/components/dashboard/user-preferences-provider";
+import { translateWorkspaceRole, type WorkspaceRole } from "@/lib/workspace-config";
 
 type SignInErrorCode =
   | "auth-failed"
   | "not-authorized"
   | "config-missing";
+
+type WorkspaceOAuthProvider = "google" | "azure";
+type DevelopmentAccessUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: WorkspaceRole;
+};
+
+type SsoProviderDefinition = {
+  provider: WorkspaceOAuthProvider;
+  className: string;
+  label: {
+    English: string;
+    Polish: string;
+  };
+};
+
+const ssoProviderDefinitions: readonly SsoProviderDefinition[] = [
+  {
+    provider: "google",
+    className: dashboardPrimaryButtonClassName,
+    label: {
+      English: "Google",
+      Polish: "Google",
+    },
+  },
+  {
+    provider: "azure",
+    className: dashboardSecondaryButtonClassName,
+    label: {
+      English: "Microsoft",
+      Polish: "Microsoft",
+    },
+  },
+] as const;
 
 function getErrorMessage(
   code: string | null,
@@ -67,13 +104,34 @@ function sanitizeClientRedirectPath(value: string | null) {
     : "/dashboard";
 }
 
+function getProviderLabel(
+  provider: WorkspaceOAuthProvider,
+  isPolish: boolean
+) {
+  const providerDefinition = ssoProviderDefinitions.find(
+    (candidate) => candidate.provider === provider
+  );
+
+  if (!providerDefinition) {
+    return "SSO";
+  }
+
+  return isPolish
+    ? providerDefinition.label.Polish
+    : providerDefinition.label.English;
+}
+
 export function SignInClient({
   authConfigured,
+  developmentAccessEnabled,
+  developmentAccessUsers,
   errorCode,
   nextPath,
   status,
 }: Readonly<{
   authConfigured: boolean;
+  developmentAccessEnabled: boolean;
+  developmentAccessUsers: readonly DevelopmentAccessUser[];
   errorCode: string | null;
   nextPath: string;
   status: string | null;
@@ -94,7 +152,7 @@ export function SignInClient({
     return callbackUrl.toString();
   }
 
-  async function handleGoogleSignIn() {
+  async function handleOAuthSignIn(provider: WorkspaceOAuthProvider) {
     setInlineError(null);
     setInlineMessage(null);
     setIsBusy(true);
@@ -102,9 +160,10 @@ export function SignInClient({
     try {
       const supabase = getSupabaseBrowserClient();
       const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
+        provider,
         options: {
           redirectTo: buildCallbackUrl(),
+          ...(provider === "azure" ? { scopes: "email" } : {}),
         },
       });
 
@@ -114,14 +173,22 @@ export function SignInClient({
 
       if (data.url) {
         window.location.assign(data.url);
+        return;
       }
+
+      throw new Error(
+        isPolish
+          ? "Nie udało się uzyskać adresu przekierowania logowania."
+          : "The sign-in redirect URL was not returned."
+      );
     } catch (error) {
+      const providerLabel = getProviderLabel(provider, isPolish);
       setInlineError(
         error instanceof Error
           ? error.message
           : isPolish
-            ? "Nie udało się rozpocząć logowania przez Google."
-            : "Unable to start Google sign-in."
+            ? `Nie udało się rozpocząć logowania przez ${providerLabel}.`
+            : `Unable to start ${providerLabel} sign-in.`
       );
       setIsBusy(false);
     }
@@ -185,8 +252,8 @@ export function SignInClient({
 
             <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600 md:text-lg">
               {isPolish
-                ? "Pierwsze wdrożenie ogranicza dostęp do zatwierdzonego katalogu pracowników. Zaloguj się przez Google albo poproś o magic link wysłany na konto z allowlisty."
-                : "This first rollout is limited to the approved staff directory. Sign in with Google or request a magic link sent to an allowlisted account."}
+                ? "Pierwsze wdrożenie ogranicza dostęp do zatwierdzonego katalogu pracowników. Zaloguj się przez Google lub Microsoft albo poproś o magic link wysłany na konto z allowlisty."
+                : "This first rollout is limited to the approved staff directory. Sign in with Google or Microsoft, or request a magic link sent to an allowlisted account."}
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
@@ -208,9 +275,22 @@ export function SignInClient({
             </h2>
             <p className="mt-3 text-sm leading-7 text-slate-500">
               {isPolish
-                ? "Google jest główną ścieżką SSO, a magic link pozostaje zapasową opcją dla zatwierdzonych kont pracowników."
-                : "Google is the primary SSO path, while magic link remains the fallback for approved staff accounts."}
+                ? "Google i Microsoft są głównymi ścieżkami SSO, a magic link pozostaje zapasową opcją dla zatwierdzonych kont pracowników."
+                : "Google and Microsoft are the primary SSO paths, while magic link remains the fallback for approved staff accounts."}
             </p>
+
+            {developmentAccessEnabled ? (
+              <div className="mt-5 rounded-[24px] border border-[#DCE1FF] bg-[#F7F8FF] px-4 py-4 text-sm leading-6 text-slate-600 shadow-[0_14px_36px_rgba(141,153,179,0.12)]">
+                <p className="font-semibold text-[#1E2340]">
+                  {isPolish ? "Lokalny dostęp developerski" : "Local developer access"}
+                </p>
+                <p className="mt-2">
+                  {isPolish
+                    ? "Jeśli zewnętrzne logowanie nie jest jeszcze gotowe, możesz wejść do workspace jako członek zespołu z bieżącego katalogu."
+                    : "If external sign-in is not ready yet, you can enter the workspace as a staff member from the current directory."}
+                </p>
+              </div>
+            ) : null}
 
             {errorMessage ? (
               <div className="mt-5 rounded-[24px] border border-[#FFD2DA] bg-[#FFF1F4] px-4 py-3 text-sm text-[#B4375C] shadow-[0_14px_36px_rgba(141,153,179,0.12)]">
@@ -244,17 +324,30 @@ export function SignInClient({
               </div>
             ) : null}
 
-            <button
-              type="button"
-              disabled={!authConfigured || isBusy}
-              onClick={() => {
-                void handleGoogleSignIn();
-              }}
-              className={`${dashboardPrimaryButtonClassName} mt-6 w-full gap-3 disabled:cursor-not-allowed disabled:opacity-70`}
-            >
-              <DashboardIcon name="users" className="h-[18px] w-[18px]" />
-              {isPolish ? "Kontynuuj przez Google" : "Continue with Google"}
-            </button>
+            <div className="mt-6 grid gap-3">
+              {ssoProviderDefinitions.map((providerDefinition) => {
+                const providerLabel = isPolish
+                  ? providerDefinition.label.Polish
+                  : providerDefinition.label.English;
+
+                return (
+                  <button
+                    key={providerDefinition.provider}
+                    type="button"
+                    disabled={!authConfigured || isBusy}
+                    onClick={() => {
+                      void handleOAuthSignIn(providerDefinition.provider);
+                    }}
+                    className={`${providerDefinition.className} w-full gap-3 disabled:cursor-not-allowed disabled:opacity-70`}
+                  >
+                    <DashboardIcon name="users" className="h-[18px] w-[18px]" />
+                    {isPolish
+                      ? `Kontynuuj przez ${providerLabel}`
+                      : `Continue with ${providerLabel}`}
+                  </button>
+                );
+              })}
+            </div>
 
             <div className="mt-6 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
               <span className="h-px flex-1 bg-slate-200" />
@@ -286,6 +379,47 @@ export function SignInClient({
                 {isPolish ? "Wyślij link logowania" : "Send sign-in link"}
               </button>
             </form>
+
+            {developmentAccessEnabled && developmentAccessUsers.length > 0 ? (
+              <>
+                <div className="mt-6 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                  <span className="h-px flex-1 bg-slate-200" />
+                  {isPolish ? "albo dostęp lokalny" : "or local access"}
+                  <span className="h-px flex-1 bg-slate-200" />
+                </div>
+
+                <form action="/auth/dev-sign-in" method="post" className="mt-6 space-y-3">
+                  <input type="hidden" name="next" value={safeNextPath} />
+
+                  {developmentAccessUsers.map((user) => (
+                    <button
+                      key={user.id}
+                      type="submit"
+                      name="userId"
+                      value={user.id}
+                      className={`${dashboardSecondaryButtonClassName} w-full items-start justify-between gap-4 rounded-[22px] px-4 py-4 text-left`}
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-semibold text-slate-900">
+                          {isPolish
+                            ? `Wejdź jako ${user.name}`
+                            : `Continue as ${user.name}`}
+                        </span>
+                        <span className="mt-1 block truncate text-xs font-medium text-slate-500">
+                          {translateWorkspaceRole(user.role, preferences.language)}
+                        </span>
+                        <span className="mt-1 block truncate text-xs text-slate-400">
+                          {user.email}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-[#4F57E8]">
+                        <DashboardIcon name="shield" className="h-5 w-5" />
+                      </span>
+                    </button>
+                  ))}
+                </form>
+              </>
+            ) : null}
           </aside>
         </div>
       </div>

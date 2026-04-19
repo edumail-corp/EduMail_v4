@@ -98,6 +98,17 @@ async function createSQLiteDatabase(databasePath: string) {
 
     CREATE INDEX IF NOT EXISTS idx_knowledge_documents_uploaded_at
       ON knowledge_documents (uploaded_at DESC);
+
+    CREATE TABLE IF NOT EXISTS workspace_staff_users (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      role TEXT NOT NULL,
+      status TEXT NOT NULL
+    );
+
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_workspace_staff_users_email_nocase
+      ON workspace_staff_users (email COLLATE NOCASE);
   `);
 
   return database;

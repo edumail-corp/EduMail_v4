@@ -5,6 +5,7 @@ import {
   type StaffEmailUpdateInput,
 } from "@/lib/email-data";
 import { updateMailboxEmail } from "@/lib/server/services/mailbox-service";
+import { listActiveWorkspaceStaffAssignees } from "@/lib/server/workspace-staff-directory";
 import { requireWorkspaceUserForApi } from "@/lib/server/workspace-auth";
 
 export const dynamic = "force-dynamic";
@@ -31,14 +32,6 @@ function isEmailUpdatePayload(value: unknown): value is StaffEmailUpdateInput {
     const status = candidate.status;
 
     if (typeof status !== "string" || !isEmailStatus(status)) {
-      return false;
-    }
-  }
-
-  if (hasAssignee) {
-    const assignee = candidate.assignee;
-
-    if (typeof assignee === "string" && !isStaffAssignee(assignee)) {
       return false;
     }
   }
@@ -71,6 +64,17 @@ export async function PATCH(
       { error: "Invalid email update payload." },
       { status: 400 }
     );
+  }
+
+  if (typeof payload.assignee === "string") {
+    const activeStaffAssignees = await listActiveWorkspaceStaffAssignees();
+
+    if (!isStaffAssignee(payload.assignee, activeStaffAssignees)) {
+      return NextResponse.json(
+        { error: "Invalid email owner." },
+        { status: 400 }
+      );
+    }
   }
 
   const { id } = await context.params;

@@ -2,6 +2,7 @@ import type { WorkspaceSettingsAdapter } from "@/lib/server/adapters/contracts";
 import { getConfiguredDatabaseUrl } from "@/lib/server/adapters/database/database-url";
 import { listConfiguredAdapterBindings } from "@/lib/server/adapters/provider-config";
 import { getConfiguredSupabaseStorage } from "@/lib/server/adapters/supabase/supabase-config";
+import { getWorkspaceStaffDirectoryData } from "@/lib/server/workspace-staff-directory";
 import { getWorkspaceEnvironmentSignals } from "@/lib/server/workspace-environment-signals";
 import { getWorkspaceLocalStorageSummary } from "@/lib/server/workspace-storage-audit";
 import { hasConfiguredSupabaseAuth } from "@/lib/supabase-auth";
@@ -12,7 +13,6 @@ import {
   getLocalizedWorkspaceWorkflowStages,
   type WorkspaceProviderStatus,
   workspaceOperatingDepartments,
-  workspaceStaffDirectory,
 } from "@/lib/workspace-config";
 
 function getLocalizedAdapterBindings(language: "English" | "Polish") {
@@ -71,7 +71,11 @@ export const localWorkspaceSettingsAdapter: WorkspaceSettingsAdapter = {
     const configuredDatabase = getConfiguredDatabaseUrl();
     const configuredSupabaseStorage = getConfiguredSupabaseStorage();
     const adapterBindings = getLocalizedAdapterBindings(language);
+    const workspaceSettingsBinding = adapterBindings.find(
+      (binding) => binding.id === "workspace-settings"
+    );
     const environmentSignals = getWorkspaceEnvironmentSignals(language);
+    const staffDirectoryData = await getWorkspaceStaffDirectoryData();
     const operationalBindings = adapterBindings.filter((binding) =>
       ["mailbox", "knowledge-base", "activity"].includes(binding.id)
     );
@@ -155,13 +159,21 @@ export const localWorkspaceSettingsAdapter: WorkspaceSettingsAdapter = {
                     ...integration,
                     status: "configured" as const,
                     summary:
-                      language === "Polish"
-                        ? "Supabase Auth chroni teraz dashboard i API, a dostęp pozostaje ograniczony do katalogu pracowników z allowlistą."
-                        : "Supabase Auth now protects the dashboard and APIs, while access remains limited to the allowlisted staff directory.",
+                      workspaceSettingsBinding?.activeProvider === "database"
+                        ? language === "Polish"
+                          ? "Supabase Auth chroni teraz dashboard i API, a członkostwo workspace jest odczytywane z katalogu pracowników zapisanego w bazie danych."
+                          : "Supabase Auth now protects the dashboard and APIs, while workspace membership is read from the database-backed staff directory."
+                        : language === "Polish"
+                          ? "Supabase Auth chroni teraz dashboard i API, a dostęp pozostaje ograniczony do katalogu pracowników z allowlistą."
+                          : "Supabase Auth now protects the dashboard and APIs, while access remains limited to the allowlisted staff directory.",
                     nextStep:
-                      language === "Polish"
-                        ? "Utrzymaj logowanie i podstawowe role, a następnie przenieś członkostwo workspace z katalogu statycznego do bazy danych."
-                        : "Keep sign-in and baseline roles stable, then move workspace membership from the static directory into the database.",
+                      workspaceSettingsBinding?.activeProvider === "database"
+                        ? language === "Polish"
+                          ? "Następnym krokiem jest utrzymanie stabilnej edycji członkostwa i wdrożenie prawdziwego ingestu inbox bez naruszania warstwy usług."
+                          : "Next, keep membership editing stable and wire real inbox ingestion without disturbing the service layer."
+                        : language === "Polish"
+                          ? "Utrzymaj logowanie i podstawowe role, a następnie przenieś członkostwo workspace z katalogu statycznego do bazy danych."
+                          : "Keep sign-in and baseline roles stable, then move workspace membership from the static directory into the database.",
                   }
               : integration
     );
@@ -177,7 +189,8 @@ export const localWorkspaceSettingsAdapter: WorkspaceSettingsAdapter = {
         ).length,
         planned: integrations.filter((integration) => integration.status === "planned").length,
       },
-      staffDirectory: workspaceStaffDirectory,
+      staffDirectory: staffDirectoryData.staffDirectory,
+      staffDirectorySource: staffDirectoryData.source,
       futureDomainModel: getLocalizedWorkspaceFutureDomainModel(language),
       manualWorkItems: getLocalizedWorkspaceManualWorkItems(language),
       operatingDepartments: workspaceOperatingDepartments,

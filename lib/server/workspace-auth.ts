@@ -11,7 +11,10 @@ import type {
   WorkspaceRole,
   WorkspaceStaffUser,
 } from "@/lib/workspace-config";
-import { workspaceStaffDirectory } from "@/lib/workspace-config";
+import {
+  findWorkspaceStaffUserByEmail,
+  listWorkspaceStaffDirectory,
+} from "@/lib/server/workspace-staff-directory";
 
 export type AuthenticatedWorkspaceUser = WorkspaceStaffUser & {
   authEmail: string;
@@ -34,23 +37,42 @@ type WorkspaceAuthResolution =
     };
 
 type CookieStoreLike = Awaited<ReturnType<typeof cookies>>;
+const developmentAccessCookieName = "edumailai.dev-access-user-id";
 
 function isAuthBypassedForVerification() {
   return process.env.EDUMAILAI_DISABLE_AUTH_FOR_VERIFY === "1";
+}
+
+export function isDevelopmentAccessEnabled() {
+  const configuredValue = process.env.EDUMAILAI_ENABLE_DEV_ACCESS?.trim();
+
+  if (configuredValue === "1") {
+    return true;
+  }
+
+  if (configuredValue === "0") {
+    return false;
+  }
+
+  return process.env.NODE_ENV !== "production";
 }
 
 function normalizeEmailAddress(value: string) {
   return value.trim().toLowerCase();
 }
 
-function getWorkspaceUserByEmail(email: string) {
-  const normalizedEmail = normalizeEmailAddress(email);
+async function getWorkspaceUserByEmail(email: string) {
+  return findWorkspaceStaffUserByEmail(email);
+}
 
-  return (
-    workspaceStaffDirectory.find(
-      (staffUser) => normalizeEmailAddress(staffUser.email) === normalizedEmail
-    ) ?? null
-  );
+function buildDevelopmentAccessWorkspaceUser(
+  staffUser: WorkspaceStaffUser
+): AuthenticatedWorkspaceUser {
+  return {
+    ...staffUser,
+    authEmail: normalizeEmailAddress(staffUser.email),
+    authUserId: `DEV-ACCESS-${staffUser.id}`,
+  };
 }
 
 function buildAuthenticatedWorkspaceUser(
@@ -64,14 +86,15 @@ function buildAuthenticatedWorkspaceUser(
   };
 }
 
-function getVerificationWorkspaceUser() {
+async function getVerificationWorkspaceUser() {
+  const staffDirectory = await listWorkspaceStaffDirectory();
   const staffUser =
-    workspaceStaffDirectory.find(
+    staffDirectory.find(
       (candidate) =>
         candidate.status === "active" && candidate.role === "operations_admin"
     ) ??
-    workspaceStaffDirectory.find((candidate) => candidate.status === "active") ??
-    workspaceStaffDirectory[0];
+    staffDirectory.find((candidate) => candidate.status === "active") ??
+    staffDirectory[0];
 
   return {
     ...staffUser,
@@ -80,7 +103,32 @@ function getVerificationWorkspaceUser() {
   } satisfies AuthenticatedWorkspaceUser;
 }
 
-function resolveWorkspaceUser(authUser: User | null): WorkspaceAuthResolution {
+async function getDevelopmentAccessWorkspaceUser(
+  cookieStore: Pick<CookieStoreLike, "get">
+) {
+  if (!isDevelopmentAccessEnabled()) {
+    return null;
+  }
+
+  const selectedUserId = cookieStore.get(developmentAccessCookieName)?.value;
+
+  if (!selectedUserId) {
+    return null;
+  }
+
+  const staffDirectory = await listWorkspaceStaffDirectory();
+  const staffUser =
+    staffDirectory.find(
+      (candidate) =>
+        candidate.id === selectedUserId && candidate.status === "active"
+    ) ?? null;
+
+  return staffUser ? buildDevelopmentAccessWorkspaceUser(staffUser) : null;
+}
+
+async function resolveWorkspaceUser(
+  authUser: User | null
+): Promise<WorkspaceAuthResolution> {
   if (!authUser?.email) {
     return {
       workspaceUser: null,
@@ -88,7 +136,7 @@ function resolveWorkspaceUser(authUser: User | null): WorkspaceAuthResolution {
     };
   }
 
-  const staffUser = getWorkspaceUserByEmail(authUser.email);
+  const staffUser = await getWorkspaceUserByEmail(authUser.email);
 
   if (!staffUser) {
     return {
@@ -137,27 +185,39 @@ export async function getCurrentWorkspaceUser() {
     return getVerificationWorkspaceUser();
   }
 
+  const cookieStore = await cookies();
+  const developmentAccessUser = await getDevelopmentAccessWorkspaceUser(
+    cookieStore
+  );
+
+  if (developmentAccessUser) {
+    return developmentAccessUser;
+  }
+
   if (!hasConfiguredSupabaseAuth()) {
     return null;
   }
 
-  const cookieStore = await cookies();
   const supabase = createSupabaseServerClient(cookieStore);
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  return resolveWorkspaceUser(user).workspaceUser;
+  return (await resolveWorkspaceUser(user)).workspaceUser;
 }
 
 export async function requireWorkspaceUser(
   redirectPath = "/sign-in?next=/dashboard"
 ) {
+  const workspaceUser = await getCurrentWorkspaceUser();
+
+  if (workspaceUser) {
+    return workspaceUser;
+  }
+
   if (!hasConfiguredSupabaseAuth()) {
     redirect("/sign-in?error=config-missing");
   }
-
-  const workspaceUser = await getCurrentWorkspaceUser();
 
   if (!workspaceUser) {
     redirect(redirectPath);
@@ -194,7 +254,18 @@ function getApiErrorMessage(reason: WorkspaceAuthFailureReason) {
 export async function requireWorkspaceUserForApi() {
   if (isAuthBypassedForVerification()) {
     return {
-      workspaceUser: getVerificationWorkspaceUser(),
+      workspaceUser: await getVerificationWorkspaceUser(),
+    } as const;
+  }
+
+  const cookieStore = await cookies();
+  const developmentAccessUser = await getDevelopmentAccessWorkspaceUser(
+    cookieStore
+  );
+
+  if (developmentAccessUser) {
+    return {
+      workspaceUser: developmentAccessUser,
     } as const;
   }
 
@@ -207,12 +278,11 @@ export async function requireWorkspaceUserForApi() {
     } as const;
   }
 
-  const cookieStore = await cookies();
   const supabase = createSupabaseServerClient(cookieStore);
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const resolution = resolveWorkspaceUser(user);
+  const resolution = await resolveWorkspaceUser(user);
 
   if (!resolution.workspaceUser) {
     return {
@@ -243,14 +313,59 @@ export async function exchangeCodeForWorkspaceSession(code: string) {
 
   return {
     supabase,
-    ...resolveWorkspaceUser(user),
+    ...(await resolveWorkspaceUser(user)),
   };
 }
 
 export async function signOutWorkspaceSession() {
+  if (!hasConfiguredSupabaseAuth()) {
+    return;
+  }
+
   const cookieStore = await cookies();
   const supabase = createSupabaseServerClient(cookieStore);
   await supabase.auth.signOut();
+}
+
+export async function getDevelopmentAccessWorkspaceUserById(userId: string) {
+  if (!isDevelopmentAccessEnabled()) {
+    return null;
+  }
+
+  const staffDirectory = await listWorkspaceStaffDirectory();
+
+  return (
+    staffDirectory.find(
+      (candidate) => candidate.id === userId && candidate.status === "active"
+    ) ?? null
+  );
+}
+
+export function setDevelopmentAccessCookie(
+  response: NextResponse,
+  userId: string
+) {
+  response.cookies.set({
+    name: developmentAccessCookieName,
+    value: userId,
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 14,
+  });
+}
+
+export function clearDevelopmentAccessCookie(response: NextResponse) {
+  response.cookies.set({
+    name: developmentAccessCookieName,
+    value: "",
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 0,
+  });
 }
 
 export function sanitizeAuthRedirectPath(

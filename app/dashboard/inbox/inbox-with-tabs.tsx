@@ -3,7 +3,11 @@
 import { MailboxView } from "@/components/dashboard/mailbox-view";
 import { useUserPreferences } from "@/components/dashboard/user-preferences-provider";
 
-export function InboxWithTabs() {
+export function InboxWithTabs({
+  staffAssigneeOptions,
+}: Readonly<{
+  staffAssigneeOptions: readonly string[];
+}>) {
   const { preferences } = useUserPreferences();
   const isPolish = preferences.language === "Polish";
 
@@ -26,6 +30,7 @@ export function InboxWithTabs() {
           : "All captured inbound messages across the current prototype mailbox."
       }
       emptyMessage={isPolish ? "Brak dostępnych wiadomości." : "No messages available."}
+      staffAssigneeOptions={staffAssigneeOptions}
       interfaceMode="email"
     />
   );

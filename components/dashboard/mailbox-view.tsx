@@ -11,6 +11,7 @@ import { useUserPreferences } from "@/components/dashboard/user-preferences-prov
 import { DashboardTopBar } from "@/components/dashboard/dashboard-top-bar";
 import {
   departmentFilterOptions,
+  getStaffAssignmentFilters,
   getEmailAssignmentRecommendation,
   filterEmailsByDepartment,
   defaultStaffAssignmentFilter,
@@ -18,13 +19,13 @@ import {
   filterEmails,
   filterEmailsByAssignment,
   getEmailDepartment,
+  getStaffAssigneeOptions,
   getDepartmentFilterLabel,
   getStaffAssignmentFilterLabel,
   getInitialSelectedEmailId,
   getSelectedEmail,
   isDepartmentFilter,
   isStaffAssignmentFilter,
-  staffAssignmentFilters,
   summarizeMailboxOperations,
   type DepartmentFilter,
   type EmailFilter,
@@ -97,6 +98,7 @@ export function MailboxView({
   listDescription,
   emptyMessage,
   filter,
+  staffAssigneeOptions = [],
   interfaceMode = "workflow",
 }: Readonly<{
   eyebrow: string;
@@ -107,6 +109,7 @@ export function MailboxView({
   listDescription: string;
   emptyMessage: string;
   filter: EmailFilter;
+  staffAssigneeOptions?: readonly string[];
   interfaceMode?: "email" | "workflow";
 }>) {
   const pathname = usePathname();
@@ -133,11 +136,16 @@ export function MailboxView({
   const [searchQuery, setSearchQuery] = useState("");
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const normalizedSearchQuery = deferredSearchQuery.trim().toLowerCase();
+  const resolvedStaffAssigneeOptions = getStaffAssigneeOptions(staffAssigneeOptions);
+  const resolvedStaffAssignmentFilters = getStaffAssignmentFilters(
+    resolvedStaffAssigneeOptions
+  );
   const requestedEmailId = searchParams.get("emailId") ?? "";
   const requestedAssigneeParam = searchParams.get("assignee");
   const requestedDepartmentParam = searchParams.get("department");
   const assignmentFilter: StaffAssignmentFilter =
-    requestedAssigneeParam && isStaffAssignmentFilter(requestedAssigneeParam)
+    requestedAssigneeParam &&
+    isStaffAssignmentFilter(requestedAssigneeParam, resolvedStaffAssigneeOptions)
       ? requestedAssigneeParam
       : defaultStaffAssignmentFilter;
   const departmentFilter: DepartmentFilter =
@@ -148,7 +156,10 @@ export function MailboxView({
   const visibleEmails = queueEmails.filter((email) =>
     matchesMailboxSearch(email, normalizedSearchQuery)
   );
-  const operationsSnapshot = summarizeMailboxOperations(queueEmails);
+  const operationsSnapshot = summarizeMailboxOperations(
+    queueEmails,
+    resolvedStaffAssigneeOptions
+  );
   const selectedEmail = getSelectedEmail(visibleEmails, selectedId);
   const selectedAssignmentRecommendation = selectedEmail
     ? getEmailAssignmentRecommendation(
@@ -760,6 +771,7 @@ export function MailboxView({
               onApprove={handleApprove}
               isApproving={approvingId === selectedEmail?.id}
               assigneeValue={assigneeValue}
+              staffAssigneeOptions={resolvedStaffAssigneeOptions}
               onAssigneeChange={setAssigneeValue}
               onSaveAssignee={handleSaveAssignee}
               isSavingAssignee={isSavingAssignee}
@@ -817,7 +829,7 @@ export function MailboxView({
             </div>
 
             <div className="mt-5 flex flex-wrap gap-2">
-              {staffAssignmentFilters.map((ownerFilter) => {
+              {resolvedStaffAssignmentFilters.map((ownerFilter) => {
                 const isActive = ownerFilter === assignmentFilter;
 
                 return (
@@ -1136,6 +1148,7 @@ export function MailboxView({
               onApprove={handleApprove}
               isApproving={approvingId === selectedEmail?.id}
               assigneeValue={assigneeValue}
+              staffAssigneeOptions={resolvedStaffAssigneeOptions}
               onAssigneeChange={setAssigneeValue}
               onSaveAssignee={handleSaveAssignee}
               isSavingAssignee={isSavingAssignee}

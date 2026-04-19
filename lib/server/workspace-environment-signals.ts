@@ -95,9 +95,14 @@ const environmentSignalDefinitions: readonly EnvironmentSignalDefinition[] = [
     requiredEnvVars: ["EDUMAILAI_AUTH_PROVIDER"],
     getSummary(configuredEnvVars, language) {
       if (configuredEnvVars.length > 0 && hasConfiguredSupabaseAuth()) {
-        return language === "Polish"
-          ? "Supabase Auth chroni już dashboard i API, a dostęp nadal opiera się na katalogu pracowników z allowlistą."
-          : "Supabase Auth is already protecting the dashboard and APIs, while access still relies on the allowlisted staff directory.";
+        return getConfiguredAdapterBinding("workspace-settings").activeProvider ===
+          "database"
+          ? language === "Polish"
+            ? "Supabase Auth chroni już dashboard i API, a członkostwo workspace jest odczytywane z katalogu pracowników zapisanego w bazie danych."
+            : "Supabase Auth is already protecting the dashboard and APIs, while workspace membership is read from the database-backed staff directory."
+          : language === "Polish"
+            ? "Supabase Auth chroni już dashboard i API, a dostęp nadal opiera się na katalogu pracowników z allowlistą."
+            : "Supabase Auth is already protecting the dashboard and APIs, while access still relies on the allowlisted staff directory.";
       }
 
       if (configuredEnvVars.length > 0) {
@@ -112,15 +117,20 @@ const environmentSignalDefinitions: readonly EnvironmentSignalDefinition[] = [
     },
     getNextStep(configuredEnvVars, language) {
       if (configuredEnvVars.length > 0 && hasConfiguredSupabaseAuth()) {
-        return language === "Polish"
-          ? "Utrzymaj logowanie i bazowe role, a potem przenieś katalog pracowników oraz członkostwo workspace do bazy danych."
-          : "Keep sign-in and baseline roles stable, then move the staff directory and workspace membership into the database.";
+        return getConfiguredAdapterBinding("workspace-settings").activeProvider ===
+          "database"
+          ? language === "Polish"
+            ? "Następnym krokiem jest utrzymanie stabilnej edycji członkostwa i wdrożenie prawdziwego ingestu inbox."
+            : "Next, keep membership editing stable and implement real inbox ingestion."
+          : language === "Polish"
+            ? "Utrzymaj logowanie i bazowe role, a potem przenieś katalog pracowników oraz członkostwo workspace do bazy danych."
+            : "Keep sign-in and baseline roles stable, then move the staff directory and workspace membership into the database.";
       }
 
       if (configuredEnvVars.length > 0) {
         return language === "Polish"
-          ? "Dodaj NEXT_PUBLIC_SUPABASE_URL i NEXT_PUBLIC_SUPABASE_ANON_KEY, a potem zweryfikuj logowanie Google i magic link."
-          : "Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, then verify Google and magic-link sign-in.";
+          ? "Dodaj NEXT_PUBLIC_SUPABASE_URL i NEXT_PUBLIC_SUPABASE_ANON_KEY, a potem zweryfikuj logowanie Google, Microsoft i magic link."
+          : "Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, then verify Google, Microsoft, and magic-link sign-in.";
       }
 
       return language === "Polish"

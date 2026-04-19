@@ -22,6 +22,7 @@ import {
   createMailboxEmail,
   listMailboxEmails,
 } from "@/lib/server/services/mailbox-service";
+import { listActiveWorkspaceStaffAssignees } from "@/lib/server/workspace-staff-directory";
 import { requireWorkspaceUserForApi } from "@/lib/server/workspace-auth";
 
 export const dynamic = "force-dynamic";
@@ -69,7 +70,13 @@ export async function GET(request: Request) {
     );
   }
 
-  if (assigneeParam !== null && !isStaffAssignmentFilter(assigneeParam)) {
+  const activeStaffAssignees =
+    assigneeParam !== null ? await listActiveWorkspaceStaffAssignees() : [];
+
+  if (
+    assigneeParam !== null &&
+    !isStaffAssignmentFilter(assigneeParam, activeStaffAssignees)
+  ) {
     return NextResponse.json(
       { error: "Invalid ownership filter." },
       { status: 400 }

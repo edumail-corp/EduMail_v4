@@ -65,8 +65,8 @@ const adapterBindingDefinitions: readonly AdapterBindingDefinition[] = [
     label: "Workspace Settings",
     envVarName: "EDUMAILAI_WORKSPACE_SETTINGS_ADAPTER",
     defaultProvider: "local",
-    supportedProviders: ["local"],
-    plannedProviders: ["database"],
+    supportedProviders: ["local", "database"],
+    plannedProviders: [],
   },
   {
     id: "file-storage",

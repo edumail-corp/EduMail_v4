@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  clearDevelopmentAccessCookie,
   sanitizeAuthRedirectPath,
   signOutWorkspaceSession,
 } from "@/lib/server/workspace-auth";
@@ -13,7 +14,10 @@ export async function POST(request: Request) {
 
   await signOutWorkspaceSession();
 
-  return NextResponse.redirect(new URL(nextPath, requestUrl.origin), {
+  const response = NextResponse.redirect(new URL(nextPath, requestUrl.origin), {
     status: 303,
   });
+
+  clearDevelopmentAccessCookie(response);
+  return response;
 }

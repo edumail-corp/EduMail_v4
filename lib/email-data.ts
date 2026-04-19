@@ -5,7 +5,7 @@ export type EmailStatus = "Draft" | "Auto-sent" | "Escalated";
 export type EmailFilter = "All" | EmailStatus;
 export type EmailPriority = "Low" | "Medium" | "High";
 export type Department = EmailCategory;
-export type StaffAssignee = "Ava Patel" | "Noah Kim" | "Priya Shah" | "Jordan Lee";
+export type StaffAssignee = string;
 export type StaffAssignmentFilter = "All" | "Unassigned" | StaffAssignee;
 export type StaffAssignmentSelectValue = "Unassigned" | StaffAssignee;
 export type DepartmentFilter = "All" | Department;
@@ -446,6 +446,26 @@ export const minimumSenderNameLength = 2;
 export const minimumEmailSubjectLength = 3;
 export const minimumEmailBodyLength = 10;
 
+function buildUniqueStaffAssigneeOptions(groups: readonly (readonly StaffAssignee[])[]) {
+  const seenOwners = new Set<string>();
+  const uniqueOwners: StaffAssignee[] = [];
+
+  for (const group of groups) {
+    for (const owner of group) {
+      const normalizedOwner = owner.trim();
+
+      if (!normalizedOwner || seenOwners.has(normalizedOwner)) {
+        continue;
+      }
+
+      seenOwners.add(normalizedOwner);
+      uniqueOwners.push(normalizedOwner);
+    }
+  }
+
+  return uniqueOwners;
+}
+
 export const departmentAssigneeMap: Record<Department, StaffAssignee[]> = {
   Admissions: ["Ava Patel", "Jordan Lee"],
   Finance: ["Noah Kim", "Priya Shah"],
@@ -471,8 +491,40 @@ export function getEmailDepartment(
   return email.department ?? email.category;
 }
 
-export function getDepartmentSuggestedAssignees(department: Department) {
-  return departmentAssigneeMap[department];
+export function getStaffAssigneeOptions(
+  availableOwners: readonly StaffAssignee[] = staffAssigneeOptions
+) {
+  return buildUniqueStaffAssigneeOptions([
+    availableOwners.length > 0 ? availableOwners : staffAssigneeOptions,
+  ]);
+}
+
+export function getStaffAssignmentFilters(
+  availableOwners: readonly StaffAssignee[] = staffAssigneeOptions
+): StaffAssignmentFilter[] {
+  return [
+    "All",
+    "Unassigned",
+    ...getStaffAssigneeOptions(availableOwners),
+  ];
+}
+
+export function getDepartmentSuggestedAssignees(
+  department: Department,
+  availableOwners?: readonly StaffAssignee[]
+) {
+  const preferredOwners = departmentAssigneeMap[department];
+
+  if (!availableOwners || availableOwners.length === 0) {
+    return [...preferredOwners];
+  }
+
+  const activeOwners = getStaffAssigneeOptions(availableOwners);
+  const matchingOwners = preferredOwners.filter((owner) =>
+    activeOwners.includes(owner)
+  );
+
+  return matchingOwners.length > 0 ? matchingOwners : activeOwners;
 }
 
 export function getEmailApprovalState(
@@ -912,7 +964,10 @@ function pickLightestDepartmentOwner(
   department: Department,
   ownerSummaries: OwnerWorkloadSummary[]
 ) {
-  const candidateOwners = getDepartmentSuggestedAssignees(department)
+  const candidateOwners = getDepartmentSuggestedAssignees(
+    department,
+    ownerSummaries.map((summary) => summary.owner)
+  )
     .map((owner) => ownerSummaries.find((summary) => summary.owner === owner))
     .filter((summary): summary is OwnerWorkloadSummary => summary !== undefined)
     .sort((left, right) => {
@@ -939,9 +994,11 @@ function pickLightestDepartmentOwner(
 }
 
 export function summarizeMailboxOperations(
-  emails: StaffEmail[]
+  emails: StaffEmail[],
+  availableOwners: readonly StaffAssignee[] = staffAssigneeOptions
 ): MailboxOperationsSnapshot {
-  const ownerSummaries = staffAssigneeOptions
+  const resolvedOwners = getStaffAssigneeOptions(availableOwners);
+  const ownerSummaries = resolvedOwners
     .map<OwnerWorkloadSummary>((owner) => {
       const ownerEmails = emails.filter((email) => email.assignee === owner);
       const activeEmails = ownerEmails.filter(isActiveWorkflowEmail);
@@ -1071,7 +1128,10 @@ export function summarizeMailboxOperations(
                 ((activeEmails.length - unassignedCount) / activeEmails.length) *
                   100
               ),
-        suggestedOwners: getDepartmentSuggestedAssignees(department),
+        suggestedOwners: getDepartmentSuggestedAssignees(
+          department,
+          resolvedOwners
+        ),
         lightestOwner: null,
         pressureScore,
         pressure: getDepartmentPressure({
@@ -1135,18 +1195,18 @@ export function getEmailAssignmentRecommendation(
   const isPolish = isPolishLanguage(language);
   const department = getEmailDepartment(email);
   const departmentLabel = translateDepartment(department, language);
-  const candidateOwners =
-    email.routingDecision?.suggestedAssignees.length
-      ? email.routingDecision.suggestedAssignees
-      : getDepartmentSuggestedAssignees(department);
-
-  if (candidateOwners.length === 0) {
-    return null;
-  }
-
+  const availableOwners = snapshot.ownerSummaries.map((summary) => summary.owner);
   const ownerMap = new Map(
     snapshot.ownerSummaries.map((summary) => [summary.owner, summary])
   );
+  const routingSuggestedOwners =
+    email.routingDecision?.suggestedAssignees.filter((owner) =>
+      availableOwners.includes(owner)
+    ) ?? [];
+  const candidateOwners =
+    routingSuggestedOwners.length > 0
+      ? routingSuggestedOwners
+      : getDepartmentSuggestedAssignees(department, availableOwners);
 
   const candidateSummaries = candidateOwners
     .map((owner) => ownerMap.get(owner))
@@ -1249,11 +1309,8 @@ export const staffAssigneeOptions = [
   "Jordan Lee",
 ] as const satisfies readonly StaffAssignee[];
 
-export const staffAssignmentFilters = [
-  "All",
-  "Unassigned",
-  ...staffAssigneeOptions,
-] as const satisfies readonly StaffAssignmentFilter[];
+export const staffAssignmentFilters =
+  getStaffAssignmentFilters() as readonly StaffAssignmentFilter[];
 
 export const defaultStaffAssignmentFilter = "All";
 export const defaultStaffAssignmentSelection = "Unassigned";
@@ -1538,14 +1595,22 @@ export function isEmailFilter(value: string): value is EmailFilter {
   return value === "All" || isEmailStatus(value);
 }
 
-export function isStaffAssignee(value: string): value is StaffAssignee {
-  return staffAssigneeOptions.includes(value as StaffAssignee);
+export function isStaffAssignee(
+  value: string,
+  availableOwners: readonly StaffAssignee[] = staffAssigneeOptions
+): value is StaffAssignee {
+  return getStaffAssigneeOptions(availableOwners).includes(value);
 }
 
 export function isStaffAssignmentFilter(
-  value: string
+  value: string,
+  availableOwners: readonly StaffAssignee[] = staffAssigneeOptions
 ): value is StaffAssignmentFilter {
-  return value === "All" || value === "Unassigned" || isStaffAssignee(value);
+  return (
+    value === "All" ||
+    value === "Unassigned" ||
+    isStaffAssignee(value, availableOwners)
+  );
 }
 
 export function isDepartmentFilter(value: string): value is DepartmentFilter {

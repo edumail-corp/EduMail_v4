@@ -10,7 +10,7 @@ import {
   getEmailApprovalGuidance,
   getEmailDepartment,
   groupEmailSourceCitations,
-  staffAssigneeOptions,
+  staffAssigneeOptions as defaultStaffAssigneeOptions,
   translateCaseApprovalState,
   translateDepartment,
   translateEmailPriority,
@@ -91,6 +91,7 @@ export function EmailDetailPanel({
   onApprove,
   isApproving = false,
   assigneeValue = defaultStaffAssignmentSelection,
+  staffAssigneeOptions = defaultStaffAssigneeOptions,
   onAssigneeChange,
   onSaveAssignee,
   isSavingAssignee = false,
@@ -115,6 +116,7 @@ export function EmailDetailPanel({
   onApprove?: () => void;
   isApproving?: boolean;
   assigneeValue?: StaffAssignmentSelectValue;
+  staffAssigneeOptions?: readonly string[];
   onAssigneeChange?: (value: StaffAssignmentSelectValue) => void;
   onSaveAssignee?: () => void;
   isSavingAssignee?: boolean;
@@ -165,7 +167,10 @@ export function EmailDetailPanel({
           : "Low"),
     preferences.language
   );
-  const suggestedOwners = email.routingDecision?.suggestedAssignees ?? [];
+  const suggestedOwners =
+    email.routingDecision?.suggestedAssignees.filter((owner) =>
+      staffAssigneeOptions.includes(owner)
+    ) ?? [];
   const primaryLibraryHref = email.source
     ? `/dashboard/knowledge-base?document=${encodeURIComponent(
         email.source

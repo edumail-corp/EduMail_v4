@@ -2,7 +2,9 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import {
   dashboardGhostButtonClassName,
+  dashboardInputClassName,
   dashboardPanelClassName,
+  dashboardPrimaryButtonClassName,
   dashboardSecondaryButtonClassName,
 } from "@/components/dashboard/dashboard-chrome";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
@@ -10,7 +12,9 @@ import { DashboardTopBar } from "@/components/dashboard/dashboard-top-bar";
 import {
   translateWorkspaceRole,
   translateWorkspaceUserStatus,
+  type WorkspaceRole,
   type WorkspaceStorageLocationKind,
+  type WorkspaceUserStatus,
 } from "@/lib/workspace-config";
 import { requireWorkspaceRole } from "@/lib/server/workspace-auth";
 import { getWorkspaceSettingsSnapshot } from "@/lib/server/services/workspace-settings-service";
@@ -20,6 +24,50 @@ import {
   userPreferencesLanguageCookie,
   type LanguagePreference,
 } from "@/lib/user-preferences";
+import {
+  createWorkspaceStaffMemberAction,
+  updateWorkspaceStaffMemberAction,
+} from "./actions";
+
+const editableWorkspaceRoles: readonly WorkspaceRole[] = [
+  "operations_admin",
+  "triage_specialist",
+  "knowledge_manager",
+];
+
+const editableWorkspaceStatuses: readonly WorkspaceUserStatus[] = [
+  "active",
+  "pending",
+];
+
+function getSearchParamValue(
+  value: string | string[] | undefined
+) {
+  if (Array.isArray(value)) {
+    return value[0] ?? null;
+  }
+
+  return typeof value === "string" ? value : null;
+}
+
+function getStaffMessage(
+  value: string | null,
+  language: LanguagePreference
+) {
+  if (value === "member-created") {
+    return language === "Polish"
+      ? "Nowy członek zespołu został zapisany."
+      : "The new staff member was saved.";
+  }
+
+  if (value === "member-updated") {
+    return language === "Polish"
+      ? "Zmiany członka zespołu zostały zapisane."
+      : "The staff member changes were saved.";
+  }
+
+  return null;
+}
 
 function getStorageStatusClassName(status: "active" | "stored" | "missing") {
   if (status === "active") {
@@ -92,14 +140,24 @@ function getStorageKindLabel(
   }
 }
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: Readonly<{
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}>) {
   await requireWorkspaceRole("operations_admin");
   const languageCookie = (await cookies()).get(userPreferencesLanguageCookie)?.value;
   const language: LanguagePreference = isLanguagePreference(languageCookie)
     ? languageCookie
     : "English";
+  const resolvedSearchParams = searchParams ? await searchParams : {};
   const isPolish = language === "Polish";
   const locale = getLocaleForLanguage(language);
+  const staffMessage = getStaffMessage(
+    getSearchParamValue(resolvedSearchParams.staffMessage),
+    language
+  );
+  const staffError = getSearchParamValue(resolvedSearchParams.staffError);
   const snapshot = await getWorkspaceSettingsSnapshot(language);
   const hasRemoteLocations = snapshot.localStorage.locations.some((location) =>
     isRemoteStorageKind(location.kind)
@@ -158,10 +216,44 @@ export default async function AdminPage() {
             {isPolish ? "Katalog pracowników" : "Staff Directory"}
           </h3>
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            {isPolish
-              ? "Ten katalog pozostaje źródłem prawdy dla dostępu i ról, dopóki członkostwo workspace nie trafi do bazy danych."
-              : "This directory remains the source of truth for access and roles until workspace membership moves into the database."}
+            {snapshot.staffDirectorySource === "database"
+              ? isPolish
+                ? "Ten katalog jest teraz odczytywany z bazy danych, więc panel admina i logowanie korzystają z tego samego członkostwa workspace."
+                : "This directory is now read from the database, so the admin surface and sign-in flow share the same workspace membership."
+              : isPolish
+                ? "Ten katalog pozostaje źródłem prawdy dla dostępu i ról, dopóki członkostwo workspace nie trafi do bazy danych."
+                : "This directory remains the source of truth for access and roles until workspace membership moves into the database."}
           </p>
+
+          <div className="mt-4 inline-flex items-center rounded-full border border-white/75 bg-slate-50/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+            {snapshot.staffDirectorySource === "database"
+              ? isPolish
+                ? "Źródło: baza danych"
+                : "Source: database"
+              : isPolish
+                ? "Źródło: katalog statyczny"
+                : "Source: static directory"}
+          </div>
+
+          {staffMessage ? (
+            <div className="mt-4 rounded-[22px] border border-[#C7F0D6] bg-[#F0FBF4] px-4 py-3 text-sm text-[#19754C]">
+              {staffMessage}
+            </div>
+          ) : null}
+
+          {staffError ? (
+            <div className="mt-4 rounded-[22px] border border-[#FFD2DA] bg-[#FFF1F4] px-4 py-3 text-sm text-[#B4375C]">
+              {staffError}
+            </div>
+          ) : null}
+
+          {snapshot.staffDirectorySource !== "database" ? (
+            <div className="mt-4 rounded-[22px] border border-[#DCE1FF] bg-[#F7F8FF] px-4 py-4 text-sm leading-6 text-slate-600">
+              {isPolish
+                ? "Edycja członkostwa jest dostępna po ustawieniu EDUMAILAI_WORKSPACE_SETTINGS_ADAPTER=database. Wtedy panel admina i logowanie będą pracować na tej samej zapisanej liście użytkowników."
+                : "Membership editing is available once EDUMAILAI_WORKSPACE_SETTINGS_ADAPTER=database. Then the admin surface and sign-in will use the same persisted roster."}
+            </div>
+          ) : null}
 
           <div className="mt-6 space-y-3">
             {snapshot.staffDirectory.map((user) => (
@@ -185,9 +277,170 @@ export default async function AdminPage() {
                     {translateWorkspaceUserStatus(user.status, language)}
                   </span>
                 </div>
+
+                {snapshot.staffDirectorySource === "database" ? (
+                  <form
+                    action={updateWorkspaceStaffMemberAction}
+                    className="mt-4 grid gap-3 border-t border-slate-100/80 pt-4"
+                  >
+                    <input type="hidden" name="userId" value={user.id} />
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <label className="block">
+                        <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                          {isPolish ? "Imię i nazwisko" : "Full name"}
+                        </span>
+                        <input
+                          type="text"
+                          name="name"
+                          defaultValue={user.name}
+                          className={dashboardInputClassName}
+                          required
+                        />
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                          {isPolish ? "Email" : "Email"}
+                        </span>
+                        <input
+                          type="email"
+                          name="email"
+                          defaultValue={user.email}
+                          className={dashboardInputClassName}
+                          required
+                        />
+                      </label>
+                    </div>
+
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <label className="block">
+                        <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                          {isPolish ? "Rola" : "Role"}
+                        </span>
+                        <select
+                          name="role"
+                          defaultValue={user.role}
+                          className={dashboardInputClassName}
+                        >
+                          {editableWorkspaceRoles.map((role) => (
+                            <option key={role} value={role}>
+                              {translateWorkspaceRole(role, language)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                          {isPolish ? "Status" : "Status"}
+                        </span>
+                        <select
+                          name="status"
+                          defaultValue={user.status}
+                          className={dashboardInputClassName}
+                        >
+                          {editableWorkspaceStatuses.map((status) => (
+                            <option key={status} value={status}>
+                              {translateWorkspaceUserStatus(status, language)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <button
+                        type="submit"
+                        className={dashboardGhostButtonClassName}
+                      >
+                        {isPolish ? "Zapisz zmiany" : "Save changes"}
+                      </button>
+                    </div>
+                  </form>
+                ) : null}
               </div>
             ))}
           </div>
+
+          {snapshot.staffDirectorySource === "database" ? (
+            <form
+              action={createWorkspaceStaffMemberAction}
+              className="mt-6 rounded-[24px] border border-white/75 bg-slate-50/70 p-4 shadow-[0_14px_32px_rgba(141,153,179,0.08)]"
+            >
+              <p className="text-sm font-semibold text-slate-900">
+                {isPolish ? "Dodaj członka zespołu" : "Add staff member"}
+              </p>
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                <label className="block">
+                  <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    {isPolish ? "Imię i nazwisko" : "Full name"}
+                  </span>
+                  <input
+                    type="text"
+                    name="name"
+                    className={dashboardInputClassName}
+                    placeholder={isPolish ? "Alex Morgan" : "Alex Morgan"}
+                    required
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    {isPolish ? "Email" : "Email"}
+                  </span>
+                  <input
+                    type="email"
+                    name="email"
+                    className={dashboardInputClassName}
+                    placeholder="staff@university.edu"
+                    required
+                  />
+                </label>
+              </div>
+
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <label className="block">
+                  <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    {isPolish ? "Rola" : "Role"}
+                  </span>
+                  <select
+                    name="role"
+                    defaultValue="triage_specialist"
+                    className={dashboardInputClassName}
+                  >
+                    {editableWorkspaceRoles.map((role) => (
+                      <option key={role} value={role}>
+                        {translateWorkspaceRole(role, language)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block">
+                  <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    {isPolish ? "Status" : "Status"}
+                  </span>
+                  <select
+                    name="status"
+                    defaultValue="active"
+                    className={dashboardInputClassName}
+                  >
+                    {editableWorkspaceStatuses.map((status) => (
+                      <option key={status} value={status}>
+                        {translateWorkspaceUserStatus(status, language)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <div className="mt-4 flex justify-end">
+                <button type="submit" className={dashboardPrimaryButtonClassName}>
+                  {isPolish ? "Dodaj użytkownika" : "Add user"}
+                </button>
+              </div>
+            </form>
+          ) : null}
         </article>
 
         <article className={`${dashboardPanelClassName} p-5 md:p-6`}>

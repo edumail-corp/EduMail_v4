@@ -22,7 +22,7 @@ import {
   getEmailApprovalState,
   getEmailDepartment,
   getEmailReplyEntry,
-  staffAssigneeOptions,
+  staffAssigneeOptions as defaultStaffAssigneeOptions,
   translateCaseApprovalState,
   translateDepartment,
   translateGroundingStrength,
@@ -83,6 +83,7 @@ export function InboxEmailDetailPanel({
   onApprove,
   isApproving = false,
   assigneeValue = defaultStaffAssignmentSelection,
+  staffAssigneeOptions = defaultStaffAssigneeOptions,
   onAssigneeChange,
   onSaveAssignee,
   isSavingAssignee = false,
@@ -106,6 +107,7 @@ export function InboxEmailDetailPanel({
   onApprove?: () => void;
   isApproving?: boolean;
   assigneeValue?: StaffAssignmentSelectValue;
+  staffAssigneeOptions?: readonly string[];
   onAssigneeChange?: (value: StaffAssignmentSelectValue) => void;
   onSaveAssignee?: () => void;
   isSavingAssignee?: boolean;

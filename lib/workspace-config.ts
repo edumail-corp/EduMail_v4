@@ -6,6 +6,7 @@ export type WorkspaceRole =
   | "knowledge_manager";
 
 export type WorkspaceUserStatus = "active" | "pending";
+export type WorkspaceStaffDirectorySource = "static" | "database";
 export type WorkspaceProviderStatus =
   | "local"
   | "manual_required"

@@ -19,6 +19,7 @@ import type {
   WorkspaceLocalStorageSummary,
   WorkspaceManualWorkItem,
   WorkspaceAdapterBinding,
+  WorkspaceStaffDirectorySource,
   WorkspaceStaffUser,
   WorkspaceWorkflowStage,
 } from "@/lib/workspace-config";
@@ -71,6 +72,7 @@ export type WorkspaceSettingsSnapshot = {
     planned: number;
   };
   staffDirectory: WorkspaceStaffUser[];
+  staffDirectorySource: WorkspaceStaffDirectorySource;
   futureDomainModel: WorkspaceDomainEntity[];
   manualWorkItems: WorkspaceManualWorkItem[];
   operatingDepartments: readonly Department[];

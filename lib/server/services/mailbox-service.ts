@@ -2,10 +2,13 @@ import type {
   DepartmentFilter,
   EmailFilter,
   StaffEmailCreateInput,
+  StaffEmail,
   StaffAssignmentFilter,
   StaffEmailUpdateInput,
 } from "@/lib/email-data";
 import {
+  getDepartmentSuggestedAssignees,
+  getEmailDepartment,
   translateDepartment,
   translateRoutingConfidence,
 } from "@/lib/email-data";
@@ -14,40 +17,84 @@ import {
   getAIDraftAdapter,
   getMailboxAdapter,
 } from "@/lib/server/adapters";
+import { listActiveWorkspaceStaffAssignees } from "@/lib/server/workspace-staff-directory";
 
 const mailboxAdapter = getMailboxAdapter();
+
+function applyActiveWorkspaceSuggestions(
+  email: StaffEmail,
+  activeStaffAssignees: readonly string[]
+) {
+  if (!email.routingDecision) {
+    return email;
+  }
+
+  const department = getEmailDepartment(email);
+
+  return {
+    ...email,
+    routingDecision: {
+      ...email.routingDecision,
+      department,
+      suggestedAssignees: getDepartmentSuggestedAssignees(
+        department,
+        activeStaffAssignees
+      ),
+    },
+  } satisfies StaffEmail;
+}
 
 export async function listMailboxEmails(
   filter: EmailFilter = "All",
   assignmentFilter: StaffAssignmentFilter = "All",
   departmentFilter: DepartmentFilter = "All"
 ) {
-  return mailboxAdapter.listEmails(filter, assignmentFilter, departmentFilter);
+  const [emails, activeStaffAssignees] = await Promise.all([
+    mailboxAdapter.listEmails(filter, assignmentFilter, departmentFilter),
+    listActiveWorkspaceStaffAssignees(),
+  ]);
+
+  return emails.map((email) =>
+    applyActiveWorkspaceSuggestions(email, activeStaffAssignees)
+  );
 }
 
 export async function updateMailboxEmail(
   id: string,
   updates: StaffEmailUpdateInput
 ) {
-  return mailboxAdapter.updateEmail(id, updates);
+  const [email, activeStaffAssignees] = await Promise.all([
+    mailboxAdapter.updateEmail(id, updates),
+    listActiveWorkspaceStaffAssignees(),
+  ]);
+
+  return email ? applyActiveWorkspaceSuggestions(email, activeStaffAssignees) : null;
 }
 
 export async function createMailboxEmail(
   input: StaffEmailCreateInput,
   language: LanguagePreference = "English"
 ) {
-  const suggestion = await (await getAIDraftAdapter()).generateDraftSuggestion(
-    input,
-    language
-  );
+  const draftAdapter = await getAIDraftAdapter();
+  const [suggestion, activeStaffAssignees] = await Promise.all([
+    draftAdapter.generateDraftSuggestion(input, language),
+    listActiveWorkspaceStaffAssignees(),
+  ]);
   const timestamp = new Date().toISOString();
   const isPolish = language === "Polish";
+  const routingDecision = {
+    ...suggestion.routingDecision,
+    suggestedAssignees: getDepartmentSuggestedAssignees(
+      suggestion.routingDecision.department,
+      activeStaffAssignees
+    ),
+  };
   const localizedDepartment = translateDepartment(
-    suggestion.routingDecision.department,
+    routingDecision.department,
     language
   );
   const localizedConfidence = translateRoutingConfidence(
-    suggestion.routingDecision.confidence,
+    routingDecision.confidence,
     language
   ).toLowerCase();
 
@@ -55,10 +102,10 @@ export async function createMailboxEmail(
     sender: `${input.senderName.trim()} <${input.senderEmail.trim().toLowerCase()}>`,
     subject: input.subject.trim(),
     body: input.body.trim(),
-    category: suggestion.routingDecision.department,
-    department: suggestion.routingDecision.department,
+    category: routingDecision.department,
+    department: routingDecision.department,
     caseOrigin: "Manual intake",
-    routingDecision: suggestion.routingDecision,
+    routingDecision,
     approvalState: suggestion.manualReviewReason
       ? "Escalated"
       : suggestion.aiDraft
@@ -90,11 +137,11 @@ export async function createMailboxEmail(
         sentAt: timestamp,
         body: suggestion.manualReviewReason
           ? isPolish
-            ? `Utworzono nową sprawę, zasugerowano ${localizedDepartment}, polecono ${suggestion.routingDecision.suggestedAssignees.join(", ")} i oznaczono sprawę do ręcznego przeglądu w skrzynce. ${suggestion.manualReviewReason}`
-            : `Created a new case, suggested ${suggestion.routingDecision.department}, recommended ${suggestion.routingDecision.suggestedAssignees.join(", ")}, and flagged it for manual review in the inbox. ${suggestion.manualReviewReason}`
+            ? `Utworzono nową sprawę, zasugerowano ${localizedDepartment}, polecono ${routingDecision.suggestedAssignees.join(", ")} i oznaczono sprawę do ręcznego przeglądu w skrzynce. ${suggestion.manualReviewReason}`
+            : `Created a new case, suggested ${routingDecision.department}, recommended ${routingDecision.suggestedAssignees.join(", ")}, and flagged it for manual review in the inbox. ${suggestion.manualReviewReason}`
           : isPolish
-            ? `Utworzono nową sprawę, zasugerowano ${localizedDepartment} z ${localizedConfidence} pewnością, polecono ${suggestion.routingDecision.suggestedAssignees.join(", ")} i przygotowano wstępny lokalny szkic do przeglądu.`
-            : `Created a new case, suggested ${suggestion.routingDecision.department} with ${suggestion.routingDecision.confidence.toLowerCase()} confidence, recommended ${suggestion.routingDecision.suggestedAssignees.join(", ")}, and prepared an initial local draft for staff review.`,
+            ? `Utworzono nową sprawę, zasugerowano ${localizedDepartment} z ${localizedConfidence} pewnością, polecono ${routingDecision.suggestedAssignees.join(", ")} i przygotowano wstępny lokalny szkic do przeglądu.`
+            : `Created a new case, suggested ${routingDecision.department} with ${routingDecision.confidence.toLowerCase()} confidence, recommended ${routingDecision.suggestedAssignees.join(", ")}, and prepared an initial local draft for staff review.`,
       },
     ],
     sourceCitations: suggestion.sourceCitations,

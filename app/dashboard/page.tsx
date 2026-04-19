@@ -18,6 +18,7 @@ import { listWorkspaceActivity } from "@/lib/server/services/activity-service";
 import { listMailboxEmails } from "@/lib/server/services/mailbox-service";
 import { listKnowledgeLibraryDocuments } from "@/lib/server/services/knowledge-base-service";
 import { requireWorkspaceUser } from "@/lib/server/workspace-auth";
+import { listActiveWorkspaceStaffAssignees } from "@/lib/server/workspace-staff-directory";
 import {
   getLocaleForLanguage,
   isLanguagePreference,
@@ -75,12 +76,16 @@ export default async function DashboardRootPage({
   let emails: Awaited<ReturnType<typeof listMailboxEmails>> = [];
   let documents: Awaited<ReturnType<typeof listKnowledgeLibraryDocuments>> = [];
   let activityEvents: Awaited<ReturnType<typeof listWorkspaceActivity>> = [];
+  let staffAssigneeOptions: Awaited<
+    ReturnType<typeof listActiveWorkspaceStaffAssignees>
+  > = [];
 
   try {
-    [emails, documents, activityEvents] = await Promise.all([
+    [emails, documents, activityEvents, staffAssigneeOptions] = await Promise.all([
       listMailboxEmails(),
       listKnowledgeLibraryDocuments(),
       listWorkspaceActivity(40),
+      listActiveWorkspaceStaffAssignees(),
     ]);
   } catch (error) {
     console.error("Failed to load dashboard data. Falling back to empty state.", error);
@@ -94,7 +99,10 @@ export default async function DashboardRootPage({
   const approvedMessages = emails.filter(
     (email) => email.status === "Auto-sent"
   ).length;
-  const operationsSnapshot = summarizeMailboxOperations(emails);
+  const operationsSnapshot = summarizeMailboxOperations(
+    emails,
+    staffAssigneeOptions
+  );
   const unassignedCount = operationsSnapshot.unassignedCount;
   const openCases = draftCount + escalatedMessages;
   const ownerCoverageRate =
