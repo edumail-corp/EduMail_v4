@@ -5,6 +5,10 @@ import type {
   KnowledgeBaseAdapter,
 } from "@/lib/server/adapters/contracts";
 import {
+  dedupeFileStorageAdapters,
+  resolveFileStorageAdapter,
+} from "@/lib/server/adapters/file-storage-resolver";
+import {
   createKnowledgeDocumentRecord,
   deleteKnowledgeDocumentRecord,
   getKnowledgeDocumentRecord,
@@ -16,6 +20,7 @@ import { buildKnowledgeBaseStorageKey } from "@/lib/server/knowledge-base-file-s
 type LocalKnowledgeBaseAdapterDependencies = {
   activityAdapter: ActivityAdapter;
   fileStorageAdapter: FileStorageAdapter;
+  fileStorageAdapters?: readonly FileStorageAdapter[];
 };
 
 type RecordBackedKnowledgeBaseAdapterOptions = {
@@ -26,9 +31,15 @@ function createRecordBackedKnowledgeBaseAdapter(
   {
     activityAdapter,
     fileStorageAdapter,
+    fileStorageAdapters,
   }: LocalKnowledgeBaseAdapterDependencies,
   options?: RecordBackedKnowledgeBaseAdapterOptions
 ): KnowledgeBaseAdapter {
+  const availableFileStorageAdapters = dedupeFileStorageAdapters(
+    fileStorageAdapter,
+    fileStorageAdapters
+  );
+
   return {
     async listDocuments() {
       const records = await listKnowledgeDocumentRecords(options);
@@ -54,6 +65,7 @@ function createRecordBackedKnowledgeBaseAdapter(
               originalName: input.name,
               mimeType: input.mimeType,
               sizeInBytes: input.sizeInBytes,
+              storageProvider: fileStorageAdapter.providerId,
             },
             mimeType: input.mimeType,
             sizeInBytes: input.sizeInBytes,
@@ -84,7 +96,14 @@ function createRecordBackedKnowledgeBaseAdapter(
       }
 
       if (documentToDelete.fileAsset) {
-        await fileStorageAdapter.deleteBinaryFile(documentToDelete.fileAsset.storageKey);
+        const documentStorageAdapter = resolveFileStorageAdapter(
+          availableFileStorageAdapters,
+          documentToDelete.fileAsset.storageProvider,
+          fileStorageAdapter
+        );
+        await documentStorageAdapter.deleteBinaryFile(
+          documentToDelete.fileAsset.storageKey
+        );
       }
 
       const deletedRecord = await deleteKnowledgeDocumentRecord(id, options);
@@ -111,7 +130,12 @@ function createRecordBackedKnowledgeBaseAdapter(
         return null;
       }
 
-      const fileBuffer = await fileStorageAdapter.readBinaryFile(
+      const documentStorageAdapter = resolveFileStorageAdapter(
+        availableFileStorageAdapters,
+        document.fileAsset.storageProvider,
+        fileStorageAdapter
+      );
+      const fileBuffer = await documentStorageAdapter.readBinaryFile(
         document.fileAsset.storageKey
       );
 

@@ -12,6 +12,7 @@
     "build:json-file": "node scripts/build-json-file.mjs",
     "build:database": "node scripts/build-database.mjs",
     "build:sqlite": "node scripts/build-sqlite.mjs",
+    "migrate:supabase-storage": "node scripts/migrate-supabase-storage.mjs",
     "start": "next start --hostname 127.0.0.1",
     "lint": "node scripts/basic-lint.mjs",
     "lint:eslint": "eslint app components lib eslint.config.mjs next.config.ts postcss.config.mjs",
@@ -21,13 +22,16 @@
     "verify:adapter-modes": "npm run verify && npm run build:json-file && npm run build:sqlite && npm run build:database"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.103.3",
     "next": "16.2.1",
+    "pg": "^8.20.0",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "cross-env": "^10.1.0",

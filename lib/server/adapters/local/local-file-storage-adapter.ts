@@ -22,6 +22,7 @@ function resolveStoragePath(storageKey: string) {
 }
 
 export const localFileStorageAdapter: FileStorageAdapter = {
+  providerId: "local",
   async writeBinaryFile(storageKey, fileBuffer) {
     const filePath = resolveStoragePath(storageKey);
     await mkdir(path.dirname(filePath), { recursive: true });

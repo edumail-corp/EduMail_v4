@@ -2,6 +2,7 @@ import { readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { getConfiguredDatabaseUrl } from "@/lib/server/adapters/database/database-url";
 import { listConfiguredAdapterBindings } from "@/lib/server/adapters/provider-config";
+import { getConfiguredSupabaseStorage } from "@/lib/server/adapters/supabase/supabase-config";
 import { resolveSQLiteDatabasePath } from "@/lib/server/adapters/sqlite/sqlite-database";
 import { knowledgeBaseStoragePrefix } from "@/lib/server/knowledge-base-file-storage";
 import { getWritableDataPath, getWritableDataRootPath } from "@/lib/server/storage-path";
@@ -116,6 +117,7 @@ export async function getWorkspaceLocalStorageSummary(
     (binding) => binding.id === "file-storage"
   )?.activeProvider;
   const configuredDatabase = getConfiguredDatabaseUrl();
+  const configuredSupabaseStorage = getConfiguredSupabaseStorage();
   const sqliteActive =
     mailboxProvider === "sqlite" ||
     knowledgeBaseProvider === "sqlite" ||
@@ -159,15 +161,6 @@ export async function getWorkspaceLocalStorageSummary(
       path: path.join(getWritableDataRootPath(), knowledgeBaseStoragePrefix),
       active: fileStorageProvider === "local",
     },
-    {
-      id: "sqlite-database",
-      label: language === "Polish" ? "Baza SQLite" : "SQLite Database",
-      kind: "sqlite" as const,
-      path: databaseActive
-        ? configuredDatabase?.resolvedPath ?? resolveSQLiteDatabasePath()
-        : resolveSQLiteDatabasePath(),
-      active: sqliteActive || databaseActive,
-    },
   ].map(async (location) => {
     const usage = await getPathUsage(location.path);
 
@@ -184,6 +177,78 @@ export async function getWorkspaceLocalStorageSummary(
       ),
     };
   }));
+
+  const databaseLocation: WorkspaceStorageLocation =
+    configuredDatabase?.driver === "postgres"
+      ? {
+          id: "postgres-database",
+          label:
+            language === "Polish"
+              ? "Baza PostgreSQL / Supabase"
+              : "PostgreSQL / Supabase Database",
+          kind: "postgres",
+          path: configuredDatabase.displayLabel,
+          present: true,
+          active: databaseActive,
+          approxSizeBytes: 0,
+          fileCount: 0,
+          summary: databaseActive
+            ? language === "Polish"
+              ? "To jest aktywne zdalne połączenie PostgreSQL/Supabase. Zużycie dysku nie jest mierzone z tego lokalnego środowiska."
+              : "This is the active remote PostgreSQL/Supabase connection. Disk usage is not measured from this local environment."
+            : language === "Polish"
+              ? "Skonfigurowano zdalną bazę PostgreSQL/Supabase, ale nie jest ona aktywną warstwą zapisu w tym środowisku."
+              : "A remote PostgreSQL/Supabase database is configured, but it is not the active persistence layer in this environment.",
+        }
+      : await (async () => {
+          const sqlitePath =
+            databaseActive && configuredDatabase?.driver === "sqlite"
+              ? configuredDatabase.resolvedPath
+              : resolveSQLiteDatabasePath();
+          const usage = await getPathUsage(sqlitePath);
+
+          return {
+            id: "sqlite-database",
+            label: language === "Polish" ? "Baza SQLite" : "SQLite Database",
+            kind: "sqlite" as const,
+            path: sqlitePath,
+            active:
+              sqliteActive ||
+              (databaseActive && configuredDatabase?.driver === "sqlite"),
+            present: usage.present,
+            approxSizeBytes: usage.approxSizeBytes,
+            fileCount: usage.fileCount,
+            summary: buildLocationSummary(
+              usage.present,
+              sqliteActive ||
+                (databaseActive && configuredDatabase?.driver === "sqlite"),
+              usage.fileCount,
+              language
+            ),
+          };
+        })();
+
+  locations.push(databaseLocation);
+
+  if (fileStorageProvider === "supabase_storage" && configuredSupabaseStorage) {
+    locations.push({
+      id: "supabase-storage",
+      label:
+        language === "Polish"
+          ? "Supabase Storage"
+          : "Supabase Storage",
+      kind: "remote",
+      path: `${configuredSupabaseStorage.projectUrl}/storage/v1/object/${configuredSupabaseStorage.bucketName}`,
+      present: true,
+      active: true,
+      approxSizeBytes: 0,
+      fileCount: 0,
+      summary:
+        language === "Polish"
+          ? `To jest aktywny zdalny bucket plików (${configuredSupabaseStorage.bucketName}). Zużycie i liczba plików nie są mierzone z tego lokalnego środowiska.`
+          : `This is the active remote file bucket (${configuredSupabaseStorage.bucketName}). Usage and file counts are not measured from this local environment.`,
+    });
+  }
 
   return {
     rootPath: getWritableDataRootPath(),

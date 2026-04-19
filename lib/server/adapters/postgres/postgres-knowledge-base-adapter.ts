@@ -12,31 +12,30 @@ import {
   dedupeFileStorageAdapters,
   resolveFileStorageAdapter,
 } from "@/lib/server/adapters/file-storage-resolver";
+import { loadBootstrapKnowledgeDocumentRecords } from "@/lib/server/adapters/postgres/postgres-bootstrap";
+import {
+  getPostgresCount,
+  parsePostgresJson,
+  runPostgresTransaction,
+  serializePostgresJson,
+  type PostgresDatabaseAccess,
+} from "@/lib/server/adapters/postgres/postgres-database";
 import {
   buildKnowledgeBaseStorageKey,
 } from "@/lib/server/knowledge-base-file-storage";
 import {
-  listKnowledgeDocumentRecords,
   toKnowledgeDocument,
   type KnowledgeDocumentRecord,
 } from "@/lib/server/knowledge-base-metadata-store";
-import {
-  getSQLiteCount,
-  parseSQLiteJson,
-  runSQLiteTransaction,
-  serializeSQLiteJson,
-  type SQLiteDatabaseAccess,
-  withSQLiteDatabase,
-} from "@/lib/server/adapters/sqlite/sqlite-database";
 
-type SQLiteKnowledgeBaseAdapterDependencies = {
+type PostgresKnowledgeBaseAdapterDependencies = {
   activityAdapter: ActivityAdapter;
   fileStorageAdapter: FileStorageAdapter;
   fileStorageAdapters?: readonly FileStorageAdapter[];
-  databaseAccess?: SQLiteDatabaseAccess;
+  databaseAccess: PostgresDatabaseAccess;
 };
 
-type SQLiteKnowledgeDocumentRow = {
+type PostgresKnowledgeDocumentRow = {
   id: string;
   name: string;
   category: KnowledgeDocumentRecord["category"];
@@ -47,10 +46,12 @@ type SQLiteKnowledgeDocumentRow = {
   summary: string;
   preview_excerpt: string;
   origin: KnowledgeDocumentRecord["origin"];
-  file_asset_json: string | null;
+  file_asset_json: unknown;
 };
 
-function toKnowledgeDocumentRecord(row: SQLiteKnowledgeDocumentRow): KnowledgeDocumentRecord {
+function toKnowledgeDocumentRecord(
+  row: PostgresKnowledgeDocumentRow
+): KnowledgeDocumentRecord {
   return {
     id: row.id,
     name: row.name,
@@ -63,7 +64,7 @@ function toKnowledgeDocumentRecord(row: SQLiteKnowledgeDocumentRow): KnowledgeDo
     summary: row.summary,
     previewExcerpt: row.preview_excerpt,
     origin: row.origin,
-    fileAsset: parseSQLiteJson<
+    fileAsset: parsePostgresJson<
       KnowledgeDocumentRecord["fileAsset"] | undefined
     >(row.file_asset_json, undefined),
   };
@@ -71,61 +72,59 @@ function toKnowledgeDocumentRecord(row: SQLiteKnowledgeDocumentRow): KnowledgeDo
 
 function upsertKnowledgeDocumentRecord(
   record: KnowledgeDocumentRecord,
-  withDatabase: SQLiteDatabaseAccess["withDatabase"] = withSQLiteDatabase
+  databaseAccess: PostgresDatabaseAccess
 ) {
-  return withDatabase((database) => {
-    database
-      .prepare(`
-        INSERT INTO knowledge_documents (
-          id,
-          name,
-          category,
-          uploaded_at,
-          pages,
-          size_in_bytes,
-          mime_type,
-          summary,
-          preview_excerpt,
-          origin,
-          file_asset_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(id) DO UPDATE SET
-          name = excluded.name,
-          category = excluded.category,
-          uploaded_at = excluded.uploaded_at,
-          pages = excluded.pages,
-          size_in_bytes = excluded.size_in_bytes,
-          mime_type = excluded.mime_type,
-          summary = excluded.summary,
-          preview_excerpt = excluded.preview_excerpt,
-          origin = excluded.origin,
-          file_asset_json = excluded.file_asset_json
-      `)
-      .run(
-        record.id,
-        record.name,
-        record.category,
-        record.uploadedAt,
-        record.pages,
-        record.sizeInBytes ?? null,
-        record.mimeType ?? null,
-        record.summary,
-        record.previewExcerpt,
-        record.origin,
-        record.fileAsset ? serializeSQLiteJson(record.fileAsset) : null
-      );
-  });
+  return databaseAccess.query(
+    `
+      INSERT INTO knowledge_documents (
+        id,
+        name,
+        category,
+        uploaded_at,
+        pages,
+        size_in_bytes,
+        mime_type,
+        summary,
+        preview_excerpt,
+        origin,
+        file_asset_json
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb)
+      ON CONFLICT (id) DO UPDATE SET
+        name = EXCLUDED.name,
+        category = EXCLUDED.category,
+        uploaded_at = EXCLUDED.uploaded_at,
+        pages = EXCLUDED.pages,
+        size_in_bytes = EXCLUDED.size_in_bytes,
+        mime_type = EXCLUDED.mime_type,
+        summary = EXCLUDED.summary,
+        preview_excerpt = EXCLUDED.preview_excerpt,
+        origin = EXCLUDED.origin,
+        file_asset_json = EXCLUDED.file_asset_json
+    `,
+    [
+      record.id,
+      record.name,
+      record.category,
+      record.uploadedAt,
+      record.pages,
+      record.sizeInBytes ?? null,
+      record.mimeType ?? null,
+      record.summary,
+      record.previewExcerpt,
+      record.origin,
+      record.fileAsset ? serializePostgresJson(record.fileAsset) : null,
+    ]
+  );
 }
 
-export function createSQLiteKnowledgeBaseAdapter({
+export function createPostgresKnowledgeBaseAdapter({
   activityAdapter,
   fileStorageAdapter,
   fileStorageAdapters,
   databaseAccess,
-}: SQLiteKnowledgeBaseAdapterDependencies): KnowledgeBaseAdapter {
+}: PostgresKnowledgeBaseAdapterDependencies): KnowledgeBaseAdapter {
   let hasBootstrapped = false;
   let bootstrapPromise: Promise<void> | null = null;
-  const withDatabase = databaseAccess?.withDatabase ?? withSQLiteDatabase;
   const availableFileStorageAdapters = dedupeFileStorageAdapters(
     fileStorageAdapter,
     fileStorageAdapters
@@ -140,50 +139,52 @@ export function createSQLiteKnowledgeBaseAdapter({
       return bootstrapPromise;
     }
 
-    bootstrapPromise = withDatabase(async (database) => {
-      if (getSQLiteCount(database, "knowledge_documents") === 0) {
-        const seedRecords = await listKnowledgeDocumentRecords({
-          fallback: "seeded",
-        });
-        const insertStatement = database.prepare(`
-          INSERT INTO knowledge_documents (
-            id,
-            name,
-            category,
-            uploaded_at,
-            pages,
-            size_in_bytes,
-            mime_type,
-            summary,
-            preview_excerpt,
-            origin,
-            file_asset_json
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `);
+    bootstrapPromise = databaseAccess
+      .withClient(async (client) => {
+        if ((await getPostgresCount(client, "knowledge_documents")) === 0) {
+          const seedRecords = await loadBootstrapKnowledgeDocumentRecords();
 
-        runSQLiteTransaction(database, () => {
-          for (const record of seedRecords) {
-            insertStatement.run(
-              record.id,
-              record.name,
-              record.category,
-              record.uploadedAt,
-              record.pages,
-              record.sizeInBytes ?? null,
-              record.mimeType ?? null,
-              record.summary,
-              record.previewExcerpt,
-              record.origin,
-              record.fileAsset ? serializeSQLiteJson(record.fileAsset) : null
-            );
-          }
-        });
-      }
+          await runPostgresTransaction(client, async () => {
+            for (const record of seedRecords) {
+              await client.query(
+                `
+                  INSERT INTO knowledge_documents (
+                    id,
+                    name,
+                    category,
+                    uploaded_at,
+                    pages,
+                    size_in_bytes,
+                    mime_type,
+                    summary,
+                    preview_excerpt,
+                    origin,
+                    file_asset_json
+                  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb)
+                `,
+                [
+                  record.id,
+                  record.name,
+                  record.category,
+                  record.uploadedAt,
+                  record.pages,
+                  record.sizeInBytes ?? null,
+                  record.mimeType ?? null,
+                  record.summary,
+                  record.previewExcerpt,
+                  record.origin,
+                  record.fileAsset ? serializePostgresJson(record.fileAsset) : null,
+                ]
+              );
+            }
+          });
+        }
 
-      hasBootstrapped = true;
-    }).finally(() => {
-      bootstrapPromise = null;
-    });
+        hasBootstrapped = true;
+      })
+      .finally(() => {
+        bootstrapPromise = null;
+      });
 
     return bootstrapPromise;
   }
@@ -191,28 +192,26 @@ export function createSQLiteKnowledgeBaseAdapter({
   async function listPersistedRecords() {
     await ensureBootstrapped();
 
-    return withDatabase((database) => {
-      const rows = database
-        .prepare(`
-          SELECT
-            id,
-            name,
-            category,
-            uploaded_at,
-            pages,
-            size_in_bytes,
-            mime_type,
-            summary,
-            preview_excerpt,
-            origin,
-            file_asset_json
-          FROM knowledge_documents
-          ORDER BY uploaded_at DESC, id DESC
-        `)
-        .all() as SQLiteKnowledgeDocumentRow[];
+    const rows = await databaseAccess.query<PostgresKnowledgeDocumentRow>(
+      `
+        SELECT
+          id,
+          name,
+          category,
+          uploaded_at,
+          pages,
+          size_in_bytes,
+          mime_type,
+          summary,
+          preview_excerpt,
+          origin,
+          file_asset_json
+        FROM knowledge_documents
+        ORDER BY uploaded_at DESC, id DESC
+      `
+    );
 
-      return rows.map(toKnowledgeDocumentRecord);
-    });
+    return rows.map(toKnowledgeDocumentRecord);
   }
 
   return {
@@ -248,7 +247,7 @@ export function createSQLiteKnowledgeBaseAdapter({
             storageProvider: fileStorageAdapter.providerId,
           },
         };
-        await upsertKnowledgeDocumentRecord(nextRecord, withDatabase);
+        await upsertKnowledgeDocumentRecord(nextRecord, databaseAccess);
 
         await activityAdapter.appendEvent({
           action: "document_uploaded",
@@ -268,28 +267,26 @@ export function createSQLiteKnowledgeBaseAdapter({
     async deleteDocument(id) {
       await ensureBootstrapped();
 
-      const documentToDelete = await withDatabase((database) => {
-        const row = database
-          .prepare(`
-            SELECT
-              id,
-              name,
-              category,
-              uploaded_at,
-              pages,
-              size_in_bytes,
-              mime_type,
-              summary,
-              preview_excerpt,
-              origin,
-              file_asset_json
-            FROM knowledge_documents
-            WHERE id = ?
-          `)
-          .get(id) as SQLiteKnowledgeDocumentRow | undefined;
-
-        return row ? toKnowledgeDocumentRecord(row) : null;
-      });
+      const rows = await databaseAccess.query<PostgresKnowledgeDocumentRow>(
+        `
+          SELECT
+            id,
+            name,
+            category,
+            uploaded_at,
+            pages,
+            size_in_bytes,
+            mime_type,
+            summary,
+            preview_excerpt,
+            origin,
+            file_asset_json
+          FROM knowledge_documents
+          WHERE id = $1
+        `,
+        [id]
+      );
+      const documentToDelete = rows[0] ? toKnowledgeDocumentRecord(rows[0]) : null;
 
       if (!documentToDelete) {
         return false;
@@ -306,9 +303,7 @@ export function createSQLiteKnowledgeBaseAdapter({
         );
       }
 
-      await withDatabase((database) => {
-        database.prepare(`DELETE FROM knowledge_documents WHERE id = ?`).run(id);
-      });
+      await databaseAccess.query(`DELETE FROM knowledge_documents WHERE id = $1`, [id]);
 
       await activityAdapter.appendEvent({
         action: "document_deleted",
@@ -324,28 +319,26 @@ export function createSQLiteKnowledgeBaseAdapter({
     async getDocumentFile(id) {
       await ensureBootstrapped();
 
-      const document = await withDatabase((database) => {
-        const row = database
-          .prepare(`
-            SELECT
-              id,
-              name,
-              category,
-              uploaded_at,
-              pages,
-              size_in_bytes,
-              mime_type,
-              summary,
-              preview_excerpt,
-              origin,
-              file_asset_json
-            FROM knowledge_documents
-            WHERE id = ?
-          `)
-          .get(id) as SQLiteKnowledgeDocumentRow | undefined;
-
-        return row ? toKnowledgeDocumentRecord(row) : null;
-      });
+      const rows = await databaseAccess.query<PostgresKnowledgeDocumentRow>(
+        `
+          SELECT
+            id,
+            name,
+            category,
+            uploaded_at,
+            pages,
+            size_in_bytes,
+            mime_type,
+            summary,
+            preview_excerpt,
+            origin,
+            file_asset_json
+          FROM knowledge_documents
+          WHERE id = $1
+        `,
+        [id]
+      );
+      const document = rows[0] ? toKnowledgeDocumentRecord(rows[0]) : null;
 
       if (!document?.fileAsset) {
         return null;

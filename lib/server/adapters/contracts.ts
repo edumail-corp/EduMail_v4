@@ -59,6 +59,8 @@ export type KnowledgeBaseDocumentFile = {
   name: string;
 };
 
+export type FileStorageProviderId = "local" | "supabase_storage";
+
 export type WorkspaceSettingsSnapshot = {
   integrations: WorkspaceIntegrationStatus[];
   adapterBindings: WorkspaceAdapterBinding[];
@@ -114,6 +116,7 @@ export interface WorkspaceSettingsAdapter {
 }
 
 export interface FileStorageAdapter {
+  providerId: FileStorageProviderId;
   writeBinaryFile(storageKey: string, fileBuffer: Buffer): Promise<void>;
   readBinaryFile(storageKey: string): Promise<Buffer | null>;
   deleteBinaryFile(storageKey: string): Promise<boolean>;

@@ -3,6 +3,7 @@ import type {
   WorkspaceProviderStatus,
   WorkspaceReadinessCategory,
 } from "@/lib/workspace-config";
+import { hasConfiguredSupabaseStorage } from "@/lib/server/adapters/supabase/supabase-config";
 import type { LanguagePreference } from "@/lib/user-preferences";
 
 type EnvironmentSignalDefinition = {
@@ -41,8 +42,8 @@ const environmentSignalDefinitions: readonly EnvironmentSignalDefinition[] = [
     getSummary(configuredEnvVars, language) {
       if (configuredEnvVars.length > 0) {
         return language === "Polish"
-          ? "Wykryto URL produkcyjnej bazy danych, ale adapter bazy nie został jeszcze podłączony do rejestru usług."
-          : "A production database URL is configured, but the database adapter has not been connected to the service registry yet.";
+          ? "Wykryto URL bazy danych. Wspólny adapter database może teraz uruchamiać skrzynkę, aktywność i metadane na SQLite albo PostgreSQL/Supabase bez zmian w trasach."
+          : "A database URL is configured. The shared database adapter can now run mailbox, activity, and metadata on SQLite or PostgreSQL/Supabase without route changes.";
       }
 
       return language === "Polish"
@@ -52,8 +53,8 @@ const environmentSignalDefinitions: readonly EnvironmentSignalDefinition[] = [
     getNextStep(configuredEnvVars, language) {
       if (configuredEnvVars.length > 0) {
         return language === "Polish"
-          ? "Następnym krokiem jest wdrożenie adaptera database na tym kontrakcie i przełączenie usług po testach parzystości."
-          : "Next, implement the database adapter on this contract and switch the services after parity testing.";
+          ? "Przełącz odpowiednie adaptery na tryb database, zweryfikuj parzystość workflow i utrzymaj pliki bazy wiedzy na osobnym adapterze storage."
+          : "Switch the relevant adapters to database mode, verify workflow parity, and keep knowledge-base files on their separate storage adapter.";
       }
 
       return language === "Polish"
@@ -121,12 +122,18 @@ const environmentSignalDefinitions: readonly EnvironmentSignalDefinition[] = [
     id: "storage-contract",
     label: "File Storage Contract",
     category: "storage",
-    requiredEnvVars: ["EDUMAILAI_FILE_STORAGE_BUCKET"],
+    requiredEnvVars: ["EDUMAILAI_FILE_STORAGE_BUCKET", "EDUMAILAI_SUPABASE_SERVICE_KEY"],
     getSummary(configuredEnvVars, language) {
+      if (hasConfiguredSupabaseStorage()) {
+        return language === "Polish"
+          ? "Wykryto bucket i klucz usługowy Supabase. Adapter storage może teraz przenieść pliki bazy wiedzy poza lokalny dysk."
+          : "A Supabase bucket and service key are configured. The storage adapter can now move knowledge-base files off the local disk.";
+      }
+
       if (configuredEnvVars.length > 0) {
         return language === "Polish"
-          ? "Wykryto docelowy bucket dla plików, ale adapter storage nadal działa lokalnie."
-          : "A target file-storage bucket is configured, but the storage adapter still runs locally.";
+          ? "Wykryto część konfiguracji storage, ale adapter plików nie ma jeszcze pełnego zestawu danych dostępowych do Supabase."
+          : "Part of the storage configuration is present, but the file-storage adapter does not yet have the full Supabase credentials it needs.";
       }
 
       return language === "Polish"
@@ -134,15 +141,21 @@ const environmentSignalDefinitions: readonly EnvironmentSignalDefinition[] = [
         : "Knowledge-base document binaries are still stored on this environment's local disk.";
     },
     getNextStep(configuredEnvVars, language) {
+      if (hasConfiguredSupabaseStorage()) {
+        return language === "Polish"
+          ? "Ustaw EDUMAILAI_FILE_STORAGE_ADAPTER=supabase_storage, zweryfikuj upload/download dokumentów i zaplanuj migrację istniejących plików lokalnych."
+          : "Set EDUMAILAI_FILE_STORAGE_ADAPTER=supabase_storage, verify document upload/download parity, and plan migration of existing local files.";
+      }
+
       if (configuredEnvVars.length > 0) {
         return language === "Polish"
-          ? "Dodaj produkcyjny adapter blob/S3 i zachowaj obecny podział metadanych oraz binariów."
-          : "Add a production blob/S3 adapter while keeping the current metadata-versus-binary split.";
+          ? "Dodaj brakujące dane dostępu do Supabase Storage, a potem przełącz adapter plików bez zmiany warstwy usług."
+          : "Add the missing Supabase Storage credentials, then switch the file adapter without changing the service layer.";
       }
 
       return language === "Polish"
-        ? "Wybierz dostawcę przechowywania plików i ustaw EDUMAILAI_FILE_STORAGE_BUCKET."
-        : "Choose a file-storage provider and set EDUMAILAI_FILE_STORAGE_BUCKET.";
+        ? "Wybierz bucket storage i ustaw EDUMAILAI_FILE_STORAGE_BUCKET oraz EDUMAILAI_SUPABASE_SERVICE_KEY."
+        : "Choose a storage bucket and set EDUMAILAI_FILE_STORAGE_BUCKET plus EDUMAILAI_SUPABASE_SERVICE_KEY.";
     },
   },
   {

@@ -1,5 +1,7 @@
 import type { WorkspaceSettingsAdapter } from "@/lib/server/adapters/contracts";
+import { getConfiguredDatabaseUrl } from "@/lib/server/adapters/database/database-url";
 import { listConfiguredAdapterBindings } from "@/lib/server/adapters/provider-config";
+import { getConfiguredSupabaseStorage } from "@/lib/server/adapters/supabase/supabase-config";
 import { getWorkspaceEnvironmentSignals } from "@/lib/server/workspace-environment-signals";
 import { getWorkspaceLocalStorageSummary } from "@/lib/server/workspace-storage-audit";
 import {
@@ -65,6 +67,8 @@ function getLocalizedAdapterBindings(language: "English" | "Polish") {
 export const localWorkspaceSettingsAdapter: WorkspaceSettingsAdapter = {
   async getSnapshot(options) {
     const language = options?.language ?? "English";
+    const configuredDatabase = getConfiguredDatabaseUrl();
+    const configuredSupabaseStorage = getConfiguredSupabaseStorage();
     const adapterBindings = getLocalizedAdapterBindings(language);
     const environmentSignals = getWorkspaceEnvironmentSignals(language);
     const operationalBindings = adapterBindings.filter((binding) =>
@@ -79,6 +83,11 @@ export const localWorkspaceSettingsAdapter: WorkspaceSettingsAdapter = {
     const hasJsonFileOperationalBinding = operationalBindings.some(
       (binding) => binding.activeProvider === "json_file"
     );
+    const hasSupabaseStorageBinding = adapterBindings.some(
+      (binding) =>
+        binding.id === "file-storage" &&
+        binding.activeProvider === "supabase_storage"
+    );
     const integrations = getLocalizedWorkspaceIntegrationStatuses(language).map(
       (integration) =>
         integration.id === "ai-provider" && options?.draftProvider
@@ -91,13 +100,21 @@ export const localWorkspaceSettingsAdapter: WorkspaceSettingsAdapter = {
             ? {
                 ...integration,
                 summary:
-                  language === "Polish"
-                    ? "Skrzynka, aktywność i metadane bazy wiedzy działają teraz przez ogólny adapter database sterowany zmienną EDUMAILAI_DATABASE_URL."
-                    : "Mailbox, activity, and knowledge-base metadata are now running through the generic database adapter controlled by EDUMAILAI_DATABASE_URL.",
+                  configuredDatabase?.driver === "postgres"
+                    ? language === "Polish"
+                      ? "Skrzynka, aktywność i metadane bazy wiedzy działają teraz przez adapter PostgreSQL/Supabase sterowany zmienną EDUMAILAI_DATABASE_URL."
+                      : "Mailbox, activity, and knowledge-base metadata are now running through the PostgreSQL/Supabase adapter controlled by EDUMAILAI_DATABASE_URL."
+                    : language === "Polish"
+                      ? "Skrzynka, aktywność i metadane bazy wiedzy działają teraz przez ogólny adapter database sterowany zmienną EDUMAILAI_DATABASE_URL."
+                      : "Mailbox, activity, and knowledge-base metadata are now running through the generic database adapter controlled by EDUMAILAI_DATABASE_URL.",
                 nextStep:
-                  language === "Polish"
-                    ? "Następnym krokiem jest podłączenie produkcyjnego sterownika bazy przy zachowaniu tego samego kontraktu adaptera."
-                    : "The next step is wiring a production database driver behind the same adapter contract.",
+                  configuredDatabase?.driver === "postgres"
+                    ? language === "Polish"
+                      ? "Następnym krokiem jest utrzymanie podziału metadanych i plików, a potem dołożenie auth oraz ingestu inbox bez zmiany usług."
+                      : "Next, keep the metadata-versus-file split, then add auth and inbox ingestion without changing the service layer."
+                    : language === "Polish"
+                      ? "Następnym krokiem jest podłączenie produkcyjnego sterownika bazy przy zachowaniu tego samego kontraktu adaptera."
+                      : "The next step is wiring a production database driver behind the same adapter contract.",
               }
           : integration.id === "database" && hasSQLiteOperationalBinding
             ? {
@@ -119,6 +136,18 @@ export const localWorkspaceSettingsAdapter: WorkspaceSettingsAdapter = {
                       ? "Skrzynka, aktywność i metadane bazy wiedzy korzystają z adapterów plików JSON zapisujących rekordy poza warstwą UI."
                       : "Mailbox, activity, and knowledge-base metadata are using JSON-file record adapters behind the UI layer.",
                 }
+              : integration.id === "file-storage" && hasSupabaseStorageBinding
+                ? {
+                    ...integration,
+                    summary:
+                      language === "Polish"
+                        ? `Pliki dokumentów bazy wiedzy działają teraz przez Supabase Storage bucket ${configuredSupabaseStorage?.bucketName ?? ""} za tym samym kontraktem file-storage.`
+                        : `Knowledge-base document files are now running through the Supabase Storage bucket ${configuredSupabaseStorage?.bucketName ?? ""} behind the same file-storage contract.`,
+                    nextStep:
+                      language === "Polish"
+                        ? "Zweryfikuj upload i pobieranie dokumentów, a potem przenieś istniejące pliki lokalne."
+                        : "Verify document upload/download parity, then migrate existing local files.",
+                  }
               : integration
     );
 

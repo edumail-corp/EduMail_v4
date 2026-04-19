@@ -7,6 +7,14 @@ export type SupportedDatabaseUrl =
       resolvedPath: string;
       sourceValue: string;
     }
+  | {
+      driver: "postgres";
+      connectionString: string;
+      sourceValue: string;
+      host: string;
+      databaseName: string;
+      displayLabel: string;
+    }
   | null;
 
 function normalizeSQLitePath(rawPath: string) {
@@ -48,11 +56,45 @@ function parseSQLiteUrl(value: string) {
   return rawPath.length > 0 ? rawPath : null;
 }
 
+function parsePostgresUrl(value: string) {
+  try {
+    const parsedUrl = new URL(value);
+
+    if (
+      parsedUrl.protocol !== "postgres:" &&
+      parsedUrl.protocol !== "postgresql:"
+    ) {
+      return null;
+    }
+
+    const databaseName = parsedUrl.pathname.replace(/^\/+/, "") || "postgres";
+
+    return {
+      driver: "postgres" as const,
+      connectionString: value,
+      sourceValue: value,
+      host: parsedUrl.hostname,
+      databaseName,
+      displayLabel: `${parsedUrl.hostname}${
+        parsedUrl.port ? `:${parsedUrl.port}` : ""
+      }/${databaseName}`,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function parseDatabaseUrl(value: string | undefined): SupportedDatabaseUrl {
   const normalizedValue = value?.trim();
 
   if (!normalizedValue) {
     return null;
+  }
+
+  const postgresUrl = parsePostgresUrl(normalizedValue);
+
+  if (postgresUrl) {
+    return postgresUrl;
   }
 
   const sqlitePath = parseSQLiteUrl(normalizedValue) ?? parseFileUrl(normalizedValue);

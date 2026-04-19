@@ -76,7 +76,12 @@ export type WorkspaceWorkflowStage = {
   description: string;
 };
 
-export type WorkspaceStorageLocationKind = "json" | "sqlite" | "directory";
+export type WorkspaceStorageLocationKind =
+  | "json"
+  | "sqlite"
+  | "postgres"
+  | "remote"
+  | "directory";
 
 export type WorkspaceStorageLocation = {
   id: string;

@@ -1,4 +1,5 @@
 import { hasSupportedConfiguredDatabaseUrl } from "@/lib/server/adapters/database/database-url";
+import { hasConfiguredSupabaseStorage } from "@/lib/server/adapters/supabase/supabase-config";
 
 export type AdapterBindingId =
   | "mailbox"
@@ -72,7 +73,7 @@ const adapterBindingDefinitions: readonly AdapterBindingDefinition[] = [
     label: "File Storage",
     envVarName: "EDUMAILAI_FILE_STORAGE_ADAPTER",
     defaultProvider: "local",
-    supportedProviders: ["local"],
+    supportedProviders: ["local", "supabase_storage"],
     plannedProviders: ["blob", "s3"],
   },
 ] as const;
@@ -94,7 +95,11 @@ function buildAdapterBinding(
     requestedProvider !== null &&
     definition.supportedProviders.includes(requestedProvider);
   const providerIsRuntimeReady =
-    requestedProvider !== "database" || hasSupportedConfiguredDatabaseUrl();
+    requestedProvider === "database"
+      ? hasSupportedConfiguredDatabaseUrl()
+      : requestedProvider === "supabase_storage"
+        ? hasConfiguredSupabaseStorage()
+        : true;
   const activeProvider =
     providerIsSupported && providerIsRuntimeReady
       ? requestedProvider

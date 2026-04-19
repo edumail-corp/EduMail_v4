@@ -2,6 +2,7 @@ import type {
   AIDraftAdapter,
   ActivityAdapter,
   FileStorageAdapter,
+  FileStorageProviderId,
   KnowledgeBaseAdapter,
   MailboxAdapter,
   WorkspaceSettingsAdapter,
@@ -28,6 +29,8 @@ import {
 import { createSQLiteActivityAdapter } from "@/lib/server/adapters/sqlite/sqlite-activity-adapter";
 import { createSQLiteKnowledgeBaseAdapter } from "@/lib/server/adapters/sqlite/sqlite-knowledge-base-adapter";
 import { createSQLiteMailboxAdapter } from "@/lib/server/adapters/sqlite/sqlite-mailbox-adapter";
+import { hasConfiguredSupabaseStorage } from "@/lib/server/adapters/supabase/supabase-config";
+import { createSupabaseFileStorageAdapter } from "@/lib/server/adapters/supabase/supabase-file-storage-adapter";
 
 let cachedLocalMailboxAdapter: MailboxAdapter | null = null;
 let cachedJsonFileMailboxAdapter: MailboxAdapter | null = null;
@@ -41,6 +44,7 @@ let cachedLocalKnowledgeBaseAdapter: KnowledgeBaseAdapter | null = null;
 let cachedJsonFileKnowledgeBaseAdapter: KnowledgeBaseAdapter | null = null;
 let cachedSQLiteKnowledgeBaseAdapter: KnowledgeBaseAdapter | null = null;
 let cachedDatabaseKnowledgeBaseAdapter: KnowledgeBaseAdapter | null = null;
+let cachedSupabaseFileStorageAdapter: FileStorageAdapter | null = null;
 
 export function getMailboxAdapter(): MailboxAdapter {
   const binding = getConfiguredAdapterBinding("mailbox");
@@ -86,12 +90,14 @@ export function getMailboxAdapter(): MailboxAdapter {
 
 export function getKnowledgeBaseAdapter(): KnowledgeBaseAdapter {
   const binding = getConfiguredAdapterBinding("knowledge-base");
+  const fileStorageAdapters = listAvailableFileStorageAdapters();
 
   if (binding.activeProvider === "database") {
     if (!cachedDatabaseKnowledgeBaseAdapter) {
       cachedDatabaseKnowledgeBaseAdapter = createDatabaseKnowledgeBaseAdapter({
         activityAdapter: getActivityAdapter(),
         fileStorageAdapter: getFileStorageAdapter(),
+        fileStorageAdapters,
       });
     }
 
@@ -103,6 +109,7 @@ export function getKnowledgeBaseAdapter(): KnowledgeBaseAdapter {
       cachedSQLiteKnowledgeBaseAdapter = createSQLiteKnowledgeBaseAdapter({
         activityAdapter: getActivityAdapter(),
         fileStorageAdapter: getFileStorageAdapter(),
+        fileStorageAdapters,
       });
     }
 
@@ -114,6 +121,7 @@ export function getKnowledgeBaseAdapter(): KnowledgeBaseAdapter {
       cachedJsonFileKnowledgeBaseAdapter = createJsonFileKnowledgeBaseAdapter({
         activityAdapter: getActivityAdapter(),
         fileStorageAdapter: getFileStorageAdapter(),
+        fileStorageAdapters,
       });
     }
 
@@ -124,6 +132,7 @@ export function getKnowledgeBaseAdapter(): KnowledgeBaseAdapter {
     cachedLocalKnowledgeBaseAdapter = createLocalKnowledgeBaseAdapter({
       activityAdapter: getActivityAdapter(),
       fileStorageAdapter: getFileStorageAdapter(),
+      fileStorageAdapters,
     });
   }
 
@@ -165,8 +174,41 @@ export function getActivityAdapter(): ActivityAdapter {
 }
 
 export function getFileStorageAdapter(): FileStorageAdapter {
-  getConfiguredAdapterBinding("file-storage");
+  const binding = getConfiguredAdapterBinding("file-storage");
+
+  if (binding.activeProvider === "supabase_storage") {
+    if (!cachedSupabaseFileStorageAdapter) {
+      cachedSupabaseFileStorageAdapter = createSupabaseFileStorageAdapter();
+    }
+
+    return cachedSupabaseFileStorageAdapter;
+  }
+
   return localFileStorageAdapter;
+}
+
+export function getFileStorageAdapterByProvider(
+  providerId: FileStorageProviderId
+): FileStorageAdapter | null {
+  return (
+    listAvailableFileStorageAdapters().find(
+      (adapter) => adapter.providerId === providerId
+    ) ?? null
+  );
+}
+
+function listAvailableFileStorageAdapters() {
+  const adapters: FileStorageAdapter[] = [localFileStorageAdapter];
+
+  if (hasConfiguredSupabaseStorage()) {
+    if (!cachedSupabaseFileStorageAdapter) {
+      cachedSupabaseFileStorageAdapter = createSupabaseFileStorageAdapter();
+    }
+
+    adapters.push(cachedSupabaseFileStorageAdapter);
+  }
+
+  return adapters;
 }
 
 let cachedAIDraftAdapter: AIDraftAdapter | null = null;

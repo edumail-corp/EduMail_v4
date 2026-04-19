@@ -24,6 +24,7 @@ export type KnowledgeDocumentAssetRecord = {
   originalName: string;
   mimeType?: string;
   sizeInBytes?: number;
+  storageProvider?: "local" | "supabase_storage";
 };
 
 export type KnowledgeDocumentRecord = Omit<
@@ -93,6 +94,7 @@ function normalizeKnowledgeDocumentRecord(
           originalName: document.name ?? baseDocument.name,
           mimeType: document.mimeType ?? baseDocument.mimeType,
           sizeInBytes: document.sizeInBytes ?? baseDocument.sizeInBytes,
+          storageProvider: "local" as const,
         }
       : undefined);
 
@@ -110,7 +112,13 @@ function normalizeKnowledgeDocumentRecord(
     summary: document.summary ?? baseDocument.summary,
     previewExcerpt: document.previewExcerpt ?? baseDocument.previewExcerpt,
     origin: document.origin ?? baseDocument.origin,
-    fileAsset,
+    fileAsset:
+      fileAsset
+        ? {
+            ...fileAsset,
+            storageProvider: fileAsset.storageProvider ?? "local",
+          }
+        : undefined,
   };
 }
 

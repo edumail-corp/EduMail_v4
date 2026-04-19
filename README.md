@@ -66,7 +66,9 @@ Note: the production build uses `next/font` with Geist, so it may need network a
 ## Current Notes
 
 - The message, activity, and document data can now persist through `local`, `json_file`, `sqlite`, or the generic `database` adapter mode for mailbox, activity, and knowledge-base metadata.
-- The `database` adapter is driven by `EDUMAILAI_DATABASE_URL` and currently supports SQLite/file paths while keeping the service boundary stable for future production drivers.
-- This is still a local prototype, so there is no real authentication, database, or external email integration yet.
+- The `database` adapter is driven by `EDUMAILAI_DATABASE_URL` and now supports both SQLite/file paths and PostgreSQL-compatible connection strings such as Supabase.
+- On first boot against an empty Postgres database, EduMailAI seeds mailbox, activity, and knowledge-base metadata from the current local JSON/SQLite sources so the workflow can move over without route or page changes.
+- Knowledge-base binaries can now also move behind a production file-storage adapter, with Supabase Storage support ready once server-side storage credentials are added.
+- This is still a prototype, so there is no real authentication or live external email integration yet, but the persistence layer is now ready to point at a real database and storage service.
 - The current product focus is stabilizing the local review workflow, grounding surfaces, and oversight dashboard before swapping in real providers.
 - The next implementation phase is formalizing swappable adapters for persistence, inbox ingestion, storage, and AI providers without changing the current workflow shape.
