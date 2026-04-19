@@ -5,6 +5,7 @@ import type {
 } from "@/lib/workspace-config";
 import { getConfiguredAdapterBinding } from "@/lib/server/adapters/provider-config";
 import { hasConfiguredSupabaseStorage } from "@/lib/server/adapters/supabase/supabase-config";
+import { hasConfiguredSupabaseAuth } from "@/lib/supabase-auth";
 import type { LanguagePreference } from "@/lib/user-preferences";
 
 type EnvironmentSignalDefinition = {
@@ -93,10 +94,16 @@ const environmentSignalDefinitions: readonly EnvironmentSignalDefinition[] = [
     category: "auth",
     requiredEnvVars: ["EDUMAILAI_AUTH_PROVIDER"],
     getSummary(configuredEnvVars, language) {
+      if (configuredEnvVars.length > 0 && hasConfiguredSupabaseAuth()) {
+        return language === "Polish"
+          ? "Supabase Auth chroni już dashboard i API, a dostęp nadal opiera się na katalogu pracowników z allowlistą."
+          : "Supabase Auth is already protecting the dashboard and APIs, while access still relies on the allowlisted staff directory.";
+      }
+
       if (configuredEnvVars.length > 0) {
         return language === "Polish"
-          ? "Wykryto konfigurację dostawcy auth, ale logowanie i role nie są jeszcze wdrożone w interfejsie."
-          : "An auth provider setting is present, but sign-in and role enforcement are not implemented yet.";
+          ? "Wykryto konfigurację dostawcy auth, ale brakuje jeszcze publicznej konfiguracji Supabase potrzebnej do logowania pracowników."
+          : "An auth provider setting is present, but the public Supabase configuration required for staff sign-in is still missing.";
       }
 
       return language === "Polish"
@@ -104,10 +111,16 @@ const environmentSignalDefinitions: readonly EnvironmentSignalDefinition[] = [
         : "Auth provider selection and access rules are still missing.";
     },
     getNextStep(configuredEnvVars, language) {
+      if (configuredEnvVars.length > 0 && hasConfiguredSupabaseAuth()) {
+        return language === "Polish"
+          ? "Utrzymaj logowanie i bazowe role, a potem przenieś katalog pracowników oraz członkostwo workspace do bazy danych."
+          : "Keep sign-in and baseline roles stable, then move the staff directory and workspace membership into the database.";
+      }
+
       if (configuredEnvVars.length > 0) {
         return language === "Polish"
-          ? "Dodaj warstwę tożsamości, członkostwo workspace i uprawnienia ról bez zmiany usług domenowych."
-          : "Add identity, workspace membership, and role permissions without changing the domain services.";
+          ? "Dodaj NEXT_PUBLIC_SUPABASE_URL i NEXT_PUBLIC_SUPABASE_ANON_KEY, a potem zweryfikuj logowanie Google i magic link."
+          : "Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, then verify Google and magic-link sign-in.";
       }
 
       return language === "Polish"

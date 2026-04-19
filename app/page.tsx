@@ -43,10 +43,10 @@ export default function Home() {
 
             <div className="mt-8">
               <Link
-                href="/dashboard"
+                href="/sign-in"
                 className="inline-flex items-center rounded-full bg-[#5C61FF] px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(92,97,255,0.26)] transition hover:bg-[#4E54F6]"
               >
-                {isPolish ? "Otwórz panel zespołu" : "Open Staff Dashboard"}
+                {isPolish ? "Zaloguj zespół" : "Sign In to Staff Workspace"}
               </Link>
             </div>
           </section>

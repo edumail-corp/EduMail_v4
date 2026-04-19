@@ -45,6 +45,14 @@ If Turbopack behaves oddly in your environment, you can use the webpack fallback
 npm run dev:webpack
 ```
 
+For staff login, configure Supabase Auth with:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `EDUMAILAI_AUTH_PROVIDER=supabase_auth`
+
+Set the Supabase Auth redirect URL to `/auth/callback` for your local and deployed origins, then enable Google plus email magic link in the Supabase dashboard.
+
 ## Verification
 
 Use these commands to verify the project locally:
@@ -75,6 +83,7 @@ Note: the production build uses `next/font` with Geist, so it may need network a
 - On first boot against an empty Postgres database, EduMailAI seeds mailbox, activity, and knowledge-base metadata from the current local JSON/SQLite sources so the workflow can move over without route or page changes.
 - Knowledge-base binaries can now persist through the file-storage adapter as either local files or Supabase Storage objects, and uploaded cards surface the active provider plus object path in the UI.
 - The current production-ready persistence split is: mailbox/activity/knowledge-base metadata through the database adapter, and knowledge-base binaries through the file-storage adapter.
-- This is still a human-in-the-loop prototype, so there is no real authentication, live inbox sync, or production AI provider yet.
-- The current product focus is keeping the local-first operator workflow stable while hardening persistence, storage transparency, and adapter parity.
-- The next implementation phase is identity and inbox operations first, then a real AI retrieval/drafting adapter behind the existing service layer.
+- Supabase Auth now protects `/dashboard` plus the current API routes, using the static staff directory as the allowlist and role map for the first rollout.
+- This is still a human-in-the-loop prototype, so live inbox sync and a production AI provider are not implemented yet.
+- The current product focus is keeping the operator workflow stable while hardening auth, persistence, storage transparency, and adapter parity.
+- The next implementation phase is moving workspace membership out of the static directory and into the database, then adding inbox operations and a real AI retrieval/drafting adapter behind the existing service layer.

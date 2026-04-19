@@ -1,9 +1,16 @@
 import { exportWorkspaceActivityAsJson } from "@/lib/server/services/activity-service";
+import { requireWorkspaceUserForApi } from "@/lib/server/workspace-auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET() {
+  const authResult = await requireWorkspaceUserForApi();
+
+  if ("response" in authResult) {
+    return authResult.response;
+  }
+
   const activityJson = await exportWorkspaceActivityAsJson();
 
   return new Response(activityJson, {

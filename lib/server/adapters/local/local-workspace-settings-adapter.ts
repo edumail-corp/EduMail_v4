@@ -4,6 +4,7 @@ import { listConfiguredAdapterBindings } from "@/lib/server/adapters/provider-co
 import { getConfiguredSupabaseStorage } from "@/lib/server/adapters/supabase/supabase-config";
 import { getWorkspaceEnvironmentSignals } from "@/lib/server/workspace-environment-signals";
 import { getWorkspaceLocalStorageSummary } from "@/lib/server/workspace-storage-audit";
+import { hasConfiguredSupabaseAuth } from "@/lib/supabase-auth";
 import {
   getLocalizedWorkspaceFutureDomainModel,
   getLocalizedWorkspaceIntegrationStatuses,
@@ -88,6 +89,7 @@ export const localWorkspaceSettingsAdapter: WorkspaceSettingsAdapter = {
         binding.id === "file-storage" &&
         binding.activeProvider === "supabase_storage"
     );
+    const hasConfiguredAuth = hasConfiguredSupabaseAuth();
     const integrations = getLocalizedWorkspaceIntegrationStatuses(language).map(
       (integration) =>
         integration.id === "ai-provider" && options?.draftProvider
@@ -147,6 +149,19 @@ export const localWorkspaceSettingsAdapter: WorkspaceSettingsAdapter = {
                       language === "Polish"
                         ? "Zweryfikuj upload i pobieranie dokumentów, a potem przenieś istniejące pliki lokalne."
                         : "Verify document upload/download parity, then migrate existing local files.",
+                  }
+              : integration.id === "auth" && hasConfiguredAuth
+                ? {
+                    ...integration,
+                    status: "configured" as const,
+                    summary:
+                      language === "Polish"
+                        ? "Supabase Auth chroni teraz dashboard i API, a dostęp pozostaje ograniczony do katalogu pracowników z allowlistą."
+                        : "Supabase Auth now protects the dashboard and APIs, while access remains limited to the allowlisted staff directory.",
+                    nextStep:
+                      language === "Polish"
+                        ? "Utrzymaj logowanie i podstawowe role, a następnie przenieś członkostwo workspace z katalogu statycznego do bazy danych."
+                        : "Keep sign-in and baseline roles stable, then move workspace membership from the static directory into the database.",
                   }
               : integration
     );

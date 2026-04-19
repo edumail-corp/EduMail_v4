@@ -22,6 +22,7 @@ import {
   createMailboxEmail,
   listMailboxEmails,
 } from "@/lib/server/services/mailbox-service";
+import { requireWorkspaceUserForApi } from "@/lib/server/workspace-auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -50,6 +51,12 @@ function isEmailCreatePayload(value: unknown): value is StaffEmailCreateInput {
 }
 
 export async function GET(request: Request) {
+  const authResult = await requireWorkspaceUserForApi();
+
+  if ("response" in authResult) {
+    return authResult.response;
+  }
+
   const { searchParams } = new URL(request.url);
   const filterParam = searchParams.get("filter");
   const assigneeParam = searchParams.get("assignee");
@@ -90,6 +97,12 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const authResult = await requireWorkspaceUserForApi();
+
+  if ("response" in authResult) {
+    return authResult.response;
+  }
+
   const payload = await request.json().catch(() => null);
 
   if (!isEmailCreatePayload(payload)) {

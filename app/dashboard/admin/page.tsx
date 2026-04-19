@@ -12,6 +12,7 @@ import {
   translateWorkspaceUserStatus,
   type WorkspaceStorageLocationKind,
 } from "@/lib/workspace-config";
+import { requireWorkspaceRole } from "@/lib/server/workspace-auth";
 import { getWorkspaceSettingsSnapshot } from "@/lib/server/services/workspace-settings-service";
 import {
   getLocaleForLanguage,
@@ -92,6 +93,7 @@ function getStorageKindLabel(
 }
 
 export default async function AdminPage() {
+  await requireWorkspaceRole("operations_admin");
   const languageCookie = (await cookies()).get(userPreferencesLanguageCookie)?.value;
   const language: LanguagePreference = isLanguagePreference(languageCookie)
     ? languageCookie
@@ -157,8 +159,8 @@ export default async function AdminPage() {
           </h3>
           <p className="mt-2 text-sm leading-6 text-slate-500">
             {isPolish
-              ? "To wystarcza, dopóki nie wdrożymy prawdziwego logowania, ról i członkostwa workspace."
-              : "This is enough until real sign-in, roles, and workspace membership are implemented."}
+              ? "Ten katalog pozostaje źródłem prawdy dla dostępu i ról, dopóki członkostwo workspace nie trafi do bazy danych."
+              : "This directory remains the source of truth for access and roles until workspace membership moves into the database."}
           </p>
 
           <div className="mt-6 space-y-3">

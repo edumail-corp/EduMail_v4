@@ -5,10 +5,12 @@ import type { ChangeEvent } from "react";
 import {
   DashboardAvatar,
   DashboardIcon,
+  dashboardGhostButtonClassName,
   dashboardInputClassName,
 } from "@/components/dashboard/dashboard-chrome";
 import { useUserPreferences } from "@/components/dashboard/user-preferences-provider";
-import { dashboardCurrentUser } from "@/lib/dashboard";
+import { useWorkspaceUser } from "@/components/dashboard/workspace-user-provider";
+import { translateWorkspaceRole } from "@/lib/workspace-config";
 
 export function DashboardTopBar({
   label,
@@ -22,12 +24,12 @@ export function DashboardTopBar({
   searchPlaceholder?: string;
 }>) {
   const { preferences } = useUserPreferences();
+  const currentUser = useWorkspaceUser();
   const openSettingsLabel =
     preferences.language === "Polish" ? "Otwórz ustawienia" : "Open settings";
-  const roleLabel =
-    preferences.language === "Polish"
-      ? "Właściciel prototypu"
-      : dashboardCurrentUser.role;
+  const signOutLabel =
+    preferences.language === "Polish" ? "Wyloguj" : "Sign Out";
+  const roleLabel = translateWorkspaceRole(currentUser.role, preferences.language);
 
   return (
     <div className="mb-7 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -59,6 +61,11 @@ export function DashboardTopBar({
       </div>
 
       <div className="flex items-center gap-3 self-end lg:self-auto">
+        <form action="/auth/sign-out?next=/" method="post">
+          <button type="submit" className={dashboardGhostButtonClassName}>
+            {signOutLabel}
+          </button>
+        </form>
         <Link
           href="/dashboard/settings"
           className="grid h-12 w-12 place-items-center rounded-full border border-white/80 bg-white/78 text-slate-500 shadow-[0_14px_36px_rgba(140,153,179,0.16)] transition hover:bg-white hover:text-[#5C61FF]"
@@ -69,14 +76,14 @@ export function DashboardTopBar({
         <div className="flex items-center gap-3 rounded-full border border-white/80 bg-white/78 px-3 py-2 shadow-[0_14px_36px_rgba(140,153,179,0.16)]">
           <div className="hidden text-right sm:block">
             <p className="text-sm font-semibold text-slate-900">
-              {dashboardCurrentUser.name}
+              {currentUser.name}
             </p>
             <p className="text-xs font-medium text-slate-500">
               {roleLabel}
             </p>
           </div>
           <DashboardAvatar
-            name={dashboardCurrentUser.name}
+            name={currentUser.name}
             className="h-10 w-10 text-[10px]"
           />
         </div>

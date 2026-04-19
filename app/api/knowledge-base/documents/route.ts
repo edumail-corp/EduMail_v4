@@ -8,6 +8,7 @@ import {
   createKnowledgeLibraryDocument,
   listKnowledgeLibraryDocuments,
 } from "@/lib/server/services/knowledge-base-service";
+import { requireWorkspaceUserForApi } from "@/lib/server/workspace-auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -36,6 +37,12 @@ function isKnowledgeUploadFile(value: FormDataEntryValue | null): value is File 
 }
 
 export async function GET() {
+  const authResult = await requireWorkspaceUserForApi();
+
+  if ("response" in authResult) {
+    return authResult.response;
+  }
+
   try {
     const documents = await listKnowledgeLibraryDocuments();
     return NextResponse.json({ documents });
@@ -48,6 +55,12 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const authResult = await requireWorkspaceUserForApi();
+
+  if ("response" in authResult) {
+    return authResult.response;
+  }
+
   const formData = await request.formData().catch(() => null);
 
   if (!formData) {

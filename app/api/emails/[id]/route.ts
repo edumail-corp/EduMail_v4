@@ -5,6 +5,7 @@ import {
   type StaffEmailUpdateInput,
 } from "@/lib/email-data";
 import { updateMailboxEmail } from "@/lib/server/services/mailbox-service";
+import { requireWorkspaceUserForApi } from "@/lib/server/workspace-auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -57,6 +58,12 @@ export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
+  const authResult = await requireWorkspaceUserForApi();
+
+  if ("response" in authResult) {
+    return authResult.response;
+  }
+
   const payload = await request.json().catch(() => null);
 
   if (!isEmailUpdatePayload(payload)) {

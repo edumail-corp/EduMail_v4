@@ -31,12 +31,6 @@ export const dashboardNavItems = [
   },
 ] as const;
 
-export const dashboardCurrentUser = {
-  name: "Admin User",
-  role: "Prototype Owner",
-  email: "admin@edumailai.local",
-} as const;
-
 export const emailStatusClasses: Record<EmailStatus, string> = {
   Draft: "border-transparent bg-[#EEF0FF] text-[#555CF0]",
   "Auto-sent": "border-transparent bg-[#E9FBF1] text-[#0C8A53]",

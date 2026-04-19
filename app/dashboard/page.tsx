@@ -8,7 +8,7 @@ import {
 } from "@/components/dashboard/dashboard-chrome";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { DashboardTopBar } from "@/components/dashboard/dashboard-top-bar";
-import { dashboardCurrentUser, workloadPressureClasses } from "@/lib/dashboard";
+import { workloadPressureClasses } from "@/lib/dashboard";
 import {
   summarizeMailboxOperations,
   translateDepartment,
@@ -17,6 +17,7 @@ import {
 import { listWorkspaceActivity } from "@/lib/server/services/activity-service";
 import { listMailboxEmails } from "@/lib/server/services/mailbox-service";
 import { listKnowledgeLibraryDocuments } from "@/lib/server/services/knowledge-base-service";
+import { requireWorkspaceUser } from "@/lib/server/workspace-auth";
 import {
   getLocaleForLanguage,
   isLanguagePreference,
@@ -52,13 +53,25 @@ function getLastSevenSnapshots(anchorIso: string, locale: string) {
   });
 }
 
-export default async function DashboardRootPage() {
+export default async function DashboardRootPage({
+  searchParams,
+}: Readonly<{
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}>) {
+  const currentUser = await requireWorkspaceUser();
+  const resolvedSearchParams = searchParams ? await searchParams : {};
   const languageCookie = (await cookies()).get(userPreferencesLanguageCookie)?.value;
   const language: LanguagePreference = isLanguagePreference(languageCookie)
     ? languageCookie
     : "English";
   const locale = getLocaleForLanguage(language);
   const isPolish = language === "Polish";
+  const authError =
+    resolvedSearchParams.error === "admin-access-required"
+      ? isPolish
+        ? "Ta sekcja jest dostępna tylko dla administratorów operacyjnych."
+        : "That section is available only to operations admins."
+      : null;
   let emails: Awaited<ReturnType<typeof listMailboxEmails>> = [];
   let documents: Awaited<ReturnType<typeof listKnowledgeLibraryDocuments>> = [];
   let activityEvents: Awaited<ReturnType<typeof listWorkspaceActivity>> = [];
@@ -215,13 +228,19 @@ export default async function DashboardRootPage() {
     <>
       <DashboardTopBar label={isPolish ? "Panel operacyjny" : "Operations Dashboard"} />
 
+      {authError ? (
+        <div className="mb-4 rounded-[24px] border border-[#FFD2DA] bg-[#FFF1F4] px-4 py-3 text-sm text-[#B4375C] shadow-[0_14px_36px_rgba(141,153,179,0.12)]">
+          {authError}
+        </div>
+      ) : null}
+
       <DashboardPageHeader
         eyebrow={isPolish ? "Przegląd panelu" : "Dashboard Overview"}
         title={isPolish ? "Przegląd panelu" : "Dashboard Overview"}
         description={
           isPolish
-            ? `Witaj ponownie, ${dashboardCurrentUser.name}. Oto szybka migawka presji kolejki, własności i ostatniej aktywności.`
-            : `Welcome back, ${dashboardCurrentUser.name}. Here is a quick snapshot of queue pressure, ownership, and recent activity.`
+            ? `Witaj ponownie, ${currentUser.name}. Oto szybka migawka presji kolejki, własności i ostatniej aktywności.`
+            : `Welcome back, ${currentUser.name}. Here is a quick snapshot of queue pressure, ownership, and recent activity.`
         }
         meta={
           isPolish

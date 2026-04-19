@@ -27,6 +27,7 @@
     "verify:adapter-modes": "npm run verify && npm run verify:knowledge-base:adapters && npm run build:json-file && npm run build:sqlite && npm run build:database"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.103.3",
     "next": "16.2.1",
     "pg": "^8.20.0",

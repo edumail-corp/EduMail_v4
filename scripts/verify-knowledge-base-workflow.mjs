@@ -219,6 +219,7 @@ async function main() {
     PORT: String(port),
     HOSTNAME: "127.0.0.1",
     TMPDIR: tempRoot,
+    EDUMAILAI_DISABLE_AUTH_FOR_VERIFY: "1",
     VERCEL: process.env.VERCEL ?? "1",
   };
 
