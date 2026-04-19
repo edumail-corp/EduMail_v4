@@ -25,6 +25,7 @@ import {
   defaultKnowledgeCategorySelection,
   filterKnowledgeDocuments,
   getKnowledgeDocumentOriginLabel,
+  getKnowledgeDocumentStorageProviderLabel,
   isAcceptedKnowledgeFile,
   isKnowledgeCategorySelection,
   knowledgeBaseCategoryClasses,
@@ -634,6 +635,22 @@ function KnowledgeBasePageContent() {
                       <p>{doc.uploadedAt}</p>
                       <p>{doc.pages} pages</p>
                     </div>
+
+                    {doc.storageProvider && doc.storagePath ? (
+                      <div className="mt-5 rounded-[22px] border border-[#DCE1FF] bg-[#F7F8FF] px-4 py-3 text-sm text-slate-600">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6673B0]">
+                          Storage Details
+                        </p>
+                        <p className="mt-2 font-semibold text-[#1E2340]">
+                          {getKnowledgeDocumentStorageProviderLabel(
+                            doc.storageProvider
+                          )}
+                        </p>
+                        <p className="mt-2 break-all rounded-[16px] bg-white/80 px-3 py-2 font-mono text-xs text-slate-500">
+                          {doc.storagePath}
+                        </p>
+                      </div>
+                    ) : null}
 
                     <div className="mt-6 flex flex-wrap gap-2">
                       {doc.downloadUrl ? (

@@ -4,26 +4,41 @@ import { getKnowledgeLibraryDocumentFile } from "@/lib/server/services/knowledge
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+function buildKnowledgeBaseFailureResponse(
+  error: unknown,
+  message: string
+) {
+  console.error(message, error);
+  return NextResponse.json({ error: message }, { status: 500 });
+}
+
 export async function GET(
   _request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await context.params;
-  const fileData = await getKnowledgeLibraryDocumentFile(id);
+  try {
+    const { id } = await context.params;
+    const fileData = await getKnowledgeLibraryDocumentFile(id);
 
-  if (!fileData) {
-    return NextResponse.json(
-      { error: "Document file not found." },
-      { status: 404 }
+    if (!fileData) {
+      return NextResponse.json(
+        { error: "Document file not found." },
+        { status: 404 }
+      );
+    }
+
+    return new NextResponse(new Uint8Array(fileData.fileBuffer), {
+      status: 200,
+      headers: {
+        "Content-Type": fileData.mimeType,
+        "Content-Disposition": `attachment; filename="${encodeURIComponent(fileData.name)}"`,
+        "Cache-Control": "no-store",
+      },
+    });
+  } catch (error) {
+    return buildKnowledgeBaseFailureResponse(
+      error,
+      "Unable to download the document right now."
     );
   }
-
-  return new NextResponse(new Uint8Array(fileData.fileBuffer), {
-    status: 200,
-    headers: {
-      "Content-Type": fileData.mimeType,
-      "Content-Disposition": `attachment; filename="${encodeURIComponent(fileData.name)}"`,
-      "Cache-Control": "no-store",
-    },
-  });
 }

@@ -138,6 +138,8 @@ export function toKnowledgeDocument(record: KnowledgeDocumentRecord): KnowledgeD
     summary: record.summary,
     previewExcerpt: record.previewExcerpt,
     origin: record.origin,
+    storageProvider: record.fileAsset?.storageProvider,
+    storagePath: record.fileAsset?.storageKey,
     referenceCount: 0,
     downloadUrl: record.fileAsset
       ? `/api/knowledge-base/documents/${record.id}/file`

@@ -13,6 +13,7 @@ export type KnowledgeCategorySelectValue =
   | "Select category"
   | KnowledgeBaseCategory;
 export type KnowledgeDocumentOrigin = "seeded" | "uploaded";
+export type KnowledgeDocumentStorageProvider = "local" | "supabase_storage";
 
 export type KnowledgeDocument = {
   id: string;
@@ -26,6 +27,8 @@ export type KnowledgeDocument = {
   summary: string;
   previewExcerpt: string;
   origin: KnowledgeDocumentOrigin;
+  storageProvider?: KnowledgeDocumentStorageProvider;
+  storagePath?: string;
   referenceCount: number;
   approvalReadyCaseCount?: number;
   weakSupportCaseCount?: number;
@@ -245,6 +248,21 @@ export function getKnowledgeDocumentOriginLabel(
   }
 
   return origin === "uploaded" ? "Stored File" : "Seeded Metadata";
+}
+
+export function getKnowledgeDocumentStorageProviderLabel(
+  provider: KnowledgeDocumentStorageProvider,
+  language: LanguagePreference = "English"
+) {
+  if (language === "Polish") {
+    return provider === "supabase_storage"
+      ? "Supabase Storage"
+      : "Lokalna pamięć robocza";
+  }
+
+  return provider === "supabase_storage"
+    ? "Supabase Storage"
+    : "Local Workspace Storage";
 }
 
 export function getKnowledgeCategorySelectionLabel(

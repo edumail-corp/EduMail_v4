@@ -12,6 +12,14 @@ import {
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+function buildKnowledgeBaseFailureResponse(
+  error: unknown,
+  message: string
+) {
+  console.error(message, error);
+  return NextResponse.json({ error: message }, { status: 500 });
+}
+
 function isKnowledgeUploadFile(value: FormDataEntryValue | null): value is File {
   if (
     !value ||
@@ -28,8 +36,15 @@ function isKnowledgeUploadFile(value: FormDataEntryValue | null): value is File 
 }
 
 export async function GET() {
-  const documents = await listKnowledgeLibraryDocuments();
-  return NextResponse.json({ documents });
+  try {
+    const documents = await listKnowledgeLibraryDocuments();
+    return NextResponse.json({ documents });
+  } catch (error) {
+    return buildKnowledgeBaseFailureResponse(
+      error,
+      "Unable to load the document library right now."
+    );
+  }
 }
 
 export async function POST(request: Request) {
@@ -66,14 +81,21 @@ export async function POST(request: Request) {
     );
   }
 
-  const document = await createKnowledgeLibraryDocument({
-    name: file.name.trim(),
-    category,
-    pages: estimateKnowledgeDocumentPages(file),
-    mimeType: file.type,
-    sizeInBytes: file.size,
-    fileBuffer: Buffer.from(await file.arrayBuffer()),
-  });
+  try {
+    const document = await createKnowledgeLibraryDocument({
+      name: file.name.trim(),
+      category,
+      pages: estimateKnowledgeDocumentPages(file),
+      mimeType: file.type,
+      sizeInBytes: file.size,
+      fileBuffer: Buffer.from(await file.arrayBuffer()),
+    });
 
-  return NextResponse.json({ document }, { status: 201 });
+    return NextResponse.json({ document }, { status: 201 });
+  } catch (error) {
+    return buildKnowledgeBaseFailureResponse(
+      error,
+      "Unable to save the document right now. The file was not added."
+    );
+  }
 }
