@@ -18,12 +18,6 @@ export const dashboardNavItems = [
     icon: "knowledge",
   },
   {
-    label: "Activity",
-    shortLabel: "Audit",
-    href: "/dashboard/activity",
-    icon: "activity",
-  },
-  {
     label: "Admin",
     shortLabel: "Control",
     href: "/dashboard/admin",

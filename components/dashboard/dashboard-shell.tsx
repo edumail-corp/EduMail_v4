@@ -8,8 +8,6 @@ import {
   DashboardIcon,
   dashboardPanelClassName,
   dashboardPrimaryButtonClassName,
-  dashboardSubtlePanelClassName,
-  dashboardGhostButtonClassName,
 } from "@/components/dashboard/dashboard-chrome";
 import { useUserPreferences } from "@/components/dashboard/user-preferences-provider";
 import { dashboardCurrentUser, dashboardNavItems } from "@/lib/dashboard";
@@ -25,15 +23,6 @@ export function DashboardShell({
   const composeLabel = preferences.language === "Polish"
     ? "Nowa wiadomość"
       : "Compose New";
-  const localPrototypeLabel = preferences.language === "Polish"
-    ? "Lokalny prototyp"
-      : "Local Prototype";
-  const localPrototypeDescription = preferences.language === "Polish"
-    ? "Skrzynka, decyzje i dokumenty działają lokalnie, a produkt pozostaje niezależny od dostawcy."
-      : "Mailbox decisions, new-case intake, and document uploads persist locally while the product stays provider-agnostic.";
-  const localPrototypeAction = preferences.language === "Polish"
-    ? "Otwórz ustawienia"
-      : "Open Settings";
   const assistantLabel =
     preferences.language === "Polish" ? "Asystent AI" : "AI Assistant";
   const workspaceDescription =
@@ -46,14 +35,13 @@ export function DashboardShell({
       : dashboardCurrentUser.role;
   const navLabelOverrides: Record<string, { label: string; shortLabel: string }> =
     preferences.language === "Polish"
-      ? {
-          Dashboard: { label: "Panel", shortLabel: "Start" },
-          Inbox: { label: "Skrzynka", shortLabel: "Wszystko" },
-          "Knowledge Base": { label: "Baza wiedzy", shortLabel: "Dok." },
-          Activity: { label: "Aktywność", shortLabel: "Log" },
-          Admin: { label: "Admin", shortLabel: "Ster." },
-          Settings: { label: "Ustawienia", shortLabel: "Opcje" },
-        }
+        ? {
+            Dashboard: { label: "Panel", shortLabel: "Start" },
+            Inbox: { label: "Skrzynka", shortLabel: "Wszystko" },
+            "Knowledge Base": { label: "Baza wiedzy", shortLabel: "Dok." },
+            Admin: { label: "Admin", shortLabel: "Ster." },
+            Settings: { label: "Ustawienia", shortLabel: "Opcje" },
+          }
         : {};
 
   return (
@@ -137,21 +125,6 @@ export function DashboardShell({
                   );
                 })}
               </nav>
-
-              <div className={`${dashboardSubtlePanelClassName} mt-5 px-4 py-4`}>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                  {localPrototypeLabel}
-                </p>
-                <p className="mt-3 text-sm leading-6 text-slate-600">
-                  {localPrototypeDescription}
-                </p>
-                <Link
-                  href="/dashboard/settings"
-                  className={`${dashboardGhostButtonClassName} mt-4 w-full`}
-                >
-                  {localPrototypeAction}
-                </Link>
-              </div>
             </div>
 
             <div className={`${dashboardPanelClassName} mt-4 shrink-0 p-3`}>

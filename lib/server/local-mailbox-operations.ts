@@ -189,10 +189,7 @@ export function getEmailActivityDescription(
       description: nextEmail.assignee
         ? `Assigned this message to ${nextEmail.assignee}.`
         : "Cleared the current message owner and returned it to the unassigned pool.",
-      href:
-        nextEmail.status === "Escalated"
-          ? `/dashboard/inbox?view=escalations&emailId=${encodeURIComponent(nextEmail.id)}`
-          : `/dashboard/inbox?emailId=${encodeURIComponent(nextEmail.id)}`,
+      href: `/dashboard/inbox?emailId=${encodeURIComponent(nextEmail.id)}`,
     };
   }
 
@@ -220,10 +217,7 @@ export function getEmailActivityDescription(
         nextEmail.staffNote && nextEmail.staffNote.length > 0
           ? "Saved an internal staff note for follow-up and context sharing."
           : "Cleared the internal staff note from this message.",
-      href:
-        nextEmail.status === "Escalated"
-          ? `/dashboard/inbox?view=escalations&emailId=${encodeURIComponent(nextEmail.id)}`
-          : `/dashboard/inbox?emailId=${encodeURIComponent(nextEmail.id)}`,
+      href: `/dashboard/inbox?emailId=${encodeURIComponent(nextEmail.id)}`,
     };
   }
 

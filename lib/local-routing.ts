@@ -310,10 +310,10 @@ export function getRoutingDestinationLabel(
   language: LanguagePreference = "English"
 ) {
   if (language === "Polish") {
-    return decision.escalationReason ? "Eskalacje" : "Skrzynka";
+    return decision.escalationReason ? "Skrzynka (przegląd ręczny)" : "Skrzynka";
   }
 
-  return decision.escalationReason ? "Escalations" : "Inbox";
+  return decision.escalationReason ? "Inbox (manual review)" : "Inbox";
 }
 
 export function getDraftPathLabel(

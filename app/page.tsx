@@ -76,26 +76,26 @@ export default function Home() {
               <div className="rounded-[24px] border border-white/75 bg-white/66 p-4 shadow-[0_16px_34px_rgba(143,155,181,0.1)]">
                 <p className="text-sm font-semibold text-[#1E2340]">
                   {isPolish
-                    ? "Szkice, eskalacje i notatki"
-                    : "Draft, Escalation, and Notes Workflow"}
+                    ? "Szkice, ręczny przegląd i notatki"
+                    : "Draft, Manual Review, and Notes Workflow"}
                 </p>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                   {isPolish
-                    ? "Oddzielaj sprawy wymagające zwykłego przeglądu od tych, które potrzebują głębszej interwencji człowieka, zachowując notatki zespołu przy każdej sprawie."
-                    : "Separate what needs review from what needs deeper human intervention, while keeping internal staff notes attached to each case."}
+                    ? "Oznaczaj sprawy wymagające głębszej interwencji człowieka, zachowując notatki zespołu przy każdej sprawie w jednym widoku skrzynki."
+                    : "Flag the cases that need deeper human intervention while keeping internal staff notes attached inside one inbox view."}
                 </p>
               </div>
 
               <div className="rounded-[24px] border border-white/75 bg-white/66 p-4 shadow-[0_16px_34px_rgba(143,155,181,0.1)]">
                 <p className="text-sm font-semibold text-[#1E2340]">
                   {isPolish
-                    ? "Baza wiedzy, aktywność i ustawienia"
-                    : "Knowledge Base, Activity, and Settings"}
+                    ? "Baza wiedzy, admin i ustawienia"
+                    : "Knowledge Base, Admin, and Settings"}
                 </p>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                   {isPolish
-                    ? "Przesyłaj lokalne pliki PDF i DOCX, przeglądaj zapisany dziennik aktywności i śledź, które integracje nadal wymagają prawdziwej konfiguracji."
-                    : "Upload local PDF and DOCX files, review a persisted activity log, and track which integrations still need real setup."}
+                    ? "Przesyłaj lokalne pliki PDF i DOCX, utrzymuj prosty katalog zespołu i sprawdzaj lokalny ślad danych zapisanych na dysku."
+                    : "Upload local PDF and DOCX files, keep a simple staff directory, and inspect the local data footprint written to disk."}
                 </p>
               </div>
             </div>

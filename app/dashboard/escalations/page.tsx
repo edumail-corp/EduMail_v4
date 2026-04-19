@@ -8,9 +8,9 @@ export default async function EscalationsPage({
   const { emailId: rawId } = await searchParams;
   const emailId = Array.isArray(rawId) ? rawId[0] : rawId;
   const params = new URLSearchParams();
-  params.set("view", "escalations");
   if (emailId) {
     params.set("emailId", emailId);
   }
-  redirect(`/dashboard/inbox?${params.toString()}`);
+  const queryString = params.toString();
+  redirect(queryString.length > 0 ? `/dashboard/inbox?${queryString}` : "/dashboard/inbox");
 }

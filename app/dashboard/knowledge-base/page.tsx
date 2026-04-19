@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   Suspense,
   useDeferredValue,
@@ -20,17 +19,11 @@ import {
 } from "@/components/dashboard/dashboard-chrome";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { DashboardTopBar } from "@/components/dashboard/dashboard-top-bar";
-import { useUserPreferences } from "@/components/dashboard/user-preferences-provider";
-import {
-  approvalStateClasses,
-  groundingStrengthClasses,
-} from "@/lib/dashboard";
 import {
   acceptedKnowledgeFileExtensions,
   createKnowledgeDocumentDraft,
   defaultKnowledgeCategorySelection,
   filterKnowledgeDocuments,
-  formatKnowledgeFileSize,
   getKnowledgeDocumentOriginLabel,
   isAcceptedKnowledgeFile,
   isKnowledgeCategorySelection,
@@ -102,18 +95,7 @@ function matchesKnowledgeDocumentSearch(
   return searchableText.includes(query);
 }
 
-function getUniqueLinkedCases(documents: KnowledgeDocument[]) {
-  return Array.from(
-    new Map(
-      documents.flatMap((document) =>
-        (document.relatedCases ?? []).map((caseItem) => [caseItem.id, caseItem] as const)
-      )
-    ).values()
-  );
-}
-
 function KnowledgeBasePageContent() {
-  const { formatDateTime } = useUserPreferences();
   const searchParams = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -133,12 +115,9 @@ function KnowledgeBasePageContent() {
   const [documentQuery, setDocumentQuery] = useState("");
 
   const requestedDocumentQuery = searchParams.get("document") ?? "";
-  const requestedContextQuery = searchParams.get("context") ?? "";
   const requestedReasonQuery = searchParams.get("reason") ?? "";
   const normalizedRequestedDocumentQuery =
     requestedDocumentQuery.trim().toLowerCase();
-  const normalizedRequestedContextQuery =
-    requestedContextQuery.trim().toLowerCase();
   const deferredDocumentQuery = useDeferredValue(documentQuery);
   const normalizedDocumentQuery = deferredDocumentQuery.trim().toLowerCase();
   const visibleDocs = filterKnowledgeDocuments(documents, activeFilter).filter(
@@ -151,27 +130,7 @@ function KnowledgeBasePageContent() {
   const referencedDocumentCount = documents.filter(
     (document) => document.referenceCount > 0
   ).length;
-  const uniqueLinkedCases = getUniqueLinkedCases(documents);
-  const approvalReadyLinkedCaseCount = uniqueLinkedCases.filter(
-    (caseItem) => caseItem.approvalReady
-  ).length;
-  const weakSupportLinkedCaseCount = uniqueLinkedCases.filter(
-    (caseItem) => caseItem.groundingStrength === "Weak"
-  ).length;
   const metadataOnlyCount = documents.length - storedDocumentCount;
-  const totalStoredBytes = documents.reduce(
-    (total, document) => total + (document.sizeInBytes ?? 0),
-    0
-  );
-  const demoStorageCapacity = 5 * 1024 * 1024 * 1024;
-  const storageUsagePercent =
-    demoStorageCapacity === 0
-      ? 0
-      : Math.min(100, Math.round((totalStoredBytes / demoStorageCapacity) * 100));
-  const libraryReadiness =
-    documents.length === 0
-      ? 0
-      : Math.round((referencedDocumentCount / documents.length) * 100);
 
   const canUpload =
     draftFile !== null &&
@@ -546,7 +505,7 @@ function KnowledgeBasePageContent() {
             </button>
           </div>
 
-          <div className="mb-5 grid gap-3 md:grid-cols-3 xl:grid-cols-5">
+          <div className="mb-5 grid gap-3 md:grid-cols-3">
             <div className="rounded-[24px] border border-white/75 bg-white/62 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
                 Stored Files
@@ -565,26 +524,10 @@ function KnowledgeBasePageContent() {
             </div>
             <div className="rounded-[24px] border border-white/75 bg-white/62 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                Referenced in Mailbox
+                Linked in Inbox
               </p>
               <p className="mt-3 text-3xl font-semibold tracking-tight text-[#1E2340]">
                 {referencedDocumentCount}
-              </p>
-            </div>
-            <div className="rounded-[24px] border border-white/75 bg-white/62 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                Unique ready
-              </p>
-              <p className="mt-3 text-3xl font-semibold tracking-tight text-[#1E2340]">
-                {approvalReadyLinkedCaseCount}
-              </p>
-            </div>
-            <div className="rounded-[24px] border border-white/75 bg-white/62 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                Unique weak
-              </p>
-              <p className="mt-3 text-3xl font-semibold tracking-tight text-[#1E2340]">
-                {weakSupportLinkedCaseCount}
               </p>
             </div>
           </div>
@@ -652,21 +595,6 @@ function KnowledgeBasePageContent() {
                 const isRequestedDocument =
                   normalizedRequestedDocumentQuery.length > 0 &&
                   doc.name.toLowerCase().includes(normalizedRequestedDocumentQuery);
-                const supportsRequestedContext =
-                  normalizedRequestedContextQuery.length > 0 &&
-                  [
-                    doc.previewExcerpt,
-                    doc.summary,
-                    doc.name,
-                    ...(doc.supportHighlights?.flatMap((highlight) => [
-                      highlight.reason,
-                      highlight.excerpt,
-                      highlight.caseSubject,
-                    ]) ?? []),
-                  ]
-                    .join(" ")
-                    .toLowerCase()
-                    .includes(normalizedRequestedContextQuery);
 
                 return (
                   <div
@@ -700,151 +628,12 @@ function KnowledgeBasePageContent() {
                       >
                         {doc.category}
                       </span>
-                      <span className="rounded-full bg-white/82 px-2.5 py-1 text-xs font-semibold text-slate-500">
-                        {doc.referenceCount} linked cases
-                      </span>
-                      {typeof doc.approvalReadyCaseCount === "number" ? (
-                        <span className="rounded-full bg-[#E9FBF1] px-2.5 py-1 text-xs font-semibold text-[#0C8A53]">
-                          {doc.approvalReadyCaseCount} ready
-                        </span>
-                      ) : null}
-                      {doc.weakSupportCaseCount ? (
-                        <span className="rounded-full bg-[#FFE9EE] px-2.5 py-1 text-xs font-semibold text-[#D43D63]">
-                          {doc.weakSupportCaseCount} weak support
-                        </span>
-                      ) : null}
                     </div>
 
                     <div className="mt-5 text-sm leading-7 text-slate-500">
                       <p>{doc.uploadedAt}</p>
-                      <p>
-                        {doc.pages} pages
-                        {typeof doc.sizeInBytes === "number"
-                          ? ` • ${formatKnowledgeFileSize(doc.sizeInBytes)}`
-                          : ""}
-                      </p>
-                      <p>{doc.downloadUrl ? "Download available" : "Metadata only"}</p>
+                      <p>{doc.pages} pages</p>
                     </div>
-
-                    <p className="mt-5 line-clamp-3 text-sm leading-7 text-slate-500">
-                      {doc.previewExcerpt}
-                    </p>
-
-                    {doc.supportHighlights && doc.supportHighlights.length > 0 ? (
-                      <div className="mt-5 rounded-[24px] border border-white/75 bg-white/62 p-4 shadow-[0_14px_32px_rgba(143,155,181,0.1)]">
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#2E5FA3]">
-                          Draft Support Ledger
-                        </p>
-                        <div className="mt-3 space-y-3">
-                          {doc.supportHighlights.map((highlight) => (
-                            <div
-                              key={`${highlight.caseId}-${highlight.reason}`}
-                              className="rounded-[20px] border border-[#DCE1FF] bg-[#F5F6FF] p-3"
-                            >
-                              <div className="flex flex-wrap items-center justify-between gap-3">
-                                <p className="text-sm font-semibold text-slate-900">
-                                  {highlight.caseSubject}
-                                </p>
-                                <Link
-                                  href={highlight.href}
-                                  className="text-xs font-semibold text-[#2E5FA3] transition hover:text-[#1F3864]"
-                                >
-                                  Open Case
-                                </Link>
-                              </div>
-                              <p className="mt-2 text-xs font-medium uppercase tracking-[0.14em] text-slate-400">
-                                Why it was cited
-                              </p>
-                              <p className="mt-1 text-sm leading-6 text-slate-700">
-                                {highlight.reason}
-                              </p>
-                              <p className="mt-2 text-sm leading-6 text-slate-500">
-                                {highlight.excerpt}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null}
-
-                    {isRequestedDocument && requestedContextQuery.length > 0 ? (
-                      <div className="mt-5 rounded-[24px] border border-[#DCE1FF] bg-[#F5F6FF] p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#2E5FA3]">
-                          Draft Support Context
-                        </p>
-                        <p className="mt-2 text-sm leading-6 text-slate-700">
-                          {requestedContextQuery}
-                        </p>
-                        <p className="mt-3 text-xs font-medium text-slate-500">
-                          {supportsRequestedContext
-                            ? "This document already carries supporting draft context for that citation."
-                            : "This document is linked to the draft, but the exact cited passage is broader than the short preview stored on the card."}
-                        </p>
-                      </div>
-                    ) : null}
-
-                    {doc.relatedCases && doc.relatedCases.length > 0 ? (
-                      <div className="mt-5 rounded-[24px] border border-white/75 bg-white/62 p-4 shadow-[0_14px_32px_rgba(143,155,181,0.1)]">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                            Related Live Cases
-                          </p>
-                          <span className="text-xs font-medium text-slate-400">
-                            {doc.relatedCases.length} active reference
-                            {doc.relatedCases.length === 1 ? "" : "s"}
-                          </span>
-                        </div>
-
-                        <div className="mt-3 space-y-3">
-                          {doc.relatedCases.slice(0, 3).map((caseItem) => (
-                            <div
-                              key={caseItem.id}
-                              className="rounded-[20px] border border-[#E7EBF6] bg-[#FBFCFF] p-3"
-                            >
-                              <div className="flex flex-wrap items-center justify-between gap-3">
-                                <p className="text-sm font-semibold text-slate-900">
-                                  {caseItem.subject}
-                                </p>
-                                <Link
-                                  href={caseItem.href}
-                                  className="text-xs font-semibold text-[#2E5FA3] transition hover:text-[#1F3864]"
-                                >
-                                  Open Case
-                                </Link>
-                              </div>
-                              <div className="mt-2 flex flex-wrap gap-2">
-                                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-500">
-                                  {caseItem.department}
-                                </span>
-                                <span
-                                  className={`rounded-full px-2.5 py-1 text-xs font-semibold ${approvalStateClasses[
-                                    caseItem.approvalState
-                                  ]}`}
-                                >
-                                  {caseItem.approvalState}
-                                </span>
-                                <span
-                                  className={`rounded-full px-2.5 py-1 text-xs font-semibold ${groundingStrengthClasses[
-                                    caseItem.groundingStrength
-                                  ]}`}
-                                >
-                                  {caseItem.groundingStrength} support
-                                </span>
-                              </div>
-                              <p className="mt-2 text-sm leading-6 text-slate-600">
-                                {caseItem.citationReason}
-                              </p>
-                              <p className="mt-2 text-xs text-slate-500">
-                                {caseItem.assignee
-                                  ? `Owner: ${caseItem.assignee}`
-                                  : "Currently unassigned"}{" "}
-                                • Updated {formatDateTime(caseItem.updatedAt)}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null}
 
                     <div className="mt-6 flex flex-wrap gap-2">
                       {doc.downloadUrl ? (
@@ -882,93 +671,6 @@ function KnowledgeBasePageContent() {
           )}
         </article>
 
-        <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
-          <article className={`${dashboardPanelClassName} p-5 md:p-6`}>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-              Total Storage
-            </p>
-            <p className="mt-4 text-4xl font-semibold tracking-tight text-[#1E2340]">
-              {formatKnowledgeFileSize(totalStoredBytes)}
-            </p>
-            <p className="mt-2 text-sm text-slate-500">
-              of {formatKnowledgeFileSize(demoStorageCapacity)} demo capacity
-            </p>
-
-            <div className="mt-5 h-2.5 w-full rounded-full bg-[#E6EAF6]">
-              <div
-                className="h-2.5 rounded-full bg-gradient-to-r from-[#8E96FF] to-[#5C61FF]"
-                style={{
-                  width:
-                    totalStoredBytes === 0
-                      ? "0%"
-                      : `${Math.max(8, storageUsagePercent)}%`,
-                }}
-              />
-            </div>
-          </article>
-
-          <article className={`${dashboardPanelClassName} p-5 md:p-6`}>
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                  AI Training Status
-                </p>
-                <h3 className="mt-3 text-2xl font-semibold tracking-tight text-[#1E2340]">
-                  Library Readiness
-                </h3>
-                <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-500">
-                  This local knowledge base is {libraryReadiness}% connected to active mailbox cases based on current source references, supports {approvalReadyLinkedCaseCount} unique approval-ready case{approvalReadyLinkedCaseCount === 1 ? "" : "s"}, and still has {weakSupportLinkedCaseCount} unique weak-support case{weakSupportLinkedCaseCount === 1 ? "" : "s"} that need stronger evidence.
-                </p>
-              </div>
-              <span className="rounded-full border border-white/80 bg-white/82 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#5C61FF] shadow-[0_12px_30px_rgba(141,153,179,0.12)]">
-                {referencedDocumentCount} linked docs
-              </span>
-            </div>
-
-            <div className="mt-6 grid gap-3 md:grid-cols-3 xl:grid-cols-5">
-              <div className="rounded-[22px] border border-white/75 bg-white/62 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Stored
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-[#1E2340]">
-                  {storedDocumentCount}
-                </p>
-              </div>
-              <div className="rounded-[22px] border border-white/75 bg-white/62 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Metadata only
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-[#1E2340]">
-                  {metadataOnlyCount}
-                </p>
-              </div>
-              <div className="rounded-[22px] border border-white/75 bg-white/62 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Referenced
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-[#1E2340]">
-                  {referencedDocumentCount}
-                </p>
-              </div>
-              <div className="rounded-[22px] border border-white/75 bg-white/62 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Unique ready
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-[#1E2340]">
-                  {approvalReadyLinkedCaseCount}
-                </p>
-              </div>
-              <div className="rounded-[22px] border border-white/75 bg-white/62 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Unique weak
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-[#1E2340]">
-                  {weakSupportLinkedCaseCount}
-                </p>
-              </div>
-            </div>
-          </article>
-        </div>
       </section>
     </>
   );

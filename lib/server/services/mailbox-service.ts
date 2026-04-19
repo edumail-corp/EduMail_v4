@@ -90,8 +90,8 @@ export async function createMailboxEmail(
         sentAt: timestamp,
         body: suggestion.manualReviewReason
           ? isPolish
-            ? `Utworzono nową sprawę, zasugerowano ${localizedDepartment}, polecono ${suggestion.routingDecision.suggestedAssignees.join(", ")} i skierowano sprawę do Eskalacji. ${suggestion.manualReviewReason}`
-            : `Created a new case, suggested ${suggestion.routingDecision.department}, recommended ${suggestion.routingDecision.suggestedAssignees.join(", ")}, and routed it into Escalations. ${suggestion.manualReviewReason}`
+            ? `Utworzono nową sprawę, zasugerowano ${localizedDepartment}, polecono ${suggestion.routingDecision.suggestedAssignees.join(", ")} i oznaczono sprawę do ręcznego przeglądu w skrzynce. ${suggestion.manualReviewReason}`
+            : `Created a new case, suggested ${suggestion.routingDecision.department}, recommended ${suggestion.routingDecision.suggestedAssignees.join(", ")}, and flagged it for manual review in the inbox. ${suggestion.manualReviewReason}`
           : isPolish
             ? `Utworzono nową sprawę, zasugerowano ${localizedDepartment} z ${localizedConfidence} pewnością, polecono ${suggestion.routingDecision.suggestedAssignees.join(", ")} i przygotowano wstępny lokalny szkic do przeglądu.`
             : `Created a new case, suggested ${suggestion.routingDecision.department} with ${suggestion.routingDecision.confidence.toLowerCase()} confidence, recommended ${suggestion.routingDecision.suggestedAssignees.join(", ")}, and prepared an initial local draft for staff review.`,

@@ -400,7 +400,7 @@ export function createSQLiteMailboxAdapter({
         title: synchronizedNextEmail.subject,
         description:
           synchronizedNextEmail.status === "Escalated"
-            ? `Created a new case, suggested ${synchronizedNextEmail.department}, recommended ${routingDecision.suggestedAssignees.join(", ")}, and routed it into the Escalations queue.`
+            ? `Created a new case, suggested ${synchronizedNextEmail.department}, recommended ${routingDecision.suggestedAssignees.join(", ")}, and flagged it for manual review in the inbox.`
             : `Created a new case, suggested ${synchronizedNextEmail.department}, recommended ${routingDecision.suggestedAssignees.join(", ")}, and added it to the review queue.`,
         href: getEmailWorkflowHref(synchronizedNextEmail),
       });

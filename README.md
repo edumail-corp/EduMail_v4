@@ -6,9 +6,9 @@ EduMailAI is a Next.js prototype for a university staff workflow tool. The app h
 
 - Staff dashboard shell with shared navigation and layout
 - Manual compose flow for creating new local cases
-- Inbox with an Escalations sub-view on the same screen (`?view=escalations`); draft cases are handled in the all-messages inbox
+- Inbox with a single standard mailbox view; escalated cases still appear there without a separate sub-view
 - AI draft detail view with confidence indicators, ownership routing, and staff notes
-- Workflow events still append to the local activity store; download the trail as JSON from the API below (no separate Activity dashboard page)
+- Workflow events still append to the local activity store in the background for audit/export needs
 - Downloadable JSON export of the local activity trail
 - Knowledge Base document library with locally persisted PDF and DOCX uploads plus download support
 - Settings surface for integration readiness, future data model, and manual setup tracking
@@ -18,12 +18,12 @@ EduMailAI is a Next.js prototype for a university staff workflow tool. The app h
 - `/` - product landing page
 - `/dashboard` - workspace overview
 - `/dashboard/compose` - create a new local mailbox case
-- `/dashboard/inbox` - full message queue; add `?view=escalations` for the escalation-only slice
+- `/dashboard/inbox` - full message queue
 - `/dashboard/drafts` - redirects to `/dashboard/inbox` (preserves `emailId` when present)
-- `/dashboard/escalations` - redirects to `/dashboard/inbox?view=escalations` (preserves `emailId` when present)
-- `/dashboard/activity` - redirects to `/dashboard` (activity data remains in JSON; use export API)
+- `/dashboard/escalations` - redirects to `/dashboard/inbox` (preserves `emailId` when present)
+- `/dashboard/activity` - redirects to `/dashboard`
 - `/dashboard/knowledge-base` - knowledge document management
-- `/dashboard/settings` - local readiness, provider status, and setup checklist
+- `/dashboard/settings` - personal language, appearance, and notification preferences
 - `/api/activity/export` - download the persisted local activity log as JSON
 
 ## Local Development

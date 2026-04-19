@@ -4,9 +4,7 @@ export type DashboardIconName =
   | "overview"
   | "inbox"
   | "drafts"
-  | "escalations"
   | "knowledge"
-  | "activity"
   | "settings"
   | "compose"
   | "search"
@@ -140,24 +138,10 @@ export function DashboardIcon({
           <path d="M4 13V5.8A1.8 1.8 0 0 1 5.8 4h8.7" />
         </>
       ) : null}
-      {name === "escalations" ? (
-        <>
-          <path d="M12 4 3.7 18.4A1 1 0 0 0 4.6 20h14.8a1 1 0 0 0 .9-1.6z" />
-          <path d="M12 9v4" />
-          <circle cx="12" cy="16.5" r=".6" fill="currentColor" stroke="none" />
-        </>
-      ) : null}
       {name === "knowledge" ? (
         <>
           <path d="M4.5 5.5A2.5 2.5 0 0 1 7 3h5v15H7a2.5 2.5 0 0 0-2.5 2.5" />
           <path d="M19.5 5.5A2.5 2.5 0 0 0 17 3h-5v15h5a2.5 2.5 0 0 1 2.5 2.5" />
-        </>
-      ) : null}
-      {name === "activity" ? (
-        <>
-          <path d="M12 5a7 7 0 1 1-7 7" />
-          <path d="M12 1v4" />
-          <path d="m8.5 11.5 2.5 2.5L15.5 9" />
         </>
       ) : null}
       {name === "settings" ? (

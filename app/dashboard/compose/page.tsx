@@ -142,10 +142,7 @@ export default function ComposePage() {
         );
       }
 
-      const destination =
-        data.email.status === "Escalated"
-          ? `/dashboard/inbox?view=escalations&emailId=${encodeURIComponent(data.email.id)}`
-          : `/dashboard/inbox?emailId=${encodeURIComponent(data.email.id)}`;
+      const destination = `/dashboard/inbox?emailId=${encodeURIComponent(data.email.id)}`;
 
       router.push(destination);
     } catch (error) {
@@ -170,8 +167,8 @@ export default function ComposePage() {
         title={isPolish ? "Utwórz nową sprawę" : "Compose New Case"}
         description={
           isPolish
-            ? "Utwórz nową lokalną sprawę mailową, zapisz pierwszy rekord przepływu i skieruj ją do przeglądu lub eskalacji na podstawie treści."
-            : "Create a new local mailbox case, generate the first workflow record, and route it into review or escalation based on the content."
+            ? "Utwórz nową lokalną sprawę mailową, zapisz pierwszy rekord przepływu i oznacz ją do zwykłego lub ręcznego przeglądu na podstawie treści."
+            : "Create a new local mailbox case, generate the first workflow record, and flag it for standard or manual review based on the content."
         }
         meta={isPolish ? "Lokalny przepływ tworzenia" : "Local creation flow"}
         actions={
@@ -446,8 +443,8 @@ export default function ComposePage() {
               </p>
               <p>
                 {isPolish
-                  ? "Treść typu odwołania, spory lub kwestie prawne kieruje sprawę do Eskalacji."
-                  : "Exception-style language like appeals, disputes, or legal issues routes the case into Escalations instead."}
+                  ? "Treść typu odwołania, spory lub kwestie prawne oznacza sprawę do ręcznego przeglądu bez opuszczania skrzynki."
+                  : "Exception-style language like appeals, disputes, or legal issues flag the case for manual review without leaving the inbox."}
               </p>
             </div>
           </article>

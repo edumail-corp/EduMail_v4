@@ -500,10 +500,6 @@ export function getEmailApprovalState(
 export function getEmailWorkflowHref(
   email: Pick<StaffEmail, "id" | "status">
 ) {
-  if (email.status === "Escalated") {
-    return `/dashboard/inbox?view=escalations&emailId=${encodeURIComponent(email.id)}`;
-  }
-
   return `/dashboard/inbox?emailId=${encodeURIComponent(email.id)}`;
 }
 
