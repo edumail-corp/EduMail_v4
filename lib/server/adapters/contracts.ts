@@ -14,8 +14,11 @@ import type { KnowledgeDocument } from "@/lib/knowledge-base-data";
 import type { LanguagePreference } from "@/lib/user-preferences";
 import type {
   WorkspaceDomainEntity,
+  WorkspaceEnvironmentSignal,
   WorkspaceIntegrationStatus,
+  WorkspaceLocalStorageSummary,
   WorkspaceManualWorkItem,
+  WorkspaceAdapterBinding,
   WorkspaceStaffUser,
   WorkspaceWorkflowStage,
 } from "@/lib/workspace-config";
@@ -58,6 +61,8 @@ export type KnowledgeBaseDocumentFile = {
 
 export type WorkspaceSettingsSnapshot = {
   integrations: WorkspaceIntegrationStatus[];
+  adapterBindings: WorkspaceAdapterBinding[];
+  environmentSignals: WorkspaceEnvironmentSignal[];
   integrationCounts: {
     local: number;
     manualRequired: number;
@@ -68,6 +73,7 @@ export type WorkspaceSettingsSnapshot = {
   manualWorkItems: WorkspaceManualWorkItem[];
   operatingDepartments: readonly Department[];
   workflowStages: WorkspaceWorkflowStage[];
+  localStorage: WorkspaceLocalStorageSummary;
 };
 
 export interface MailboxAdapter {
@@ -108,8 +114,7 @@ export interface WorkspaceSettingsAdapter {
 }
 
 export interface FileStorageAdapter {
-  ensureDirectory(directoryPath: string): Promise<void>;
-  writeBinaryFile(filePath: string, fileBuffer: Buffer): Promise<void>;
-  readBinaryFile(filePath: string): Promise<Buffer | null>;
-  deleteBinaryFile(filePath: string): Promise<boolean>;
+  writeBinaryFile(storageKey: string, fileBuffer: Buffer): Promise<void>;
+  readBinaryFile(storageKey: string): Promise<Buffer | null>;
+  deleteBinaryFile(storageKey: string): Promise<boolean>;
 }

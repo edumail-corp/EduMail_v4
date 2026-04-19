@@ -65,7 +65,8 @@ Note: the production build uses `next/font` with Geist, so it may need network a
 
 ## Current Notes
 
-- The message, activity, and document data persist locally using JSON files plus uploaded files in the project workspace.
+- The message, activity, and document data can now persist through `local`, `json_file`, `sqlite`, or the generic `database` adapter mode for mailbox, activity, and knowledge-base metadata.
+- The `database` adapter is driven by `EDUMAILAI_DATABASE_URL` and currently supports SQLite/file paths while keeping the service boundary stable for future production drivers.
 - This is still a local prototype, so there is no real authentication, database, or external email integration yet.
 - The current product focus is stabilizing the local review workflow, grounding surfaces, and oversight dashboard before swapping in real providers.
 - The next implementation phase is formalizing swappable adapters for persistence, inbox ingestion, storage, and AI providers without changing the current workflow shape.

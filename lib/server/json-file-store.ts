@@ -16,10 +16,6 @@ export async function ensureStoreDirectory(filePath: string) {
   await mkdir(path.dirname(filePath), { recursive: true });
 }
 
-export async function ensureDirectory(directoryPath: string) {
-  await mkdir(directoryPath, { recursive: true });
-}
-
 export async function writeJsonFileAtomically<T>(
   filePath: string,
   value: T
@@ -68,4 +64,43 @@ export async function readJsonFileWithFallback<T>(
   }
 
   return options.fallback();
+}
+
+export async function readJsonFileIfExists<T>(
+  filePath: string,
+  options?: Pick<ReadJsonFileOptions<T>, "retries">
+) {
+  await ensureStoreDirectory(filePath);
+
+  const retries = options?.retries ?? 2;
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      const fileContents = await readFile(filePath, "utf8");
+      return JSON.parse(fileContents) as T;
+    } catch (error) {
+      const errno = (error as NodeJS.ErrnoException).code;
+
+      if (errno === "ENOENT") {
+        return null;
+      }
+
+      if (error instanceof SyntaxError && attempt < retries) {
+        await wait(40);
+        continue;
+      }
+
+      if (error instanceof SyntaxError) {
+        console.error(
+          `Failed to parse JSON store at ${filePath}. Returning null for recovery.`,
+          error
+        );
+        return null;
+      }
+
+      throw error;
+    }
+  }
+
+  return null;
 }

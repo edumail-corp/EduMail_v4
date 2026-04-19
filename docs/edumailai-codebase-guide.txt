@@ -1,0 +1,404 @@
+EduMailAI Codebase Guide
+Plain-language file map for personal understanding
+
+Purpose
+
+This document explains which files are responsible for which parts of the
+EduMailAI app, especially the pages you can open in the browser and the files
+that save or load data behind them.
+
+The app is organized in a simple flow:
+
+1. A page file under "app" decides what URL exists.
+2. That page uses reusable screen pieces from "components/dashboard".
+3. Those screen pieces call API routes under "app/api" when they need to
+   load or save data.
+4. The API routes call service files under "lib/server/services".
+5. The services use local store files under "lib/server" to read and write
+   JSON data and uploaded files.
+
+If you want a very short summary:
+
+- "app" = pages and URLs
+- "components/dashboard" = visible interface pieces
+- "lib" = shared rules, types, translations, and helper logic
+- "app/api" = backend endpoints the interface talks to
+- "lib/server/services" = backend business actions
+- "lib/server/*store" = local saved data
+
+
+======================================================================
+1. ROOT APP FILES
+======================================================================
+
+app/layout.tsx
+- Global wrapper for the whole website.
+- Loads the global CSS file.
+- Wraps the whole app with the user-preferences system, so language, theme,
+  time format, and similar personal options can be used everywhere.
+
+app/globals.css
+- Main global styling file.
+- Controls shared appearance across the app.
+
+app/page.tsx
+- The public landing page.
+- This is the first screen with the product introduction and the button
+  "Open Staff Dashboard".
+
+app/favicon.ico
+- Browser tab icon.
+
+
+======================================================================
+2. DASHBOARD PAGE FILES
+======================================================================
+
+app/dashboard/layout.tsx
+- Wrapper for everything inside the dashboard.
+- Places dashboard pages inside the shared dashboard shell.
+
+app/dashboard/page.tsx
+- Dashboard overview page.
+- Shows high-level operational metrics such as open cases, unassigned work,
+  KB health, and average response timing.
+- Pulls together mailbox, activity, and knowledge-base data in one page.
+
+app/dashboard/inbox/page.tsx
+- Main Inbox page entry.
+- Loads the inbox tab controller.
+
+app/dashboard/inbox/inbox-with-tabs.tsx
+- Decides whether the user is looking at normal Inbox or Escalations.
+- Reuses the same mailbox engine but changes the mode and labels.
+
+app/dashboard/compose/page.tsx
+- "Compose New Case" page.
+- Lets staff manually create a new email case.
+- Shows a preview of how the local routing logic will classify the case.
+- Sends the new case to the backend and then opens it in Inbox or
+  Escalations, depending on the result.
+
+app/dashboard/knowledge-base/page.tsx
+- Knowledge Base page.
+- Shows stored policy/source documents.
+- Allows upload, search, filter, delete, and download.
+- Also shows where documents are connected to cases.
+
+app/dashboard/activity/page.tsx
+- Activity Log page.
+- Loads recent activity events and passes them into the activity screen.
+
+app/dashboard/settings/page.tsx
+- Personal Settings page.
+- This is now simplified and focused on personal preferences, not
+  workspace-wide admin setup.
+
+app/dashboard/drafts/page.tsx
+- Redirect helper.
+- Instead of being a separate working area now, it forwards the user back
+  into Inbox with the selected case.
+
+app/dashboard/escalations/page.tsx
+- Redirect helper.
+- Opens the Inbox in escalation mode rather than maintaining a separate,
+  totally independent page implementation.
+
+
+======================================================================
+3. REUSABLE DASHBOARD UI FILES
+======================================================================
+
+components/dashboard/dashboard-shell.tsx
+- The main dashboard frame.
+- Contains the left sidebar, navigation items, current user card, and the
+  main content area where pages are shown.
+
+components/dashboard/dashboard-top-bar.tsx
+- The small top bar used across dashboard pages.
+- Can show either a label or a search field.
+- Also shows settings access and the current user.
+
+components/dashboard/dashboard-page-header.tsx
+- Standard large page heading section.
+- Used across many pages for the page title, description, and small action
+  buttons.
+
+components/dashboard/dashboard-chrome.tsx
+- Shared visual building blocks.
+- Defines common panel styles, button styles, icons, and avatar rendering.
+
+components/dashboard/user-preferences-provider.tsx
+- Central client-side preferences system.
+- Stores and reads local settings such as language, dark mode, inbox density,
+  time format, and desktop notifications.
+- Also updates the page language and theme in the browser.
+
+components/dashboard/settings-preferences.tsx
+- Actual settings form shown inside the Settings page.
+- Lets the user change language, theme, inbox density, time format, and a
+  few local preference toggles.
+
+components/dashboard/mailbox-view.tsx
+- The main mailbox engine for the app.
+- Loads email data from the backend.
+- Applies filters such as owner and department.
+- Tracks which email is selected.
+- Saves actions such as changing assignee, editing the draft, editing notes,
+  and approving/sending a reply.
+- This is one of the most important files in the app because Inbox behavior
+  depends heavily on it.
+
+components/dashboard/inbox-email-list.tsx
+- The normal Inbox left-hand list.
+- Designed to feel more like a standard email application.
+- Shows sender, subject, preview text, date, and whether a suggested reply
+  is ready.
+
+components/dashboard/inbox-email-detail-panel.tsx
+- The normal Inbox right-hand detail view.
+- Shows the selected email, the generated reply, source information,
+  confidence, approval state, note area, and actions.
+
+components/dashboard/email-list.tsx
+- Alternate message list focused more on workflow and review signals than on
+  email-style presentation.
+- Used when the app is showing a more operational or escalation-heavy view.
+
+components/dashboard/email-detail-panel.tsx
+- Alternate detailed review panel focused more on routing explanation,
+  grounding, approval guidance, suggested owners, and workflow context.
+
+components/dashboard/email-badges.tsx
+- Small reusable labels for email category and email status.
+
+components/dashboard/activity-log-view.tsx
+- Main Activity page interface.
+- Handles activity search, filtering, summary blocks, and display of recent
+  events.
+
+
+======================================================================
+4. SHARED APP LOGIC FILES
+======================================================================
+
+lib/user-preferences.ts
+- Defines what personal settings exist.
+- Important point: only two languages are allowed right now, English and
+  Polish.
+- English is the default language.
+
+lib/dashboard.ts
+- Shared dashboard constants and display helpers.
+- Includes navigation items, demo current user information, badge colors, and
+  common date formatting helpers.
+
+lib/email-data.ts
+- One of the most important shared logic files in the project.
+- Defines the main case/email data structure.
+- Defines statuses, departments, priorities, approval states, routing data,
+  and grounding data.
+- Includes many helper functions for filtering, translating labels,
+  calculating workload, assessing grounding strength, and choosing what
+  operational state a case is in.
+
+lib/local-routing.ts
+- Local routing logic for new cases.
+- Reads the message subject and body and uses keywords to suggest:
+  department, confidence, escalation risk, and suggested owners.
+- Also maps each department to a likely source document.
+
+lib/knowledge-base-data.ts
+- Shared knowledge-base data rules.
+- Defines what a knowledge document looks like.
+- Defines seeded demo documents that exist locally.
+- Controls allowed upload types such as PDF and DOCX.
+
+lib/activity-log.ts
+- Shared activity log definitions.
+- Defines event types like case created, draft saved, note saved, document
+  uploaded, and so on.
+
+lib/workspace-config.ts
+- Future-facing workspace/admin configuration data.
+- Contains staff directory, provider readiness state, workflow stages, and
+  future domain-model notes.
+- More important for future admin and provider setup than for the current
+  simplified Settings page.
+
+
+======================================================================
+5. API ROUTE FILES
+======================================================================
+
+These files are backend entry points that the interface calls.
+
+app/api/emails/route.ts
+- Handles loading emails and creating a new email case.
+- Validates the incoming request before passing it to the mailbox service.
+
+app/api/emails/[id]/route.ts
+- Handles updates to one specific email case.
+- Used for actions like changing owner, saving a draft, saving a note, or
+  updating status.
+
+app/api/knowledge-base/documents/route.ts
+- Handles knowledge-base document listing and document upload.
+
+app/api/knowledge-base/documents/[id]/route.ts
+- Handles deleting one specific knowledge-base document.
+
+app/api/knowledge-base/documents/[id]/file/route.ts
+- Handles downloading the stored file behind one knowledge-base document.
+
+app/api/activity/export/route.ts
+- Exports the activity log as a JSON file download.
+
+
+======================================================================
+6. SERVER SERVICE FILES
+======================================================================
+
+These files contain the server-side business logic used by the API routes.
+
+lib/server/services/mailbox-service.ts
+- Main mailbox business layer.
+- Lists mailbox emails.
+- Updates mailbox emails.
+- Creates new mailbox emails.
+- When creating a new case, it first asks the draft service for a local draft
+  suggestion and routing result.
+
+lib/server/services/ai-draft-service.ts
+- Generates the current local reply suggestion.
+- Creates the local draft text, case summary, source citations, and routing
+  output.
+- Important note: this is not a live external AI provider yet. It is local,
+  seeded logic.
+
+lib/server/services/knowledge-base-service.ts
+- Adds case-related intelligence to knowledge-base documents.
+- Connects documents to related cases, citations, and support strength.
+
+lib/server/services/activity-service.ts
+- Lists activity data and exports it.
+
+lib/server/services/workspace-settings-service.ts
+- Combines future workspace/provider readiness information.
+- More related to future admin/readiness work than to the current simplified
+  Settings page.
+
+
+======================================================================
+7. LOCAL STORAGE AND PERSISTENCE FILES
+======================================================================
+
+These files are the local storage layer. They are currently the closest thing
+the app has to a local database.
+
+lib/server/email-store.ts
+- Main local mailbox data store.
+- Reads email cases from local JSON.
+- Creates new cases.
+- Updates cases when drafts, notes, assignees, or approvals change.
+- Also writes activity events when mailbox actions happen.
+
+lib/server/knowledge-base-store.ts
+- Main local knowledge-base store.
+- Saves document metadata.
+- Saves uploaded files.
+- Deletes document records and files.
+- Also logs document-related activity.
+
+lib/server/activity-log-store.ts
+- Local activity-event store.
+- Reads the activity log and appends new events.
+
+lib/server/json-file-store.ts
+- Shared safety helper for local JSON storage.
+- Makes sure folders exist.
+- Writes JSON files safely.
+- Falls back gracefully if a JSON file is missing or temporarily invalid.
+- This helps reduce crashes caused by local file issues.
+
+lib/server/storage-path.ts
+- Small helper for writable storage paths.
+- Useful for local development now and for future hosted environments later.
+
+
+======================================================================
+8. SCRIPT FILE
+======================================================================
+
+scripts/basic-lint.mjs
+- Simple project check script used during verification.
+
+
+======================================================================
+9. HOW THE MAJOR FLOWS CONNECT
+======================================================================
+
+Landing page flow
+- app/page.tsx shows the public intro screen.
+- Clicking "Open Staff Dashboard" goes to app/dashboard/page.tsx.
+- app/dashboard/layout.tsx and components/dashboard/dashboard-shell.tsx make
+  the common dashboard frame around all dashboard pages.
+
+Inbox flow
+- app/dashboard/inbox/page.tsx opens inbox-with-tabs.tsx.
+- inbox-with-tabs.tsx decides normal Inbox or Escalations mode.
+- components/dashboard/mailbox-view.tsx loads and manages the mailbox.
+- mailbox-view.tsx calls the email API routes.
+- The email API routes call mailbox-service.ts.
+- mailbox-service.ts reads or saves data using email-store.ts.
+
+Compose new case flow
+- app/dashboard/compose/page.tsx shows the manual intake form.
+- It previews routing using lib/local-routing.ts.
+- When submitted, it sends data to app/api/emails/route.ts.
+- The backend calls mailbox-service.ts.
+- mailbox-service.ts asks ai-draft-service.ts for a local draft suggestion.
+- The result is saved by email-store.ts.
+- After save, the app opens the created case in Inbox or Escalations.
+
+Knowledge-base flow
+- app/dashboard/knowledge-base/page.tsx shows the KB screen.
+- It calls the KB API routes for list, upload, delete, and file download.
+- Those API routes call knowledge-base-service.ts.
+- knowledge-base-service.ts uses knowledge-base-store.ts and also compares KB
+  documents with current mailbox cases to show support links.
+
+Activity flow
+- app/dashboard/activity/page.tsx loads activity data.
+- components/dashboard/activity-log-view.tsx shows it to the user.
+- app/api/activity/export/route.ts lets the user download the log.
+- The underlying data comes from activity-service.ts and
+  activity-log-store.ts.
+
+Preferences and language flow
+- lib/user-preferences.ts defines allowed preferences.
+- components/dashboard/user-preferences-provider.tsx stores and applies them.
+- Many pages and components read from this provider so they can switch
+  between English and Polish and respect local visual preferences.
+
+
+======================================================================
+10. SIMPLE NON-TECHNICAL SUMMARY
+======================================================================
+
+If you want to remember the project in the simplest possible way:
+
+- The landing page introduces the product.
+- The dashboard pages are the user-facing staff workspace.
+- The Inbox is powered mostly by mailbox-view.ts plus the email API and
+  email-store.ts.
+- Compose creates new local cases and uses local routing plus local draft
+  generation.
+- The Knowledge Base manages source documents and shows which cases they
+  support.
+- Activity records important actions done in the app.
+- Settings now handles personal preferences only.
+- The app is currently local-first, which means data is being saved locally
+  in files rather than through a real production database or live email
+  provider.
+

@@ -8,7 +8,10 @@ function getWritableBaseDir() {
   return process.cwd();
 }
 
-export function getWritableDataPath(...segments: string[]) {
-  return path.join(getWritableBaseDir(), "data", ...segments);
+export function getWritableDataRootPath() {
+  return path.join(getWritableBaseDir(), "data");
 }
 
+export function getWritableDataPath(...segments: string[]) {
+  return path.join(getWritableDataRootPath(), ...segments);
+}
