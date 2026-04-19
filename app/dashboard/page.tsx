@@ -14,13 +14,17 @@ import {
   translateDepartment,
   translateWorkloadPressure,
 } from "@/lib/email-data";
+import { listWorkspaceActivity } from "@/lib/server/services/activity-service";
 import { listMailboxEmails } from "@/lib/server/services/mailbox-service";
 import { listKnowledgeLibraryDocuments } from "@/lib/server/services/knowledge-base-service";
 import {
+  getLocaleForLanguage,
   isLanguagePreference,
   userPreferencesLanguageCookie,
   type LanguagePreference,
 } from "@/lib/user-preferences";
+
+const dashboardWeeklyFallbackAnchorIso = "2026-01-07T00:00:00.000Z";
 
 function formatAverageMinutes(minutes: number) {
   if (minutes <= 0) {
@@ -34,19 +38,36 @@ function formatAverageMinutes(minutes: number) {
   return `${(minutes / 60).toFixed(1)}h`;
 }
 
+function getLastSevenSnapshots(anchorIso: string, locale: string) {
+  const anchor = new Date(anchorIso);
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(anchor);
+    date.setDate(anchor.getDate() - (6 - index));
+
+    return {
+      key: date.toISOString().slice(0, 10),
+      label: date.toLocaleDateString(locale, { weekday: "short" }),
+    };
+  });
+}
+
 export default async function DashboardRootPage() {
   const languageCookie = (await cookies()).get(userPreferencesLanguageCookie)?.value;
   const language: LanguagePreference = isLanguagePreference(languageCookie)
     ? languageCookie
     : "English";
+  const locale = getLocaleForLanguage(language);
   const isPolish = language === "Polish";
   let emails: Awaited<ReturnType<typeof listMailboxEmails>> = [];
   let documents: Awaited<ReturnType<typeof listKnowledgeLibraryDocuments>> = [];
+  let activityEvents: Awaited<ReturnType<typeof listWorkspaceActivity>> = [];
 
   try {
-    [emails, documents] = await Promise.all([
+    [emails, documents, activityEvents] = await Promise.all([
       listMailboxEmails(),
       listKnowledgeLibraryDocuments(),
+      listWorkspaceActivity(40),
     ]);
   } catch (error) {
     console.error("Failed to load dashboard data. Falling back to empty state.", error);
@@ -90,6 +111,38 @@ export default async function DashboardRootPage() {
             const updated = new Date(email.lastUpdatedAt).getTime();
             return total + Math.max(0, updated - received) / 60000;
           }, 0) / approvedMessages;
+
+  const latestTimestamps = [
+    ...emails.map((email) => new Date(email.lastUpdatedAt).getTime()),
+    ...activityEvents.map((event) => new Date(event.timestamp).getTime()),
+  ];
+  const latestTimestamp =
+    latestTimestamps.length > 0
+      ? latestTimestamps.reduce((max, value) => (value > max ? value : max))
+      : new Date(dashboardWeeklyFallbackAnchorIso).getTime();
+
+  const weeklySnapshots = getLastSevenSnapshots(
+    new Date(latestTimestamp).toISOString(),
+    locale
+  );
+  const weeklySeries = weeklySnapshots.map((snapshot) => {
+    const mailCount = emails.filter(
+      (email) => email.receivedAt.slice(0, 10) === snapshot.key
+    ).length;
+    const activityCount = activityEvents.filter(
+      (event) => event.timestamp.slice(0, 10) === snapshot.key
+    ).length;
+
+    return {
+      ...snapshot,
+      mailCount,
+      activityCount,
+    };
+  });
+  const maxWeeklyValue = weeklySeries.reduce((max, entry) => {
+    const currentMax = Math.max(entry.mailCount, entry.activityCount);
+    return currentMax > max ? currentMax : max;
+  }, 1);
 
   const busiestOwner: [string, number] = operationsSnapshot.mostLoadedOwner
     ? [operationsSnapshot.mostLoadedOwner.owner, operationsSnapshot.mostLoadedOwner.activeCount]
@@ -167,8 +220,8 @@ export default async function DashboardRootPage() {
         title={isPolish ? "Przegląd panelu" : "Dashboard Overview"}
         description={
           isPolish
-            ? `Witaj ponownie, ${dashboardCurrentUser.name}. Oto szybka migawka presji kolejki, własności i gotowości odpowiedzi.`
-            : `Welcome back, ${dashboardCurrentUser.name}. Here is a quick snapshot of queue pressure, ownership, and reply readiness.`
+            ? `Witaj ponownie, ${dashboardCurrentUser.name}. Oto szybka migawka presji kolejki, własności i ostatniej aktywności.`
+            : `Welcome back, ${dashboardCurrentUser.name}. Here is a quick snapshot of queue pressure, ownership, and recent activity.`
         }
         meta={
           isPolish
@@ -210,7 +263,64 @@ export default async function DashboardRootPage() {
         ))}
       </section>
 
-      <section className="mt-4">
+      <section className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)]">
+        <article className={`${dashboardPanelClassName} p-6 md:p-7`}>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-400">
+                {isPolish ? "Aktywność tygodniowa" : "Weekly Activity"}
+              </p>
+              <h3 className="mt-3 text-3xl font-semibold tracking-tight text-[#1E2340]">
+                {isPolish ? "Aktywność tygodniowa" : "Weekly Activity"}
+              </h3>
+              <p className="mt-2 text-sm leading-7 text-slate-500">
+                {isPolish
+                  ? "Wolumen poczty przychodzącej względem zarejestrowanej aktywności przepływu w ostatnich siedmiu aktywnych dniach lokalnego prototypu."
+                  : "Inbound mail volume versus logged workflow activity across the latest seven active days in the local prototype."}
+              </p>
+            </div>
+            <div className="flex items-center gap-4 text-sm text-slate-500">
+              <span className="flex items-center gap-2">
+                <span className="h-3 w-3 rounded-full bg-[#5C61FF]" />
+                {isPolish ? "Poczta" : "Mail"}
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="h-3 w-3 rounded-full bg-[#B7BDFC]" />
+                {isPolish ? "Aktywność" : "Activity"}
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-8 grid h-[240px] grid-cols-7 gap-3">
+            {weeklySeries.map((entry) => (
+              <div key={entry.key} className="flex flex-col items-center gap-3">
+                <div className="flex h-full w-full items-end justify-center gap-2 rounded-[24px] bg-white/44 px-2 py-3">
+                  <div
+                    className="w-1/2 rounded-t-[18px] bg-[#B7BDFC]"
+                    style={{
+                      height: `${Math.max(10, (entry.activityCount / maxWeeklyValue) * 100)}%`,
+                    }}
+                  />
+                  <div
+                    className="w-1/2 rounded-t-[18px] bg-[#5C61FF]"
+                    style={{
+                      height: `${Math.max(10, (entry.mailCount / maxWeeklyValue) * 100)}%`,
+                    }}
+                  />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-slate-700">{entry.label}</p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    {isPolish
+                      ? `${entry.mailCount} poczta • ${entry.activityCount} log`
+                      : `${entry.mailCount} mail • ${entry.activityCount} log`}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </article>
+
         <article className={`${dashboardPanelClassName} p-6`}>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
               {isPolish ? "Obciążenie i fokus" : "Workload & Focus"}
