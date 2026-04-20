@@ -26,6 +26,7 @@ import {
 } from "@/lib/user-preferences";
 import {
   createWorkspaceStaffMemberAction,
+  deleteWorkspaceStaffMemberAction,
   updateWorkspaceStaffMemberAction,
 } from "./actions";
 
@@ -39,6 +40,12 @@ const editableWorkspaceStatuses: readonly WorkspaceUserStatus[] = [
   "active",
   "pending",
 ];
+
+const adminDangerButtonClassName =
+  "inline-flex items-center justify-center rounded-full border border-[#F8D2DA] bg-[#FFF1F4] px-4 py-2.5 text-sm font-semibold text-[#B4375C] transition hover:border-[#F0BCC8] hover:bg-[#FFE8EE]";
+
+const disabledAdminDangerButtonClassName =
+  "inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-400";
 
 function getSearchParamValue(
   value: string | string[] | undefined
@@ -64,6 +71,12 @@ function getStaffMessage(
     return language === "Polish"
       ? "Zmiany członka zespołu zostały zapisane."
       : "The staff member changes were saved.";
+  }
+
+  if (value === "member-deleted") {
+    return language === "Polish"
+      ? "Członek zespołu został usunięty."
+      : "The staff member was removed.";
   }
 
   return null;
@@ -145,7 +158,7 @@ export default async function AdminPage({
 }: Readonly<{
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }>) {
-  await requireWorkspaceRole("operations_admin");
+  const currentUser = await requireWorkspaceRole("operations_admin");
   const languageCookie = (await cookies()).get(userPreferencesLanguageCookie)?.value;
   const language: LanguagePreference = isLanguagePreference(languageCookie)
     ? languageCookie
@@ -170,6 +183,10 @@ export default async function AdminPage({
   const hasRemoteFileBucket = snapshot.localStorage.locations.some(
     (location) => location.kind === "remote" && location.active
   );
+  const activeAdminCount = snapshot.staffDirectory.filter(
+    (user) =>
+      user.role === "operations_admin" && user.status === "active"
+  ).length;
 
   return (
     <>
@@ -257,108 +274,161 @@ export default async function AdminPage({
 
           <div className="mt-6 space-y-3">
             {snapshot.staffDirectory.map((user) => (
-              <div
-                key={user.id}
-                className="rounded-[22px] border border-white/75 bg-white/62 p-4 shadow-[0_14px_32px_rgba(141,153,179,0.12)]"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">{user.name}</p>
-                    <p className="mt-1 text-sm text-slate-500">{user.email}</p>
-                    <p className="mt-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-                      {translateWorkspaceRole(user.role, language)}
-                    </p>
-                  </div>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${getStaffStatusClassName(
-                      user.status
-                    )}`}
+              (() => {
+                const isCurrentUser = user.id === currentUser.id;
+                const isLastActiveAdmin =
+                  user.role === "operations_admin" &&
+                  user.status === "active" &&
+                  activeAdminCount <= 1;
+                const canDeleteUser = !isCurrentUser && !isLastActiveAdmin;
+
+                return (
+                  <div
+                    key={user.id}
+                    className="rounded-[22px] border border-white/75 bg-white/62 p-4 shadow-[0_14px_32px_rgba(141,153,179,0.12)]"
                   >
-                    {translateWorkspaceUserStatus(user.status, language)}
-                  </span>
-                </div>
-
-                {snapshot.staffDirectorySource === "database" ? (
-                  <form
-                    action={updateWorkspaceStaffMemberAction}
-                    className="mt-4 grid gap-3 border-t border-slate-100/80 pt-4"
-                  >
-                    <input type="hidden" name="userId" value={user.id} />
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <label className="block">
-                        <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                          {isPolish ? "Imię i nazwisko" : "Full name"}
-                        </span>
-                        <input
-                          type="text"
-                          name="name"
-                          defaultValue={user.name}
-                          className={dashboardInputClassName}
-                          required
-                        />
-                      </label>
-
-                      <label className="block">
-                        <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                          {isPolish ? "Email" : "Email"}
-                        </span>
-                        <input
-                          type="email"
-                          name="email"
-                          defaultValue={user.email}
-                          className={dashboardInputClassName}
-                          required
-                        />
-                      </label>
-                    </div>
-
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <label className="block">
-                        <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                          {isPolish ? "Rola" : "Role"}
-                        </span>
-                        <select
-                          name="role"
-                          defaultValue={user.role}
-                          className={dashboardInputClassName}
-                        >
-                          {editableWorkspaceRoles.map((role) => (
-                            <option key={role} value={role}>
-                              {translateWorkspaceRole(role, language)}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      <label className="block">
-                        <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                          {isPolish ? "Status" : "Status"}
-                        </span>
-                        <select
-                          name="status"
-                          defaultValue={user.status}
-                          className={dashboardInputClassName}
-                        >
-                          {editableWorkspaceStatuses.map((status) => (
-                            <option key={status} value={status}>
-                              {translateWorkspaceUserStatus(status, language)}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-
-                    <div className="flex justify-end">
-                      <button
-                        type="submit"
-                        className={dashboardGhostButtonClassName}
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">
+                          {user.name}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-500">{user.email}</p>
+                        <p className="mt-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
+                          {translateWorkspaceRole(user.role, language)}
+                        </p>
+                        {isCurrentUser ? (
+                          <p className="mt-2 text-xs leading-5 text-[#4F57E8]">
+                            {isPolish
+                              ? "To jest Twoje bieżące konto admina. Nazwę możesz zmienić tutaj, ale email, rolę i dostęp zmieniaj z innej aktywnej sesji administratora."
+                              : "This is your current admin account. You can update the display name here, but change email, role, or access from another active admin session."}
+                          </p>
+                        ) : null}
+                      </div>
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${getStaffStatusClassName(
+                          user.status
+                        )}`}
                       >
-                        {isPolish ? "Zapisz zmiany" : "Save changes"}
-                      </button>
+                        {translateWorkspaceUserStatus(user.status, language)}
+                      </span>
                     </div>
-                  </form>
-                ) : null}
-              </div>
+
+                    {snapshot.staffDirectorySource === "database" ? (
+                      <form
+                        action={updateWorkspaceStaffMemberAction}
+                        className="mt-4 grid gap-3 border-t border-slate-100/80 pt-4"
+                      >
+                        <input type="hidden" name="userId" value={user.id} />
+                        {isCurrentUser ? (
+                          <>
+                            <input type="hidden" name="role" value={user.role} />
+                            <input type="hidden" name="status" value={user.status} />
+                          </>
+                        ) : null}
+
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <label className="block">
+                            <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                              {isPolish ? "Imię i nazwisko" : "Full name"}
+                            </span>
+                            <input
+                              type="text"
+                              name="name"
+                              defaultValue={user.name}
+                              className={dashboardInputClassName}
+                              required
+                            />
+                          </label>
+
+                          <label className="block">
+                            <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                              {isPolish ? "Email" : "Email"}
+                            </span>
+                            <input
+                              type="email"
+                              name="email"
+                              defaultValue={user.email}
+                              readOnly={isCurrentUser}
+                              className={`${dashboardInputClassName} ${
+                                isCurrentUser ? "cursor-not-allowed opacity-70" : ""
+                              }`}
+                              required
+                            />
+                          </label>
+                        </div>
+
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <label className="block">
+                            <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                              {isPolish ? "Rola" : "Role"}
+                            </span>
+                            <select
+                              {...(isCurrentUser
+                                ? {}
+                                : { name: "role" })}
+                              defaultValue={user.role}
+                              disabled={isCurrentUser}
+                              className={`${dashboardInputClassName} ${
+                                isCurrentUser ? "cursor-not-allowed opacity-70" : ""
+                              }`}
+                            >
+                              {editableWorkspaceRoles.map((role) => (
+                                <option key={role} value={role}>
+                                  {translateWorkspaceRole(role, language)}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+
+                          <label className="block">
+                            <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                              {isPolish ? "Status" : "Status"}
+                            </span>
+                            <select
+                              {...(isCurrentUser
+                                ? {}
+                                : { name: "status" })}
+                              defaultValue={user.status}
+                              disabled={isCurrentUser}
+                              className={`${dashboardInputClassName} ${
+                                isCurrentUser ? "cursor-not-allowed opacity-70" : ""
+                              }`}
+                            >
+                              {editableWorkspaceStatuses.map((status) => (
+                                <option key={status} value={status}>
+                                  {translateWorkspaceUserStatus(status, language)}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
+
+                        <div className="flex flex-wrap justify-end gap-3">
+                          <button
+                            type="submit"
+                            className={dashboardGhostButtonClassName}
+                          >
+                            {isPolish ? "Zapisz zmiany" : "Save changes"}
+                          </button>
+                          <button
+                            type="submit"
+                            formAction={deleteWorkspaceStaffMemberAction}
+                            formNoValidate
+                            disabled={!canDeleteUser}
+                            className={
+                              canDeleteUser
+                                ? adminDangerButtonClassName
+                                : disabledAdminDangerButtonClassName
+                            }
+                          >
+                            {isPolish ? "Usuń użytkownika" : "Remove user"}
+                          </button>
+                        </div>
+                      </form>
+                    ) : null}
+                  </div>
+                );
+              })()
             ))}
           </div>
 

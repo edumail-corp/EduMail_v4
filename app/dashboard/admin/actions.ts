@@ -6,6 +6,7 @@ import type { WorkspaceRole, WorkspaceUserStatus } from "@/lib/workspace-config"
 import { requireWorkspaceRole } from "@/lib/server/workspace-auth";
 import {
   createWorkspaceStaffUser,
+  deleteWorkspaceStaffUser,
   updateWorkspaceStaffUser,
 } from "@/lib/server/workspace-staff-directory";
 
@@ -20,6 +21,11 @@ function redirectToAdmin(params: Record<string, string>) {
   redirect(query.length > 0 ? `/dashboard/admin?${query}` : "/dashboard/admin");
 }
 
+function revalidateWorkspaceMembershipPages() {
+  revalidatePath("/dashboard/admin");
+  revalidatePath("/sign-in");
+}
+
 export async function createWorkspaceStaffMemberAction(formData: FormData) {
   await requireWorkspaceRole("operations_admin");
 
@@ -31,7 +37,7 @@ export async function createWorkspaceStaffMemberAction(formData: FormData) {
       status: getFormValue(formData, "status") as WorkspaceUserStatus,
     });
 
-    revalidatePath("/dashboard/admin");
+    revalidateWorkspaceMembershipPages();
     redirectToAdmin({ staffMessage: "member-created" });
   } catch (error) {
     const message =
@@ -41,21 +47,64 @@ export async function createWorkspaceStaffMemberAction(formData: FormData) {
 }
 
 export async function updateWorkspaceStaffMemberAction(formData: FormData) {
-  await requireWorkspaceRole("operations_admin");
+  const currentUser = await requireWorkspaceRole("operations_admin");
+  const userId = getFormValue(formData, "userId");
+  const email = getFormValue(formData, "email");
+  const role = getFormValue(formData, "role") as WorkspaceRole;
+  const status = getFormValue(formData, "status") as WorkspaceUserStatus;
 
   try {
-    await updateWorkspaceStaffUser(getFormValue(formData, "userId"), {
+    if (
+      userId === currentUser.id &&
+      email.toLowerCase() !== currentUser.email.toLowerCase()
+    ) {
+      throw new Error(
+        "Sign in as another active admin before changing the email on your current admin account."
+      );
+    }
+
+    if (
+      userId === currentUser.id &&
+      (role !== "operations_admin" || status !== "active")
+    ) {
+      throw new Error(
+        "Sign in as another active admin before removing admin access from your current account."
+      );
+    }
+
+    await updateWorkspaceStaffUser(userId, {
       name: getFormValue(formData, "name"),
-      email: getFormValue(formData, "email"),
-      role: getFormValue(formData, "role") as WorkspaceRole,
-      status: getFormValue(formData, "status") as WorkspaceUserStatus,
+      email,
+      role,
+      status,
     });
 
-    revalidatePath("/dashboard/admin");
+    revalidateWorkspaceMembershipPages();
     redirectToAdmin({ staffMessage: "member-updated" });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to update the staff member.";
+    redirectToAdmin({ staffError: message });
+  }
+}
+
+export async function deleteWorkspaceStaffMemberAction(formData: FormData) {
+  const currentUser = await requireWorkspaceRole("operations_admin");
+  const userId = getFormValue(formData, "userId");
+
+  try {
+    if (userId === currentUser.id) {
+      throw new Error(
+        "Sign in as another active admin before removing your current admin account."
+      );
+    }
+
+    await deleteWorkspaceStaffUser(userId);
+    revalidateWorkspaceMembershipPages();
+    redirectToAdmin({ staffMessage: "member-deleted" });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unable to delete the staff member.";
     redirectToAdmin({ staffError: message });
   }
 }

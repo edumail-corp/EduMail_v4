@@ -135,7 +135,7 @@ Note: the production build uses `next/font` with Geist, so it may need network a
 - The current sign-in surface supports Google SSO, Microsoft SSO through Supabase's Azure provider, and email magic link as the fallback path for approved staff accounts.
 - A local developer-access option is available on the sign-in page so the workspace stays reachable while external auth setup is still incomplete.
 - Workspace membership can now move behind `EDUMAILAI_WORKSPACE_SETTINGS_ADAPTER=database`, seeding the current staff directory into SQLite or PostgreSQL/Supabase on first boot so auth and the admin surface share one persisted roster.
-- When workspace membership uses the database-backed settings adapter, `/dashboard/admin` can now add and update staff members directly against that shared roster.
+- When workspace membership uses the database-backed settings adapter, `/dashboard/admin` can now add, update, and remove staff members directly against that shared roster, with duplicate-email checks and protection against removing the last active operations admin.
 - Live inbox sync and outbound reply delivery are now available through Microsoft Graph when the mailbox credentials are configured, while local manual intake and local auto-sent fallback remain available for unfinished environments.
 - OpenAI can now back the draft-generation layer when configured, while the local seeded adapter remains the safe fallback.
 - This is still a human-in-the-loop prototype, and knowledge grounding currently uses document metadata plus preview excerpts rather than full parsed document text.
