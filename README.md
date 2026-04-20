@@ -56,6 +56,7 @@ Set the Supabase Auth redirect URL to `/auth/callback` for your local and deploy
 If you need to keep the prototype usable before external auth is fully wired, keep local developer access enabled in non-production or set:
 
 - `EDUMAILAI_ENABLE_DEV_ACCESS=1`
+  Optional override. Built-in staff access now turns on automatically whenever Supabase auth is not configured, so the app stays reachable during setup.
 
 That exposes a local-only sign-in path on `/sign-in` using the current staff directory.
 

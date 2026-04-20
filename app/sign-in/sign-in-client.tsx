@@ -145,6 +145,35 @@ export function SignInClient({
   const [isBusy, setIsBusy] = useState(false);
   const [inlineMessage, setInlineMessage] = useState<string | null>(null);
   const [inlineError, setInlineError] = useState<string | null>(null);
+  const showBuiltInWorkspaceAccess =
+    developmentAccessEnabled && developmentAccessUsers.length > 0;
+  const shouldPrioritizeBuiltInAccess = showBuiltInWorkspaceAccess && !authConfigured;
+  const builtInAccessButtonClassName = shouldPrioritizeBuiltInAccess
+    ? dashboardPrimaryButtonClassName
+    : dashboardSecondaryButtonClassName;
+  const builtInAccessTitleClassName = shouldPrioritizeBuiltInAccess
+    ? "block truncate text-sm font-semibold text-white"
+    : "block truncate text-sm font-semibold text-slate-900";
+  const builtInAccessRoleClassName = shouldPrioritizeBuiltInAccess
+    ? "mt-1 block truncate text-xs font-medium text-white/80"
+    : "mt-1 block truncate text-xs font-medium text-slate-500";
+  const builtInAccessEmailClassName = shouldPrioritizeBuiltInAccess
+    ? "mt-1 block truncate text-xs text-white/70"
+    : "mt-1 block truncate text-xs text-slate-400";
+  const accessNoticeTitle = shouldPrioritizeBuiltInAccess
+    ? isPolish
+      ? "Wbudowany dostęp do workspace"
+      : "Built-in workspace access"
+    : isPolish
+      ? "Lokalny dostęp developerski"
+      : "Local developer access";
+  const accessNoticeDescription = shouldPrioritizeBuiltInAccess
+    ? isPolish
+      ? "Supabase Auth nie jest jeszcze skonfigurowany w tym środowisku, więc możesz wejść do workspace jako zatwierdzony pracownik z bieżącego katalogu."
+      : "Supabase Auth is not configured in this environment yet, so you can still enter the workspace as an approved staff member from the current directory."
+    : isPolish
+      ? "Jeśli zewnętrzne logowanie nie jest jeszcze gotowe, możesz wejść do workspace jako członek zespołu z bieżącego katalogu."
+      : "If external sign-in is not ready yet, you can enter the workspace as a staff member from the current directory.";
 
   function buildCallbackUrl() {
     const callbackUrl = new URL("/auth/callback", window.location.origin);
@@ -245,15 +274,23 @@ export function SignInClient({
             </div>
 
             <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 md:text-6xl">
-              {isPolish
-                ? "Zaloguj zespół do EduMailAI przez Supabase Auth."
-                : "Sign your team into EduMailAI through Supabase Auth."}
+              {shouldPrioritizeBuiltInAccess
+                ? isPolish
+                  ? "Wejdź do EduMailAI przez wbudowany dostęp pracowników."
+                  : "Enter EduMailAI through built-in staff access."
+                : isPolish
+                  ? "Zaloguj zespół do EduMailAI przez Supabase Auth."
+                  : "Sign your team into EduMailAI through Supabase Auth."}
             </h1>
 
             <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600 md:text-lg">
-              {isPolish
-                ? "Pierwsze wdrożenie ogranicza dostęp do zatwierdzonego katalogu pracowników. Zaloguj się przez Google lub Microsoft albo poproś o magic link wysłany na konto z allowlisty."
-                : "This first rollout is limited to the approved staff directory. Sign in with Google or Microsoft, or request a magic link sent to an allowlisted account."}
+              {shouldPrioritizeBuiltInAccess
+                ? isPolish
+                  ? "To środowisko nadal korzysta z repozytoryjnego katalogu pracowników jako ścieżki wejścia. Wybierz zatwierdzony profil poniżej, aby przejść dalej do /dashboard."
+                  : "This environment is still using the repo-backed staff directory as the entry path. Choose an approved staff profile below to continue into /dashboard."
+                : isPolish
+                  ? "Pierwsze wdrożenie ogranicza dostęp do zatwierdzonego katalogu pracowników. Zaloguj się przez Google lub Microsoft albo poproś o magic link wysłany na konto z allowlisty."
+                  : "This first rollout is limited to the approved staff directory. Sign in with Google or Microsoft, or request a magic link sent to an allowlisted account."}
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
@@ -279,16 +316,12 @@ export function SignInClient({
                 : "Google and Microsoft are the primary SSO paths, while magic link remains the fallback for approved staff accounts."}
             </p>
 
-            {developmentAccessEnabled ? (
+            {showBuiltInWorkspaceAccess ? (
               <div className="mt-5 rounded-[24px] border border-[#DCE1FF] bg-[#F7F8FF] px-4 py-4 text-sm leading-6 text-slate-600 shadow-[0_14px_36px_rgba(141,153,179,0.12)]">
                 <p className="font-semibold text-[#1E2340]">
-                  {isPolish ? "Lokalny dostęp developerski" : "Local developer access"}
+                  {accessNoticeTitle}
                 </p>
-                <p className="mt-2">
-                  {isPolish
-                    ? "Jeśli zewnętrzne logowanie nie jest jeszcze gotowe, możesz wejść do workspace jako członek zespołu z bieżącego katalogu."
-                    : "If external sign-in is not ready yet, you can enter the workspace as a staff member from the current directory."}
-                </p>
+                <p className="mt-2">{accessNoticeDescription}</p>
               </div>
             ) : null}
 
@@ -304,7 +337,7 @@ export function SignInClient({
               </div>
             ) : null}
 
-            {!authConfigured ? (
+            {!authConfigured && !shouldPrioritizeBuiltInAccess ? (
               <div className="mt-5 rounded-[24px] border border-[#FFD2DA] bg-[#FFF1F4] px-4 py-3 text-sm text-[#B4375C] shadow-[0_14px_36px_rgba(141,153,179,0.12)]">
                 {isPolish
                   ? "Dodaj NEXT_PUBLIC_SUPABASE_URL i NEXT_PUBLIC_SUPABASE_ANON_KEY, aby włączyć logowanie."
@@ -324,67 +357,77 @@ export function SignInClient({
               </div>
             ) : null}
 
-            <div className="mt-6 grid gap-3">
-              {ssoProviderDefinitions.map((providerDefinition) => {
-                const providerLabel = isPolish
-                  ? providerDefinition.label.Polish
-                  : providerDefinition.label.English;
+            {authConfigured ? (
+              <>
+                <div className="mt-6 grid gap-3">
+                  {ssoProviderDefinitions.map((providerDefinition) => {
+                    const providerLabel = isPolish
+                      ? providerDefinition.label.Polish
+                      : providerDefinition.label.English;
 
-                return (
+                    return (
+                      <button
+                        key={providerDefinition.provider}
+                        type="button"
+                        disabled={isBusy}
+                        onClick={() => {
+                          void handleOAuthSignIn(providerDefinition.provider);
+                        }}
+                        className={`${providerDefinition.className} w-full gap-3 disabled:cursor-not-allowed disabled:opacity-70`}
+                      >
+                        <DashboardIcon name="users" className="h-[18px] w-[18px]" />
+                        {isPolish
+                          ? `Kontynuuj przez ${providerLabel}`
+                          : `Continue with ${providerLabel}`}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-6 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                  <span className="h-px flex-1 bg-slate-200" />
+                  {isPolish ? "albo magic link" : "or magic link"}
+                  <span className="h-px flex-1 bg-slate-200" />
+                </div>
+
+                <form className="mt-6 space-y-4" onSubmit={handleMagicLink}>
+                  <label className="block">
+                    <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                      {isPolish ? "Email pracownika" : "Staff email"}
+                    </span>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      placeholder={isPolish ? "pracownik@uczelnia.edu" : "staff@university.edu"}
+                      className={dashboardInputClassName}
+                      autoComplete="email"
+                      required
+                    />
+                  </label>
+
                   <button
-                    key={providerDefinition.provider}
-                    type="button"
-                    disabled={!authConfigured || isBusy}
-                    onClick={() => {
-                      void handleOAuthSignIn(providerDefinition.provider);
-                    }}
-                    className={`${providerDefinition.className} w-full gap-3 disabled:cursor-not-allowed disabled:opacity-70`}
+                    type="submit"
+                    disabled={isBusy || email.trim().length === 0}
+                    className={`${dashboardSecondaryButtonClassName} w-full disabled:cursor-not-allowed disabled:opacity-70`}
                   >
-                    <DashboardIcon name="users" className="h-[18px] w-[18px]" />
-                    {isPolish
-                      ? `Kontynuuj przez ${providerLabel}`
-                      : `Continue with ${providerLabel}`}
+                    {isPolish ? "Wyślij link logowania" : "Send sign-in link"}
                   </button>
-                );
-              })}
-            </div>
+                </form>
+              </>
+            ) : null}
 
-            <div className="mt-6 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-              <span className="h-px flex-1 bg-slate-200" />
-              {isPolish ? "albo magic link" : "or magic link"}
-              <span className="h-px flex-1 bg-slate-200" />
-            </div>
-
-            <form className="mt-6 space-y-4" onSubmit={handleMagicLink}>
-              <label className="block">
-                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                  {isPolish ? "Email pracownika" : "Staff email"}
-                </span>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder={isPolish ? "pracownik@uczelnia.edu" : "staff@university.edu"}
-                  className={dashboardInputClassName}
-                  autoComplete="email"
-                  required
-                />
-              </label>
-
-              <button
-                type="submit"
-                disabled={!authConfigured || isBusy || email.trim().length === 0}
-                className={`${dashboardSecondaryButtonClassName} w-full disabled:cursor-not-allowed disabled:opacity-70`}
-              >
-                {isPolish ? "Wyślij link logowania" : "Send sign-in link"}
-              </button>
-            </form>
-
-            {developmentAccessEnabled && developmentAccessUsers.length > 0 ? (
+            {showBuiltInWorkspaceAccess ? (
               <>
                 <div className="mt-6 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
                   <span className="h-px flex-1 bg-slate-200" />
-                  {isPolish ? "albo dostęp lokalny" : "or local access"}
+                  {authConfigured
+                    ? isPolish
+                      ? "albo dostęp lokalny"
+                      : "or local access"
+                    : isPolish
+                      ? "wejdź do workspace"
+                      : "enter the workspace"}
                   <span className="h-px flex-1 bg-slate-200" />
                 </div>
 
@@ -397,22 +440,22 @@ export function SignInClient({
                       type="submit"
                       name="userId"
                       value={user.id}
-                      className={`${dashboardSecondaryButtonClassName} w-full items-start justify-between gap-4 rounded-[22px] px-4 py-4 text-left`}
+                      className={`w-full items-start justify-between gap-4 rounded-[22px] px-4 py-4 text-left ${builtInAccessButtonClassName}`}
                     >
                       <span className="min-w-0">
-                        <span className="block truncate text-sm font-semibold text-slate-900">
+                        <span className={builtInAccessTitleClassName}>
                           {isPolish
                             ? `Wejdź jako ${user.name}`
                             : `Continue as ${user.name}`}
                         </span>
-                        <span className="mt-1 block truncate text-xs font-medium text-slate-500">
+                        <span className={builtInAccessRoleClassName}>
                           {translateWorkspaceRole(user.role, preferences.language)}
                         </span>
-                        <span className="mt-1 block truncate text-xs text-slate-400">
+                        <span className={builtInAccessEmailClassName}>
                           {user.email}
                         </span>
                       </span>
-                      <span className="shrink-0 text-[#4F57E8]">
+                      <span className="shrink-0 text-current">
                         <DashboardIcon name="shield" className="h-5 w-5" />
                       </span>
                     </button>

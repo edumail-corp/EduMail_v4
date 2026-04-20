@@ -54,6 +54,10 @@ export function isDevelopmentAccessEnabled() {
     return false;
   }
 
+  if (!hasConfiguredSupabaseAuth()) {
+    return true;
+  }
+
   return process.env.NODE_ENV !== "production";
 }
 
