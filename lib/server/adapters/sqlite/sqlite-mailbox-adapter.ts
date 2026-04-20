@@ -57,6 +57,7 @@ type SQLiteMailboxRow = {
   source: string | null;
   summary: string;
   manual_review_reason: string | null;
+  integration_json: string | null;
 };
 
 type SQLiteMailboxAdapterDependencies = {
@@ -114,6 +115,7 @@ function toMailboxCaseRecord(row: SQLiteMailboxRow): MailboxCaseRecord {
       summary: row.summary,
       manualReviewReason: row.manual_review_reason,
     },
+    integration: parseSQLiteJson(row.integration_json, null),
   };
 }
 
@@ -146,8 +148,9 @@ function upsertMailboxCaseRecord(
           staff_note,
           source,
           summary,
-          manual_review_reason
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          manual_review_reason,
+          integration_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           sender = excluded.sender,
           subject = excluded.subject,
@@ -169,7 +172,8 @@ function upsertMailboxCaseRecord(
           staff_note = excluded.staff_note,
           source = excluded.source,
           summary = excluded.summary,
-          manual_review_reason = excluded.manual_review_reason
+          manual_review_reason = excluded.manual_review_reason,
+          integration_json = excluded.integration_json
       `)
       .run(
         record.id,
@@ -193,7 +197,8 @@ function upsertMailboxCaseRecord(
         record.response.staffNote,
         record.response.source,
         record.response.summary,
-        record.response.manualReviewReason
+        record.response.manualReviewReason,
+        serializeSQLiteJson(record.integration)
       );
   });
 }
@@ -244,8 +249,9 @@ export function createSQLiteMailboxAdapter({
             staff_note,
             source,
             summary,
-            manual_review_reason
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            manual_review_reason,
+            integration_json
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
         runSQLiteTransaction(database, () => {
@@ -272,7 +278,8 @@ export function createSQLiteMailboxAdapter({
               record.response.staffNote,
               record.response.source,
               record.response.summary,
-              record.response.manualReviewReason
+              record.response.manualReviewReason,
+              serializeSQLiteJson(record.integration)
             );
           }
         });
@@ -314,7 +321,8 @@ export function createSQLiteMailboxAdapter({
             staff_note,
             source,
             summary,
-            manual_review_reason
+            manual_review_reason,
+            integration_json
           FROM mailbox_cases
           ORDER BY received_at DESC, id DESC
         `)

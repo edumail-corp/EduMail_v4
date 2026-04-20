@@ -6,6 +6,8 @@ EduMailAI is a Next.js prototype for a university staff workflow tool. The app h
 
 - Staff dashboard shell with shared navigation and layout
 - Manual compose flow for creating new local cases
+- Microsoft Graph-backed inbox sync for importing real mailbox messages when configured
+- Microsoft Graph-backed outbound send for approved replies when configured, with local fallback preserved
 - Inbox with a single standard mailbox view; escalated cases still appear there without a separate sub-view
 - AI draft detail view with confidence indicators, routing context, generated reply support, and staff notes
 - Workflow events still append behind the scenes for audit/export needs
@@ -27,6 +29,8 @@ EduMailAI is a Next.js prototype for a university staff workflow tool. The app h
 - `/dashboard/knowledge-base` - knowledge document management
 - `/dashboard/settings` - personal language, appearance, and notification preferences
 - `/api/activity/export` - download the persisted audit trail as JSON
+- `/api/inbox/sync` - trigger a live inbox sync for the configured mailbox provider
+- `/api/emails/[id]/send` - send an approved reply through the configured outbound provider
 
 ## Local Development
 
@@ -59,6 +63,24 @@ If you need to keep the prototype usable before external auth is fully wired, ke
   Optional override. Built-in staff access now turns on automatically whenever Supabase auth is not configured, so the app stays reachable during setup.
 
 That exposes a local-only sign-in path on `/sign-in` using the current staff directory.
+
+## Microsoft Graph Mail Setup
+
+To enable real inbox sync and outbound send for a shared mailbox, set:
+
+- `EDUMAILAI_INBOX_PROVIDER=microsoft_graph`
+- `EDUMAILAI_OUTBOUND_PROVIDER=microsoft_graph`
+- `EDUMAILAI_MICROSOFT_TENANT_ID`
+- `EDUMAILAI_MICROSOFT_CLIENT_ID`
+- `EDUMAILAI_MICROSOFT_CLIENT_SECRET`
+- `EDUMAILAI_MICROSOFT_MAILBOX_USER`
+
+Recommended Microsoft Entra app configuration:
+
+- Use application permissions for `Mail.Read` and `Mail.Send`
+- Grant admin consent for those permissions
+- Point `EDUMAILAI_MICROSOFT_MAILBOX_USER` at the shared mailbox email or user id you want EduMailAI to read and send from
+- Optional: set `EDUMAILAI_MICROSOFT_SYNC_BATCH_SIZE` to control how many recent messages each sync import attempts
 
 ## Verification
 
@@ -95,6 +117,6 @@ Note: the production build uses `next/font` with Geist, so it may need network a
 - A local developer-access option is available on the sign-in page so the workspace stays reachable while external auth setup is still incomplete.
 - Workspace membership can now move behind `EDUMAILAI_WORKSPACE_SETTINGS_ADAPTER=database`, seeding the current staff directory into SQLite or PostgreSQL/Supabase on first boot so auth and the admin surface share one persisted roster.
 - When workspace membership uses the database-backed settings adapter, `/dashboard/admin` can now add and update staff members directly against that shared roster.
-- This is still a human-in-the-loop prototype, so live inbox sync and a production AI provider are not implemented yet.
-- The current product focus is keeping the operator workflow stable while hardening auth, persistence, storage transparency, and adapter parity.
-- The next implementation phase is wiring inbox operations and a real AI retrieval/drafting adapter behind the existing service layer.
+- Live inbox sync and outbound reply delivery are now available through Microsoft Graph when the mailbox credentials are configured, while local manual intake and local auto-sent fallback remain available for unfinished environments.
+- This is still a human-in-the-loop prototype, and the AI drafting layer remains local/demo rather than production-backed.
+- The current product focus is keeping the operator workflow stable while hardening auth, persistence, mailbox operations, storage transparency, and adapter parity.

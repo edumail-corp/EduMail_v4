@@ -56,6 +56,7 @@ type PostgresMailboxRow = {
   source: string | null;
   summary: string;
   manual_review_reason: string | null;
+  integration_json: unknown;
 };
 
 type PostgresMailboxAdapterDependencies = {
@@ -113,6 +114,7 @@ function toMailboxCaseRecord(row: PostgresMailboxRow): MailboxCaseRecord {
       summary: row.summary,
       manualReviewReason: row.manual_review_reason,
     },
+    integration: parsePostgresJson(row.integration_json, null),
   };
 }
 
@@ -144,10 +146,11 @@ function upsertMailboxCaseRecord(
         staff_note,
         source,
         summary,
-        manual_review_reason
+        manual_review_reason,
+        integration_json
       ) VALUES (
         $1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8, $9, $10, $11::jsonb, $12,
-        $13, $14, $15, $16, $17, $18, $19, $20, $21, $22
+        $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23::jsonb
       )
       ON CONFLICT (id) DO UPDATE SET
         sender = EXCLUDED.sender,
@@ -170,7 +173,8 @@ function upsertMailboxCaseRecord(
         staff_note = EXCLUDED.staff_note,
         source = EXCLUDED.source,
         summary = EXCLUDED.summary,
-        manual_review_reason = EXCLUDED.manual_review_reason
+        manual_review_reason = EXCLUDED.manual_review_reason,
+        integration_json = EXCLUDED.integration_json
     `,
     [
       record.id,
@@ -195,6 +199,7 @@ function upsertMailboxCaseRecord(
       record.response.source,
       record.response.summary,
       record.response.manualReviewReason,
+      serializePostgresJson(record.integration),
     ]
   );
 }
@@ -246,10 +251,11 @@ export function createPostgresMailboxAdapter({
                     staff_note,
                     source,
                     summary,
-                    manual_review_reason
+                    manual_review_reason,
+                    integration_json
                   ) VALUES (
                     $1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8, $9, $10, $11::jsonb,
-                    $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22
+                    $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23::jsonb
                   )
                 `,
                 [
@@ -275,6 +281,7 @@ export function createPostgresMailboxAdapter({
                   record.response.source,
                   record.response.summary,
                   record.response.manualReviewReason,
+                  serializePostgresJson(record.integration),
                 ]
               );
             }
@@ -317,7 +324,8 @@ export function createPostgresMailboxAdapter({
           staff_note,
           source,
           summary,
-          manual_review_reason
+          manual_review_reason,
+          integration_json
         FROM mailbox_cases
         ORDER BY received_at DESC, id DESC
       `

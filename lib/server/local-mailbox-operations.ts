@@ -178,7 +178,7 @@ export function getEmailActivityDescription(
   if (nextEmail.status === "Auto-sent" && previousEmail.status !== "Auto-sent") {
     return {
       action: "email_approved" as const,
-      description: `Approved the reply for ${nextEmail.sender} and moved the message into Auto-sent.`,
+      description: `Sent the reply for ${nextEmail.sender} and moved the message into Auto-sent.`,
       href: `/dashboard/inbox?emailId=${encodeURIComponent(nextEmail.id)}`,
     };
   }

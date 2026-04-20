@@ -1,6 +1,7 @@
 import type { WorkspaceSettingsAdapter } from "@/lib/server/adapters/contracts";
 import { getConfiguredDatabaseUrl } from "@/lib/server/adapters/database/database-url";
 import { listConfiguredAdapterBindings } from "@/lib/server/adapters/provider-config";
+import { getMailRuntimeStatus } from "@/lib/server/mail-provider-config";
 import { getConfiguredSupabaseStorage } from "@/lib/server/adapters/supabase/supabase-config";
 import { getWorkspaceStaffDirectoryData } from "@/lib/server/workspace-staff-directory";
 import { getWorkspaceEnvironmentSignals } from "@/lib/server/workspace-environment-signals";
@@ -94,6 +95,7 @@ export const localWorkspaceSettingsAdapter: WorkspaceSettingsAdapter = {
         binding.activeProvider === "supabase_storage"
     );
     const hasConfiguredAuth = hasConfiguredSupabaseAuth();
+    const mailRuntimeStatus = getMailRuntimeStatus();
     const integrations = getLocalizedWorkspaceIntegrationStatuses(language).map(
       (integration) =>
         integration.id === "ai-provider" && options?.draftProvider
@@ -174,6 +176,33 @@ export const localWorkspaceSettingsAdapter: WorkspaceSettingsAdapter = {
                         : language === "Polish"
                           ? "Utrzymaj logowanie i podstawowe role, a następnie przenieś członkostwo workspace z katalogu statycznego do bazy danych."
                           : "Keep sign-in and baseline roles stable, then move workspace membership from the static directory into the database.",
+                  }
+              : integration.id === "email-inbox" && mailRuntimeStatus.hasLiveInboxSync
+                ? {
+                    ...integration,
+                    status: "configured" as const,
+                    summary:
+                      language === "Polish"
+                        ? "Microsoft Graph synchronizuje już żywe wiadomości do skrzynki EduMailAI z deduplikacją po identyfikatorze wiadomości."
+                        : "Microsoft Graph is now syncing live mailbox messages into EduMailAI with message-id deduplication.",
+                    nextStep:
+                      language === "Polish"
+                        ? "Przetestuj skrzynkę współdzieloną na prawdziwych wiadomościach i dopiero potem dołóż harmonogram odświeżania lub checkpointy."
+                        : "Test the shared mailbox on real traffic, then add scheduled refresh or checkpoints only if the team needs them.",
+                  }
+              : integration.id === "email-outbound" &&
+                  mailRuntimeStatus.hasLiveOutboundSend
+                ? {
+                    ...integration,
+                    status: "configured" as const,
+                    summary:
+                      language === "Polish"
+                        ? "Microsoft Graph wysyła już zatwierdzone odpowiedzi z workspace zamiast kończyć je wyłącznie lokalnie."
+                        : "Microsoft Graph is now sending approved replies from the workspace instead of ending them only in the local flow.",
+                    nextStep:
+                      language === "Polish"
+                        ? "Zweryfikuj końcowe dostarczanie odpowiedzi, a potem ewentualnie dołóż monitoring błędów wysyłki."
+                        : "Verify end-to-end reply delivery, then add send-failure monitoring if it becomes necessary.",
                   }
               : integration
     );

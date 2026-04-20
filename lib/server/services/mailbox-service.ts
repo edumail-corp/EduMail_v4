@@ -1,8 +1,12 @@
 import type {
   DepartmentFilter,
+  EmailCategory,
   EmailFilter,
-  StaffEmailCreateInput,
+  EmailPriority,
+  MailboxIntegration,
+  MailProvider,
   StaffEmail,
+  StaffEmailCreateInput,
   StaffAssignmentFilter,
   StaffEmailUpdateInput,
 } from "@/lib/email-data";
@@ -12,6 +16,8 @@ import {
   translateDepartment,
   translateRoutingConfidence,
 } from "@/lib/email-data";
+import { inferLocalRoutingDecision } from "@/lib/local-routing";
+import type { MailboxCreateEmailInput } from "@/lib/server/adapters/contracts";
 import type { LanguagePreference } from "@/lib/user-preferences";
 import {
   getAIDraftAdapter,
@@ -20,6 +26,44 @@ import {
 import { listActiveWorkspaceStaffAssignees } from "@/lib/server/workspace-staff-directory";
 
 const mailboxAdapter = getMailboxAdapter();
+
+type BuildMailboxCaseOptions = {
+  input: StaffEmailCreateInput;
+  language: LanguagePreference;
+  caseOrigin: StaffEmail["caseOrigin"];
+  receivedAt?: string;
+  threadLabel: {
+    english: string;
+    polish: string;
+  };
+  internalLabel: {
+    english: string;
+    polish: string;
+  };
+  internalAuthor: {
+    english: string;
+    polish: string;
+  };
+  integration?: MailboxIntegration | null;
+};
+
+export type IngestMailboxEmailInput = {
+  senderName: string;
+  senderEmail: string;
+  subject: string;
+  body: string;
+  receivedAt: string;
+  provider: MailProvider;
+  externalMessageId: string;
+  externalConversationId?: string | null;
+  referenceUrl?: string | null;
+  language?: LanguagePreference;
+};
+
+export type IngestMailboxEmailResult = {
+  email: StaffEmail;
+  duplicate: boolean;
+};
 
 function applyActiveWorkspaceSuggestions(
   email: StaffEmail,
@@ -44,43 +88,57 @@ function applyActiveWorkspaceSuggestions(
   } satisfies StaffEmail;
 }
 
-export async function listMailboxEmails(
-  filter: EmailFilter = "All",
-  assignmentFilter: StaffAssignmentFilter = "All",
-  departmentFilter: DepartmentFilter = "All"
-) {
-  const [emails, activeStaffAssignees] = await Promise.all([
-    mailboxAdapter.listEmails(filter, assignmentFilter, departmentFilter),
-    listActiveWorkspaceStaffAssignees(),
-  ]);
+function inferInboundPriority(subject: string, body: string): EmailPriority {
+  const combined = `${subject} ${body}`.toLowerCase();
 
-  return emails.map((email) =>
-    applyActiveWorkspaceSuggestions(email, activeStaffAssignees)
-  );
+  if (
+    /urgent|asap|immediately|today|deadline|error|issue|problem|appeal|refund/.test(
+      combined
+    )
+  ) {
+    return "High";
+  }
+
+  if (/follow up|question|help|request|support/.test(combined)) {
+    return "Medium";
+  }
+
+  return "Medium";
 }
 
-export async function updateMailboxEmail(
-  id: string,
-  updates: StaffEmailUpdateInput
-) {
-  const [email, activeStaffAssignees] = await Promise.all([
-    mailboxAdapter.updateEmail(id, updates),
-    listActiveWorkspaceStaffAssignees(),
-  ]);
-
-  return email ? applyActiveWorkspaceSuggestions(email, activeStaffAssignees) : null;
+function inferInboundCategory(
+  subject: string,
+  body: string,
+  priority: EmailPriority,
+  language: LanguagePreference
+): EmailCategory {
+  return inferLocalRoutingDecision(
+    {
+      category: "Admissions",
+      priority,
+      subject,
+      body,
+    },
+    language
+  ).department;
 }
 
-export async function createMailboxEmail(
-  input: StaffEmailCreateInput,
-  language: LanguagePreference = "English"
-) {
+async function buildMailboxCaseInput({
+  input,
+  language,
+  caseOrigin,
+  receivedAt,
+  threadLabel,
+  internalLabel,
+  internalAuthor,
+  integration = null,
+}: BuildMailboxCaseOptions): Promise<MailboxCreateEmailInput> {
   const draftAdapter = await getAIDraftAdapter();
   const [suggestion, activeStaffAssignees] = await Promise.all([
     draftAdapter.generateDraftSuggestion(input, language),
     listActiveWorkspaceStaffAssignees(),
   ]);
-  const timestamp = new Date().toISOString();
+  const timestamp = receivedAt ?? new Date().toISOString();
   const isPolish = language === "Polish";
   const routingDecision = {
     ...suggestion.routingDecision,
@@ -98,13 +156,13 @@ export async function createMailboxEmail(
     language
   ).toLowerCase();
 
-  return mailboxAdapter.createEmail({
+  return {
     sender: `${input.senderName.trim()} <${input.senderEmail.trim().toLowerCase()}>`,
     subject: input.subject.trim(),
     body: input.body.trim(),
     category: routingDecision.department,
     department: routingDecision.department,
-    caseOrigin: "Manual intake",
+    caseOrigin,
     routingDecision,
     approvalState: suggestion.manualReviewReason
       ? "Escalated"
@@ -124,7 +182,7 @@ export async function createMailboxEmail(
       {
         id: "THREAD-INBOUND",
         kind: "Inbound",
-        label: isPolish ? "Wpis ręczny" : "Manual intake",
+        label: isPolish ? threadLabel.polish : threadLabel.english,
         author: input.senderName.trim(),
         sentAt: timestamp,
         body: input.body.trim(),
@@ -132,8 +190,8 @@ export async function createMailboxEmail(
       {
         id: "THREAD-INTAKE",
         kind: "Internal",
-        label: isPolish ? "Przyjęcie w workspace" : "Workspace intake",
-        author: isPolish ? "Przepływ tworzenia EduMailAI" : "EduMailAI compose flow",
+        label: isPolish ? internalLabel.polish : internalLabel.english,
+        author: isPolish ? internalAuthor.polish : internalAuthor.english,
         sentAt: timestamp,
         body: suggestion.manualReviewReason
           ? isPolish
@@ -145,5 +203,149 @@ export async function createMailboxEmail(
       },
     ],
     sourceCitations: suggestion.sourceCitations,
-  });
+    integration,
+  };
+}
+
+async function getActiveWorkspaceSuggestions() {
+  return listActiveWorkspaceStaffAssignees();
+}
+
+export async function listMailboxEmails(
+  filter: EmailFilter = "All",
+  assignmentFilter: StaffAssignmentFilter = "All",
+  departmentFilter: DepartmentFilter = "All"
+) {
+  const [emails, activeStaffAssignees] = await Promise.all([
+    mailboxAdapter.listEmails(filter, assignmentFilter, departmentFilter),
+    getActiveWorkspaceSuggestions(),
+  ]);
+
+  return emails.map((email) =>
+    applyActiveWorkspaceSuggestions(email, activeStaffAssignees)
+  );
+}
+
+export async function getMailboxEmail(id: string) {
+  const emails = await listMailboxEmails();
+  return emails.find((email) => email.id === id) ?? null;
+}
+
+export async function findMailboxEmailByInboundIdentity(
+  provider: MailProvider,
+  externalMessageId: string
+) {
+  const emails = await listMailboxEmails();
+
+  return (
+    emails.find(
+      (email) =>
+        email.integration?.inboundProvider === provider &&
+        email.integration?.inboundMessageId === externalMessageId
+    ) ?? null
+  );
+}
+
+export async function updateMailboxEmail(
+  id: string,
+  updates: StaffEmailUpdateInput
+) {
+  const [email, activeStaffAssignees] = await Promise.all([
+    mailboxAdapter.updateEmail(id, updates),
+    getActiveWorkspaceSuggestions(),
+  ]);
+
+  return email ? applyActiveWorkspaceSuggestions(email, activeStaffAssignees) : null;
+}
+
+export async function createMailboxEmail(
+  input: StaffEmailCreateInput,
+  language: LanguagePreference = "English"
+) {
+  return mailboxAdapter.createEmail(
+    await buildMailboxCaseInput({
+      input,
+      language,
+      caseOrigin: "Manual intake",
+      threadLabel: {
+        english: "Manual intake",
+        polish: "Wpis ręczny",
+      },
+      internalLabel: {
+        english: "Workspace intake",
+        polish: "Przyjęcie w workspace",
+      },
+      internalAuthor: {
+        english: "EduMailAI compose flow",
+        polish: "Przepływ tworzenia EduMailAI",
+      },
+    })
+  );
+}
+
+export async function ingestMailboxEmail(
+  input: IngestMailboxEmailInput
+): Promise<IngestMailboxEmailResult> {
+  const existingEmail = await findMailboxEmailByInboundIdentity(
+    input.provider,
+    input.externalMessageId
+  );
+
+  if (existingEmail) {
+    return {
+      email: existingEmail,
+      duplicate: true,
+    };
+  }
+
+  const language = input.language ?? "English";
+  const priority = inferInboundPriority(input.subject, input.body);
+  const category = inferInboundCategory(
+    input.subject,
+    input.body,
+    priority,
+    language
+  );
+  const email = await mailboxAdapter.createEmail(
+    await buildMailboxCaseInput({
+      input: {
+        senderName: input.senderName,
+        senderEmail: input.senderEmail,
+        subject: input.subject,
+        body: input.body,
+        category,
+        priority,
+      },
+      language,
+      caseOrigin: "Email intake",
+      receivedAt: input.receivedAt,
+      threadLabel: {
+        english: "Live inbox message",
+        polish: "Wiadomość z żywej skrzynki",
+      },
+      internalLabel: {
+        english: "Inbox sync import",
+        polish: "Import synchronizacji skrzynki",
+      },
+      internalAuthor: {
+        english: `${input.provider} inbox sync`,
+        polish: `Synchronizacja skrzynki ${input.provider}`,
+      },
+      integration: {
+        inboundProvider: input.provider,
+        inboundMessageId: input.externalMessageId,
+        inboundConversationId: input.externalConversationId ?? null,
+        inboundSyncedAt: new Date().toISOString(),
+        inboundReferenceUrl: input.referenceUrl ?? null,
+        outboundProvider: null,
+        outboundMessageId: null,
+        outboundSentAt: null,
+      },
+    })
+  );
+
+  return {
+    email,
+    duplicate: false,
+  };
 }

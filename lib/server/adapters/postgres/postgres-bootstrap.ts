@@ -34,6 +34,7 @@ type SQLiteMailboxRow = {
   source: string | null;
   summary: string;
   manual_review_reason: string | null;
+  integration_json: string | null;
 };
 
 type SQLiteKnowledgeDocumentRow = {
@@ -125,6 +126,7 @@ function toMailboxCaseRecord(row: SQLiteMailboxRow): MailboxCaseRecord {
       summary: row.summary,
       manualReviewReason: row.manual_review_reason,
     },
+    integration: parseSQLiteJson(row.integration_json, null),
   };
 }
 
@@ -246,7 +248,8 @@ async function listSQLiteMailboxRecords() {
           staff_note,
           source,
           summary,
-          manual_review_reason
+          manual_review_reason,
+          integration_json
         FROM mailbox_cases
       `)
       .all() as SQLiteMailboxRow[];

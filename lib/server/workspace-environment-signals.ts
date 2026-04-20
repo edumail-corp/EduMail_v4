@@ -4,6 +4,11 @@ import type {
   WorkspaceReadinessCategory,
 } from "@/lib/workspace-config";
 import { getConfiguredAdapterBinding } from "@/lib/server/adapters/provider-config";
+import {
+  getConfiguredInboxProvider,
+  getConfiguredOutboundProvider,
+  getMailRuntimeStatus,
+} from "@/lib/server/mail-provider-config";
 import { hasConfiguredSupabaseStorage } from "@/lib/server/adapters/supabase/supabase-config";
 import { hasConfiguredSupabaseAuth } from "@/lib/supabase-auth";
 import type { LanguagePreference } from "@/lib/user-preferences";
@@ -142,28 +147,96 @@ const environmentSignalDefinitions: readonly EnvironmentSignalDefinition[] = [
     id: "email-contract",
     label: "Inbox Contract",
     category: "email",
-    requiredEnvVars: ["EDUMAILAI_INBOX_PROVIDER"],
+    requiredEnvVars: [
+      "EDUMAILAI_INBOX_PROVIDER",
+      "EDUMAILAI_MICROSOFT_TENANT_ID",
+      "EDUMAILAI_MICROSOFT_CLIENT_ID",
+      "EDUMAILAI_MICROSOFT_CLIENT_SECRET",
+      "EDUMAILAI_MICROSOFT_MAILBOX_USER",
+    ],
     getSummary(configuredEnvVars, language) {
-      if (configuredEnvVars.length > 0) {
+      const runtimeStatus = getMailRuntimeStatus();
+
+      if (runtimeStatus.hasLiveInboxSync) {
         return language === "Polish"
-          ? "Wykryto docelowego dostawcę skrzynki, ale synchronizacja wiadomości i checkpointy ingestu nie są jeszcze wdrożone."
-          : "A live inbox provider is named, but ingestion sync and checkpoints are not implemented yet.";
+          ? "Microsoft Graph może już importować żywe wiadomości do skrzynki EduMailAI z zachowaniem deduplikacji po identyfikatorze wiadomości."
+          : "Microsoft Graph can now import live inbox messages into EduMailAI with message-id deduplication.";
+      }
+
+      if (getConfiguredInboxProvider() === "microsoft_graph") {
+        return language === "Polish"
+          ? "Wybrano Microsoft Graph dla skrzynki, ale brakuje jeszcze pełnego zestawu poświadczeń dla żywej synchronizacji."
+          : "Microsoft Graph is selected for inbox sync, but the mailbox credentials are still incomplete.";
       }
 
       return language === "Polish"
-        ? "Nie wybrano jeszcze dostawcy poczty lub helpdesku dla prawdziwego ingestu."
-        : "No live mailbox or helpdesk provider has been chosen for real ingestion yet.";
+        ? "Żywy provider skrzynki nie jest jeszcze skonfigurowany, więc workspace nadal polega na ręcznym tworzeniu spraw."
+        : "No live inbox provider is configured yet, so the workspace still relies on manual case creation.";
     },
     getNextStep(configuredEnvVars, language) {
-      if (configuredEnvVars.length > 0) {
+      if (getMailRuntimeStatus().hasLiveInboxSync) {
         return language === "Polish"
-          ? "Następnym krokiem jest wdrożenie adaptera inbox z normalizacją wiadomości, deduplikacją i checkpointami."
-          : "Next, implement the inbox adapter with message normalization, deduplication, and checkpoints.";
+          ? "Przetestuj synchronizację wspólnej skrzynki, a potem dodaj checkpointy lub harmonogram odświeżania, jeśli zespół ich potrzebuje."
+          : "Test the shared-mailbox sync flow, then add checkpoints or scheduled refresh if the team needs them.";
+      }
+
+      if (getConfiguredInboxProvider() === "microsoft_graph") {
+        return language === "Polish"
+          ? "Dodaj tenant ID, client ID, client secret oraz EDUMAILAI_MICROSOFT_MAILBOX_USER, aby uruchomić żywy import z Microsoft Graph."
+          : "Add the tenant ID, client ID, client secret, and EDUMAILAI_MICROSOFT_MAILBOX_USER to enable live Microsoft Graph import.";
       }
 
       return language === "Polish"
-        ? "Wybierz dostawcę inbox/helpdesk i ustaw EDUMAILAI_INBOX_PROVIDER."
-        : "Choose an inbox/helpdesk provider and set EDUMAILAI_INBOX_PROVIDER.";
+        ? "Ustaw EDUMAILAI_INBOX_PROVIDER=microsoft_graph i przygotuj poświadczenia dla współdzielonej skrzynki."
+        : "Set EDUMAILAI_INBOX_PROVIDER=microsoft_graph and prepare the shared-mailbox credentials.";
+    },
+  },
+  {
+    id: "outbound-email-contract",
+    label: "Outbound Mail Contract",
+    category: "email",
+    requiredEnvVars: [
+      "EDUMAILAI_OUTBOUND_PROVIDER",
+      "EDUMAILAI_MICROSOFT_TENANT_ID",
+      "EDUMAILAI_MICROSOFT_CLIENT_ID",
+      "EDUMAILAI_MICROSOFT_CLIENT_SECRET",
+      "EDUMAILAI_MICROSOFT_MAILBOX_USER",
+    ],
+    getSummary(configuredEnvVars, language) {
+      const runtimeStatus = getMailRuntimeStatus();
+
+      if (runtimeStatus.hasLiveOutboundSend) {
+        return language === "Polish"
+          ? "Microsoft Graph może już wysyłać zatwierdzone odpowiedzi bezpośrednio z workspace."
+          : "Microsoft Graph can now send approved replies directly from the workspace.";
+      }
+
+      if (getConfiguredOutboundProvider() === "microsoft_graph") {
+        return language === "Polish"
+          ? "Wybrano Microsoft Graph dla poczty wychodzącej, ale brakuje jeszcze pełnych poświadczeń do wysyłki."
+          : "Microsoft Graph is selected for outbound mail, but the send credentials are still incomplete.";
+      }
+
+      return language === "Polish"
+        ? "Zatwierdzone odpowiedzi nadal kończą się w lokalnym trybie Auto-sent i nie wychodzą do prawdziwej skrzynki."
+        : "Approved replies still end in the local Auto-sent mode and are not leaving the workspace yet.";
+    },
+    getNextStep(configuredEnvVars, language) {
+      if (getMailRuntimeStatus().hasLiveOutboundSend) {
+        return language === "Polish"
+          ? "Zweryfikuj rzeczywistą wysyłkę odpowiedzi, a potem dodaj śledzenie błędów dostarczenia lub sent-items reconciliation, jeśli będzie potrzebne."
+          : "Verify real reply delivery, then add delivery-failure tracking or sent-items reconciliation if needed.";
+      }
+
+      if (getConfiguredOutboundProvider() === "microsoft_graph") {
+        return language === "Polish"
+          ? "Dodaj brakujące poświadczenia Microsoft Graph, aby przycisk Approve & Send wysyłał prawdziwe maile."
+          : "Add the missing Microsoft Graph credentials so Approve & Send delivers real email.";
+      }
+
+      return language === "Polish"
+        ? "Ustaw EDUMAILAI_OUTBOUND_PROVIDER=microsoft_graph, aby zatwierdzone odpowiedzi trafiały do prawdziwych odbiorców."
+        : "Set EDUMAILAI_OUTBOUND_PROVIDER=microsoft_graph so approved replies go to real recipients.";
     },
   },
   {

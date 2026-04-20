@@ -48,6 +48,22 @@ type MailboxEmailResponse = {
   email: StaffEmail;
 };
 
+type MailboxSendResponse = MailboxEmailResponse & {
+  provider: string;
+  live: boolean;
+  summary: string;
+};
+
+type InboxSyncResponse = {
+  provider: string;
+  live: boolean;
+  processedCount: number;
+  importedCount: number;
+  duplicateCount: number;
+  summary: string;
+  importedEmailIds: string[];
+};
+
 type MailboxErrorResponse = {
   error?: string;
 };
@@ -62,6 +78,27 @@ function getMailboxErrorMessage(data: unknown) {
   }
 
   return null;
+}
+
+async function fetchMailboxEmails(
+  filter: EmailFilter,
+  isPolish: boolean
+) {
+  const response = await fetch(`/api/emails?filter=${encodeURIComponent(filter)}`, {
+    cache: "no-store",
+  });
+  const data = (await response.json()) as MailboxEmailsResponse | MailboxErrorResponse;
+
+  if (!response.ok || !("emails" in data)) {
+    throw new Error(
+      getMailboxErrorMessage(data) ??
+        (isPolish
+          ? "Nie udało się załadować skrzynki."
+          : "Unable to load the mailbox.")
+    );
+  }
+
+  return data.emails;
 }
 
 function matchesMailboxSearch(email: StaffEmail, query: string) {
@@ -100,6 +137,7 @@ export function MailboxView({
   filter,
   staffAssigneeOptions = [],
   interfaceMode = "workflow",
+  canSyncInbox = false,
 }: Readonly<{
   eyebrow: string;
   title: string;
@@ -111,6 +149,7 @@ export function MailboxView({
   filter: EmailFilter;
   staffAssigneeOptions?: readonly string[];
   interfaceMode?: "email" | "workflow";
+  canSyncInbox?: boolean;
 }>) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -133,6 +172,7 @@ export function MailboxView({
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [noteValue, setNoteValue] = useState("");
   const [isSavingNote, setIsSavingNote] = useState(false);
+  const [isSyncingInbox, setIsSyncingInbox] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const normalizedSearchQuery = deferredSearchQuery.trim().toLowerCase();
@@ -250,27 +290,8 @@ export function MailboxView({
       setActionError(null);
       setActionMessage(null);
 
-        try {
-          const response = await fetch(
-          `/api/emails?filter=${encodeURIComponent(filter)}`,
-           {
-             cache: "no-store",
-           }
-         );
-        const data = (await response.json()) as
-          | MailboxEmailsResponse
-          | MailboxErrorResponse;
-
-        if (!response.ok || !("emails" in data)) {
-          throw new Error(
-            getMailboxErrorMessage(data) ??
-              (isPolish
-                ? "Nie udało się załadować skrzynki."
-                : "Unable to load the mailbox.")
-          );
-        }
-
-        setEmails(data.emails);
+      try {
+        setEmails(await fetchMailboxEmails(filter, isPolish));
       } catch (error) {
         setLoadError(
           error instanceof Error
@@ -356,26 +377,20 @@ export function MailboxView({
     setActionMessage(null);
 
     try {
-      const response = await fetch(`/api/emails/${selectedEmail.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          status: "Auto-sent",
-        }),
+      const response = await fetch(`/api/emails/${selectedEmail.id}/send`, {
+        method: "POST",
       });
 
       const data = (await response.json()) as
-        | MailboxEmailResponse
+        | MailboxSendResponse
         | MailboxErrorResponse;
 
       if (!response.ok || !("email" in data)) {
         throw new Error(
           getMailboxErrorMessage(data) ??
             (isPolish
-              ? "Nie udało się zaktualizować wiadomości."
-              : "Unable to update the message.")
+              ? "Nie udało się wysłać odpowiedzi."
+              : "Unable to send the reply.")
         );
       }
 
@@ -385,21 +400,74 @@ export function MailboxView({
         )
       );
       publishActionFeedback(
-        isPolish ? "Odpowiedź zatwierdzona" : "Reply approved",
-        isPolish
-          ? `"${data.email.subject}" przeniesiono do Wysłanych.`
-          : `"${data.email.subject}" moved to Auto-sent.`
+        data.live
+          ? isPolish
+            ? "Odpowiedź wysłana"
+            : "Reply sent"
+          : isPolish
+            ? "Odpowiedź oznaczona lokalnie"
+            : "Reply marked locally",
+        data.summary
       );
     } catch (error) {
       setActionError(
         error instanceof Error
           ? error.message
           : isPolish
-            ? "Nie udało się zaktualizować wiadomości."
-            : "Unable to update the message."
+            ? "Nie udało się wysłać odpowiedzi."
+            : "Unable to send the reply."
       );
     } finally {
       setApprovingId(null);
+    }
+  }
+
+  async function handleSyncInbox() {
+    if (!canSyncInbox || isSyncingInbox) {
+      return;
+    }
+
+    setIsSyncingInbox(true);
+    setActionError(null);
+    setActionMessage(null);
+
+    try {
+      const response = await fetch("/api/inbox/sync", {
+        method: "POST",
+      });
+      const data = (await response.json()) as
+        | InboxSyncResponse
+        | MailboxErrorResponse;
+
+      if (!response.ok || !("summary" in data)) {
+        throw new Error(
+          getMailboxErrorMessage(data) ??
+            (isPolish
+              ? "Nie udało się zsynchronizować skrzynki."
+              : "Unable to sync the inbox.")
+        );
+      }
+
+      setEmails(await fetchMailboxEmails(filter, isPolish));
+
+      if (data.importedEmailIds.length > 0) {
+        setSelectedId(data.importedEmailIds[0] ?? "");
+      }
+
+      publishActionFeedback(
+        isPolish ? "Skrzynka zsynchronizowana" : "Inbox synced",
+        data.summary
+      );
+    } catch (error) {
+      setActionError(
+        error instanceof Error
+          ? error.message
+          : isPolish
+            ? "Nie udało się zsynchronizować skrzynki."
+            : "Unable to sync the inbox."
+      );
+    } finally {
+      setIsSyncingInbox(false);
     }
   }
 
@@ -726,6 +794,26 @@ export function MailboxView({
               <span className="rounded-full border border-white/80 bg-white/82 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 shadow-[0_14px_36px_rgba(140,153,179,0.16)]">
                 {compactMeta}
               </span>
+              {canSyncInbox ? (
+                <button
+                  type="button"
+                  onClick={handleSyncInbox}
+                  disabled={isSyncingInbox}
+                  className={
+                    isSyncingInbox
+                      ? "inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-400"
+                      : dashboardGhostButtonClassName
+                  }
+                >
+                  {isSyncingInbox
+                    ? isPolish
+                      ? "Synchronizacja..."
+                      : "Syncing..."
+                    : isPolish
+                      ? "Synchronizuj skrzynkę"
+                      : "Sync Inbox"}
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}

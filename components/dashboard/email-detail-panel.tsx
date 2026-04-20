@@ -231,8 +231,8 @@ export function EmailDetailPanel({
 
   let reviewMessage =
     isPolish
-      ? "Zatwierdź tę odpowiedź, aby przenieść ją do kolejki wysłanych i zapisać decyzję."
-      : "Approve this response to move it into the auto-sent queue and persist the decision.";
+      ? "Zatwierdź tę odpowiedź, aby wysłać ją do odbiorcy albo zakończyć lokalny fallback, jeśli dostawca poczty nie jest jeszcze skonfigurowany."
+      : "Approve this response to send it to the recipient, or finish in the local fallback when outbound mail is not configured yet.";
 
   if (isEditingDraft) {
     reviewMessage = isPolish
@@ -240,8 +240,8 @@ export function EmailDetailPanel({
       : "Update the draft, save it to the mailbox store, and approve it when the response is ready.";
   } else if (isAlreadySent) {
     reviewMessage = isPolish
-      ? "Ta wiadomość została już zatwierdzona i przeniesiona do kolejki wysłanych."
-      : "This message has already been approved and moved into the sent queue.";
+      ? "Ta wiadomość została już wysłana albo zakończona w lokalnym fallbacku."
+      : "This message has already been sent or completed in the local fallback.";
   } else if (!hasDraft) {
     reviewMessage = isPolish
       ? "Szkic AI nie jest jeszcze dostępny, więc ta sprawa nadal wymaga ręcznej odpowiedzi."

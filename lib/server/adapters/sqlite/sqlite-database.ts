@@ -111,6 +111,20 @@ async function createSQLiteDatabase(databasePath: string) {
       ON workspace_staff_users (email COLLATE NOCASE);
   `);
 
+  const mailboxCaseColumns = database
+    .prepare("PRAGMA table_info(mailbox_cases)")
+    .all() as Array<{ name?: string }>;
+  const hasIntegrationColumn = mailboxCaseColumns.some(
+    (column) => column.name === "integration_json"
+  );
+
+  if (!hasIntegrationColumn) {
+    database.exec(`
+      ALTER TABLE mailbox_cases
+      ADD COLUMN integration_json TEXT
+    `);
+  }
+
   return database;
 }
 

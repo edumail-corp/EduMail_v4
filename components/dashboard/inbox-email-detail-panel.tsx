@@ -291,6 +291,40 @@ export function InboxEmailDetailPanel({
       : isPolish
         ? "Niedostępne"
         : "Not available";
+  const inboundSourceValue =
+    email.integration?.inboundProvider === "microsoft_graph"
+      ? "Microsoft Graph"
+      : email.caseOrigin === "Manual intake"
+        ? isPolish
+          ? "Ręczne przyjęcie"
+          : "Manual intake"
+        : isPolish
+          ? "Lokalny fallback"
+          : "Local fallback";
+  const inboundSourceCaption = email.integration?.inboundReferenceUrl
+    ? isPolish
+      ? "Ta sprawa zachowuje odnośnik do źródłowej wiadomości w skrzynce."
+      : "This case keeps a reference link back to the source mailbox message."
+    : isPolish
+      ? "Ta sprawa nie ma zewnętrznego odnośnika do wiadomości źródłowej."
+      : "This case does not have an external source-message link.";
+  const outboundSourceValue =
+    email.integration?.outboundProvider === "microsoft_graph"
+      ? "Microsoft Graph"
+      : email.integration?.outboundSentAt
+        ? isPolish
+          ? "Lokalny fallback"
+          : "Local fallback"
+        : isPolish
+          ? "Jeszcze nie wysłano"
+          : "Not sent yet";
+  const outboundSourceCaption = email.integration?.outboundSentAt
+    ? isPolish
+      ? `Ostatnia wysyłka została zapisana ${formatDateTime(email.integration.outboundSentAt)}.`
+      : `Last send was recorded at ${formatDateTime(email.integration.outboundSentAt)}.`
+    : isPolish
+      ? "Odpowiedź nie została jeszcze zatwierdzona do wysyłki."
+      : "The reply has not been approved for send yet.";
 
   return (
     <section className="space-y-4">
@@ -356,8 +390,8 @@ export function InboxEmailDetailPanel({
             </h4>
             <p className="mt-2 text-sm leading-6 text-slate-500">
               {isPolish
-                ? "Otwórz wiadomość, przejrzyj przygotowaną odpowiedź i wyślij ją dopiero po końcowym przeglądzie człowieka."
-                : "Open the message, review the prepared response, and send it only after final human review."}
+                ? "Otwórz wiadomość, przejrzyj przygotowaną odpowiedź i wyślij ją po końcowym przeglądzie człowieka albo zakończ lokalnym fallbackiem, jeśli provider poczty nie jest jeszcze gotowy."
+                : "Open the message, review the prepared response, and send it after final human review, or finish in the local fallback if the mail provider is not ready yet."}
             </p>
           </div>
 
@@ -368,7 +402,7 @@ export function InboxEmailDetailPanel({
           ) : null}
         </div>
 
-        <div className="mt-5 grid gap-3 lg:grid-cols-3">
+        <div className="mt-5 grid gap-3 lg:grid-cols-4">
           <MetaCard
             label={replyDateLabel}
             value={replyDateValue}
@@ -399,6 +433,19 @@ export function InboxEmailDetailPanel({
             label={isPolish ? "Pewność" : "Confidence"}
             value={`${routingConfidenceLabel} • ${routingConfidenceScore}%`}
             caption={groundingAssessment.summary}
+          />
+          <MetaCard
+            label={isPolish ? "Dostawa poczty" : "Mail delivery"}
+            value={outboundSourceValue}
+            caption={outboundSourceCaption}
+          />
+        </div>
+
+        <div className="mt-3">
+          <MetaCard
+            label={isPolish ? "Źródło skrzynki" : "Mailbox source"}
+            value={inboundSourceValue}
+            caption={inboundSourceCaption}
           />
         </div>
 

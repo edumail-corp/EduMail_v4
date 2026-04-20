@@ -182,8 +182,20 @@ export const workspaceIntegrationStatuses: WorkspaceIntegrationStatus[] = [
     label: "Inbox Integration",
     category: "email",
     status: "manual_required",
-    summary: "Messages are local demo cases and are not synced from a real helpdesk or mailbox.",
-    nextStep: "Choose an inbound email/helpdesk provider and define sync rules.",
+    summary:
+      "Live inbox sync can now run through Microsoft Graph, while manual intake stays available as the local fallback.",
+    nextStep:
+      "Configure the Microsoft Graph mailbox credentials and enable inbox sync for the shared mailbox.",
+  },
+  {
+    id: "email-outbound",
+    label: "Outbound Mail",
+    category: "email",
+    status: "manual_required",
+    summary:
+      "Approved replies can now be delivered through Microsoft Graph, with the local auto-sent flow kept as the fallback path.",
+    nextStep:
+      "Configure outbound Microsoft Graph mail so approved replies leave the workspace for real recipients.",
   },
   {
     id: "hosting",
@@ -410,9 +422,16 @@ export function getLocalizedWorkspaceIntegrationStatuses(
     "email-inbox": {
       label: "Integracja skrzynki",
       summary:
-        "Wiadomości są lokalnymi przypadkami demo i nie są synchronizowane z prawdziwą skrzynką.",
+        "Żywa synchronizacja skrzynki może teraz działać przez Microsoft Graph, a ręczne przyjęcie nadal pozostaje lokalnym fallbackiem.",
       nextStep:
-        "Wybierz dostawcę poczty lub helpdesku i zdefiniuj zasady synchronizacji.",
+        "Skonfiguruj poświadczenia skrzynki Microsoft Graph i włącz synchronizację wspólnej skrzynki.",
+    },
+    "email-outbound": {
+      label: "Poczta wychodząca",
+      summary:
+        "Zatwierdzone odpowiedzi mogą już wychodzić przez Microsoft Graph, a lokalny przepływ Auto-sent pozostaje ścieżką zapasową.",
+      nextStep:
+        "Skonfiguruj wychodzącą pocztę Microsoft Graph, aby zatwierdzone odpowiedzi trafiały do prawdziwych odbiorców.",
     },
     hosting: {
       label: "Hosting i obserwowalność",

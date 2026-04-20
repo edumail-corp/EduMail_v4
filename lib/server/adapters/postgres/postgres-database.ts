@@ -103,6 +103,9 @@ async function initializePostgresDatabase(pool: Pool) {
       manual_review_reason TEXT
     );
 
+    ALTER TABLE mailbox_cases
+      ADD COLUMN IF NOT EXISTS integration_json JSONB;
+
     CREATE INDEX IF NOT EXISTS idx_mailbox_cases_status
       ON mailbox_cases (status);
     CREATE INDEX IF NOT EXISTS idx_mailbox_cases_updated_at

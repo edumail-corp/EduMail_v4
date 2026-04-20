@@ -5,6 +5,7 @@ import {
   type CaseOrigin,
   type Department,
   type EmailThreadEntry,
+  type MailboxIntegration,
   type RoutingDecision,
   type StaffEmail,
   type StaffAssignee,
@@ -62,6 +63,7 @@ export type MailboxCaseRecord = {
   message: MailboxCaseMessageRecord;
   workflow: MailboxCaseWorkflowRecord;
   response: MailboxCaseResponseRecord;
+  integration: MailboxIntegration | null;
 };
 
 export type MailboxRecordReadOptions = {
@@ -101,6 +103,7 @@ function flattenLegacyMailboxRecord(
     lastUpdatedAt: record.workflow?.lastUpdatedAt,
     threadHistory: record.message?.threadHistory,
     sourceCitations: record.message?.sourceCitations,
+    integration: record.integration,
   };
 }
 
@@ -135,6 +138,7 @@ function normalizeMailboxEmail(email: Partial<StaffEmail>) {
       lastUpdatedAt: email.lastUpdatedAt ?? email.receivedAt ?? new Date().toISOString(),
       threadHistory: createFallbackThreadHistory(email),
       sourceCitations: [],
+      integration: email.integration ?? null,
     } satisfies StaffEmail);
 
   const normalizedEmail = {
@@ -151,6 +155,7 @@ function normalizeMailboxEmail(email: Partial<StaffEmail>) {
     sourceCitations:
       email.sourceCitations?.map((citation) => ({ ...citation })) ??
       baseEmail.sourceCitations.map((citation) => ({ ...citation })),
+    integration: email.integration ?? baseEmail.integration ?? null,
   } satisfies StaffEmail;
 
   return synchronizeOperationalFields(normalizedEmail);
@@ -182,6 +187,7 @@ export function toStaffEmail(record: MailboxCaseRecord): StaffEmail {
     sourceCitations: record.message.sourceCitations.map((citation) => ({
       ...citation,
     })),
+    integration: record.integration,
   });
 }
 
@@ -222,6 +228,7 @@ export function fromStaffEmail(email: StaffEmail): MailboxCaseRecord {
       summary: normalizedEmail.summary,
       manualReviewReason: normalizedEmail.manualReviewReason,
     },
+    integration: normalizedEmail.integration ?? null,
   };
 }
 

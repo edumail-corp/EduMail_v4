@@ -32,6 +32,19 @@ export type EmailThreadEntry = {
   body: string;
 };
 
+export type MailProvider = "local" | "microsoft_graph";
+
+export type MailboxIntegration = {
+  inboundProvider: MailProvider | null;
+  inboundMessageId: string | null;
+  inboundConversationId: string | null;
+  inboundSyncedAt: string | null;
+  inboundReferenceUrl: string | null;
+  outboundProvider: MailProvider | null;
+  outboundMessageId: string | null;
+  outboundSentAt: string | null;
+};
+
 export type EmailSourceCitation = {
   id: string;
   documentName: string;
@@ -96,6 +109,7 @@ export type StaffEmail = {
   lastUpdatedAt: string;
   threadHistory: EmailThreadEntry[];
   sourceCitations: EmailSourceCitation[];
+  integration?: MailboxIntegration | null;
 };
 
 export type StaffEmailUpdateInput = {
@@ -103,6 +117,7 @@ export type StaffEmailUpdateInput = {
   assignee?: StaffAssignee | null;
   aiDraft?: string;
   staffNote?: string | null;
+  integration?: MailboxIntegration | null;
 };
 
 export type EmailGroundingAssessment = {

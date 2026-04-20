@@ -37,7 +37,7 @@ export const activityActionMeta: Record<
     classes: "border-blue-200 bg-blue-100 text-blue-800",
   },
   email_approved: {
-    label: "Approved",
+    label: "Reply Sent",
     classes: "border-emerald-200 bg-emerald-100 text-emerald-800",
   },
   assignment_updated: {
@@ -84,7 +84,7 @@ export function getActivityActionLabel(
   if (language === "Polish") {
     const polishLabels: Record<ActivityAction, string> = {
       case_created: "Utworzono sprawę",
-      email_approved: "Zatwierdzono odpowiedź",
+      email_approved: "Wysłano odpowiedź",
       assignment_updated: "Zmieniono właściciela",
       draft_saved: "Zapisano szkic",
       note_saved: "Zapisano notatkę",
