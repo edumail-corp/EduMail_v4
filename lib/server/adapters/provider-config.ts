@@ -1,4 +1,5 @@
 import { hasSupportedConfiguredDatabaseUrl } from "@/lib/server/adapters/database/database-url";
+import { hasConfiguredOpenAIDraftProvider } from "@/lib/server/adapters/openai/openai-config";
 import { hasConfiguredSupabaseStorage } from "@/lib/server/adapters/supabase/supabase-config";
 
 export type AdapterBindingId =
@@ -57,8 +58,8 @@ const adapterBindingDefinitions: readonly AdapterBindingDefinition[] = [
     label: "AI Drafting",
     envVarName: "EDUMAILAI_AI_DRAFT_ADAPTER",
     defaultProvider: "local",
-    supportedProviders: ["local"],
-    plannedProviders: ["openai", "ai_gateway"],
+    supportedProviders: ["local", "openai"],
+    plannedProviders: ["ai_gateway"],
   },
   {
     id: "workspace-settings",
@@ -97,6 +98,8 @@ function buildAdapterBinding(
   const providerIsRuntimeReady =
     requestedProvider === "database"
       ? hasSupportedConfiguredDatabaseUrl()
+      : requestedProvider === "openai"
+        ? hasConfiguredOpenAIDraftProvider()
       : requestedProvider === "supabase_storage"
         ? hasConfiguredSupabaseStorage()
         : true;

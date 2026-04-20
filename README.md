@@ -8,6 +8,7 @@ EduMailAI is a Next.js prototype for a university staff workflow tool. The app h
 - Manual compose flow for creating new local cases
 - Microsoft Graph-backed inbox sync for importing real mailbox messages when configured
 - Microsoft Graph-backed outbound send for approved replies when configured, with local fallback preserved
+- OpenAI-backed draft generation when `EDUMAILAI_AI_DRAFT_ADAPTER=openai` is configured
 - Inbox with a single standard mailbox view; escalated cases still appear there without a separate sub-view
 - AI draft detail view with confidence indicators, routing context, generated reply support, and staff notes
 - Workflow events still append behind the scenes for audit/export needs
@@ -82,6 +83,24 @@ Recommended Microsoft Entra app configuration:
 - Point `EDUMAILAI_MICROSOFT_MAILBOX_USER` at the shared mailbox email or user id you want EduMailAI to read and send from
 - Optional: set `EDUMAILAI_MICROSOFT_SYNC_BATCH_SIZE` to control how many recent messages each sync import attempts
 
+## OpenAI Draft Setup
+
+To switch draft generation from the local seeded flow to OpenAI, set:
+
+- `EDUMAILAI_AI_DRAFT_ADAPTER=openai`
+- `EDUMAILAI_AI_API_KEY`
+
+Optional tuning:
+
+- `EDUMAILAI_AI_MODEL`
+  Defaults to `gpt-4.1-mini`
+- `EDUMAILAI_OPENAI_BASE_URL`
+  Useful if you later front this through a compatible proxy
+- `EDUMAILAI_AI_MAX_OUTPUT_TOKENS`
+  Caps the structured draft response size
+
+The current OpenAI adapter keeps routing local, ranks knowledge-base documents locally, and sends the routed case plus selected document summaries/excerpts to the model for grounded draft generation. If the model request fails, EduMailAI falls back to the local seeded draft flow so case creation stays usable.
+
 ## Verification
 
 Use these commands to verify the project locally:
@@ -118,5 +137,6 @@ Note: the production build uses `next/font` with Geist, so it may need network a
 - Workspace membership can now move behind `EDUMAILAI_WORKSPACE_SETTINGS_ADAPTER=database`, seeding the current staff directory into SQLite or PostgreSQL/Supabase on first boot so auth and the admin surface share one persisted roster.
 - When workspace membership uses the database-backed settings adapter, `/dashboard/admin` can now add and update staff members directly against that shared roster.
 - Live inbox sync and outbound reply delivery are now available through Microsoft Graph when the mailbox credentials are configured, while local manual intake and local auto-sent fallback remain available for unfinished environments.
-- This is still a human-in-the-loop prototype, and the AI drafting layer remains local/demo rather than production-backed.
-- The current product focus is keeping the operator workflow stable while hardening auth, persistence, mailbox operations, storage transparency, and adapter parity.
+- OpenAI can now back the draft-generation layer when configured, while the local seeded adapter remains the safe fallback.
+- This is still a human-in-the-loop prototype, and knowledge grounding currently uses document metadata plus preview excerpts rather than full parsed document text.
+- The current product focus is keeping the operator workflow stable while hardening auth, persistence, mailbox operations, model-backed drafting, storage transparency, and adapter parity.

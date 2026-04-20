@@ -215,9 +215,17 @@ let cachedAIDraftAdapter: AIDraftAdapter | null = null;
 let cachedWorkspaceSettingsAdapter: WorkspaceSettingsAdapter | null = null;
 
 export async function getAIDraftAdapter(): Promise<AIDraftAdapter> {
-  getConfiguredAdapterBinding("ai-draft");
+  const binding = getConfiguredAdapterBinding("ai-draft");
 
   if (cachedAIDraftAdapter) {
+    return cachedAIDraftAdapter;
+  }
+
+  if (binding.activeProvider === "openai") {
+    const adapterModule = await import(
+      "@/lib/server/adapters/openai/openai-ai-draft-adapter"
+    );
+    cachedAIDraftAdapter = adapterModule.openAIAIDraftAdapter;
     return cachedAIDraftAdapter;
   }
 

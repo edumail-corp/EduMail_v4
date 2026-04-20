@@ -9,6 +9,7 @@ import {
   getConfiguredOutboundProvider,
   getMailRuntimeStatus,
 } from "@/lib/server/mail-provider-config";
+import { getOpenAIDraftConfig } from "@/lib/server/adapters/openai/openai-config";
 import { hasConfiguredSupabaseStorage } from "@/lib/server/adapters/supabase/supabase-config";
 import { hasConfiguredSupabaseAuth } from "@/lib/supabase-auth";
 import type { LanguagePreference } from "@/lib/user-preferences";
@@ -297,6 +298,15 @@ const environmentSignalDefinitions: readonly EnvironmentSignalDefinition[] = [
     category: "ai",
     requiredEnvVars: ["EDUMAILAI_AI_API_KEY"],
     getSummary(configuredEnvVars, language) {
+      const aiDraftBinding = getConfiguredAdapterBinding("ai-draft");
+      const openAIConfig = getOpenAIDraftConfig();
+
+      if (aiDraftBinding.activeProvider === "openai" && openAIConfig) {
+        return language === "Polish"
+          ? `OpenAI (${openAIConfig.model}) generuje teraz szkice odpowiedzi z lokalnym doborem dokumentów bazy wiedzy do ugruntowania.`
+          : `OpenAI (${openAIConfig.model}) is now generating reply drafts with local knowledge-base document selection for grounding.`;
+      }
+
       if (configuredEnvVars.length > 0) {
         return language === "Polish"
           ? "Wykryto klucz AI, ale szkice nadal pochodzą z lokalnego adaptera demonstracyjnego."
@@ -308,10 +318,18 @@ const environmentSignalDefinitions: readonly EnvironmentSignalDefinition[] = [
         : "No production AI provider is configured yet for routing and drafting.";
     },
     getNextStep(configuredEnvVars, language) {
+      const aiDraftBinding = getConfiguredAdapterBinding("ai-draft");
+
+      if (aiDraftBinding.activeProvider === "openai") {
+        return language === "Polish"
+          ? "Następnym krokiem jest strojenie promptu, ocena jakości szkiców i ewentualne wzbogacenie ugruntowania o pełny tekst dokumentów."
+          : "Next, tune the prompt, evaluate draft quality, and consider richer grounding from full document text.";
+      }
+
       if (configuredEnvVars.length > 0) {
         return language === "Polish"
-          ? "Następnym krokiem jest wdrożenie adaptera AI z ustrukturyzowanymi wynikami i kontrolą ugruntowania."
-          : "Next, implement the AI adapter with structured outputs and grounding controls.";
+          ? "Ustaw EDUMAILAI_AI_DRAFT_ADAPTER=openai, aby przełączyć szkice na adapter produkcyjnego modelu."
+          : "Set EDUMAILAI_AI_DRAFT_ADAPTER=openai to switch drafting onto the production model adapter.";
       }
 
       return language === "Polish"

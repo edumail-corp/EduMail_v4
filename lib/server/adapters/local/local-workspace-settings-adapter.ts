@@ -75,6 +75,7 @@ export const localWorkspaceSettingsAdapter: WorkspaceSettingsAdapter = {
     const workspaceSettingsBinding = adapterBindings.find(
       (binding) => binding.id === "workspace-settings"
     );
+    const aiDraftBinding = adapterBindings.find((binding) => binding.id === "ai-draft");
     const environmentSignals = getWorkspaceEnvironmentSignals(language);
     const staffDirectoryData = await getWorkspaceStaffDirectoryData();
     const operationalBindings = adapterBindings.filter((binding) =>
@@ -101,6 +102,12 @@ export const localWorkspaceSettingsAdapter: WorkspaceSettingsAdapter = {
         integration.id === "ai-provider" && options?.draftProvider
           ? {
               ...integration,
+              status:
+                aiDraftBinding?.activeProvider === "openai"
+                  ? ("configured" as const)
+                  : aiDraftBinding?.status === "manual_required"
+                    ? ("manual_required" as const)
+                    : integration.status,
               summary: options.draftProvider.summary,
               nextStep: options.draftProvider.nextStep,
             }
