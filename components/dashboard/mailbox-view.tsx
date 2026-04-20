@@ -165,6 +165,7 @@ export function MailboxView({
   const [isEditingDraft, setIsEditingDraft] = useState(false);
   const [draftValue, setDraftValue] = useState("");
   const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [isRegeneratingDraft, setIsRegeneratingDraft] = useState(false);
   const [assigneeValue, setAssigneeValue] = useState<StaffAssignmentSelectValue>(
     defaultStaffAssignmentSelection
   );
@@ -630,6 +631,71 @@ export function MailboxView({
     }
   }
 
+  async function handleRegenerateDraft() {
+    if (!selectedEmail || selectedEmail.status === "Auto-sent" || isRegeneratingDraft) {
+      return;
+    }
+
+    setIsRegeneratingDraft(true);
+    setIsEditingDraft(false);
+    setActionError(null);
+    setActionMessage(null);
+
+    try {
+      const response = await fetch(
+        `/api/emails/${selectedEmail.id}/regenerate-draft`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            language: preferences.language,
+          }),
+        }
+      );
+
+      const data = (await response.json()) as
+        | MailboxEmailResponse
+        | MailboxErrorResponse;
+
+      if (!response.ok || !("email" in data)) {
+        throw new Error(
+          getMailboxErrorMessage(data) ??
+            (isPolish
+              ? "Nie udało się wygenerować nowej odpowiedzi."
+              : "Unable to generate a fresh reply draft.")
+        );
+      }
+
+      setEmails((currentEmails) =>
+        currentEmails.map((email) =>
+          email.id === data.email.id ? data.email : email
+        )
+      );
+      publishActionFeedback(
+        isPolish ? "Szkic odświeżony" : "Draft refreshed",
+        data.email.aiDraft
+          ? isPolish
+            ? `Przygotowano nową odpowiedź dla "${data.email.subject}".`
+            : `Prepared a fresh reply for "${data.email.subject}".`
+          : isPolish
+            ? `Sprawa "${data.email.subject}" nadal wymaga ręcznego przeglądu po ponownej analizie AI.`
+            : `"${data.email.subject}" still needs manual review after the AI rerun.`
+      );
+    } catch (error) {
+      setActionError(
+        error instanceof Error
+          ? error.message
+          : isPolish
+            ? "Nie udało się wygenerować nowej odpowiedzi."
+            : "Unable to generate a fresh reply draft."
+      );
+    } finally {
+      setIsRegeneratingDraft(false);
+    }
+  }
+
   function handleStartEditingNote() {
     if (!selectedEmail) {
       return;
@@ -870,6 +936,8 @@ export function MailboxView({
               onCancelEditing={handleCancelEditing}
               onSaveDraft={handleSaveDraft}
               isSavingDraft={isSavingDraft}
+              onRegenerateDraft={handleRegenerateDraft}
+              isRegeneratingDraft={isRegeneratingDraft}
               isEditingNote={isEditingNote}
               noteValue={noteValue}
               onNoteChange={setNoteValue}
@@ -1247,6 +1315,8 @@ export function MailboxView({
               onCancelEditing={handleCancelEditing}
               onSaveDraft={handleSaveDraft}
               isSavingDraft={isSavingDraft}
+              onRegenerateDraft={handleRegenerateDraft}
+              isRegeneratingDraft={isRegeneratingDraft}
               isEditingNote={isEditingNote}
               noteValue={noteValue}
               onNoteChange={setNoteValue}

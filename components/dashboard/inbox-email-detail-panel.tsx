@@ -94,6 +94,8 @@ export function InboxEmailDetailPanel({
   onCancelEditing,
   onSaveDraft,
   isSavingDraft = false,
+  onRegenerateDraft,
+  isRegeneratingDraft = false,
   isEditingNote = false,
   noteValue = "",
   onNoteChange,
@@ -118,6 +120,8 @@ export function InboxEmailDetailPanel({
   onCancelEditing?: () => void;
   onSaveDraft?: () => void;
   isSavingDraft?: boolean;
+  onRegenerateDraft?: () => void;
+  isRegeneratingDraft?: boolean;
   isEditingNote?: boolean;
   noteValue?: string;
   onNoteChange?: (value: string) => void;
@@ -180,6 +184,7 @@ export function InboxEmailDetailPanel({
     !isApproving &&
     !isSavingAssignee &&
     !isSavingDraft &&
+    !isRegeneratingDraft &&
     !isSavingNote &&
     !isEditingDraft &&
     !isEditingNote &&
@@ -189,15 +194,27 @@ export function InboxEmailDetailPanel({
     !isApproving &&
     !isSavingAssignee &&
     !isSavingDraft &&
+    !isRegeneratingDraft &&
     !isSavingNote &&
     !isEditingNote &&
     Boolean(onStartEditing);
+  const canRegenerateDraft =
+    !isAlreadySent &&
+    !isApproving &&
+    !isSavingAssignee &&
+    !isSavingDraft &&
+    !isRegeneratingDraft &&
+    !isSavingNote &&
+    !isEditingDraft &&
+    !isEditingNote &&
+    Boolean(onRegenerateDraft);
   const canSaveDraft =
     draftValue.trim().length > 0 && !isSavingDraft && Boolean(onSaveDraft);
   const canEditAssignment =
     !isApproving &&
     !isSavingAssignee &&
     !isSavingDraft &&
+    !isRegeneratingDraft &&
     !isSavingNote &&
     !isEditingDraft &&
     !isEditingNote;
@@ -213,6 +230,7 @@ export function InboxEmailDetailPanel({
     !isApproving &&
     !isSavingAssignee &&
     !isSavingDraft &&
+    !isRegeneratingDraft &&
     !isSavingNote &&
     !isEditingDraft &&
     Boolean(onStartEditingNote);
@@ -262,6 +280,17 @@ export function InboxEmailDetailPanel({
     : isPolish
       ? "Zapisz odpowiedź"
       : "Save Reply";
+  const regenerateDraftLabel = isRegeneratingDraft
+    ? isPolish
+      ? "Odświeżanie..."
+      : "Refreshing..."
+    : hasDraft
+      ? isPolish
+        ? "Wygeneruj ponownie"
+        : "Regenerate Reply"
+      : isPolish
+        ? "Wygeneruj odpowiedź"
+        : "Generate Reply";
   const noteLabel =
     email.staffNote && email.staffNote.length > 0
       ? isPolish
@@ -565,6 +594,18 @@ export function InboxEmailDetailPanel({
                 }`}
               >
                 {editLabel}
+              </button>
+              <button
+                type="button"
+                onClick={onRegenerateDraft}
+                disabled={!canRegenerateDraft}
+                className={`text-sm ${
+                  canRegenerateDraft
+                    ? dashboardSecondaryButtonClassName
+                    : disabledSecondaryButtonClassName
+                }`}
+              >
+                {regenerateDraftLabel}
               </button>
             </>
           )}

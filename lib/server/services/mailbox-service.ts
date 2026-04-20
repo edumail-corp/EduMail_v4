@@ -13,6 +13,7 @@ import type {
 import {
   getDepartmentSuggestedAssignees,
   getEmailDepartment,
+  isValidEmailAddress,
   translateDepartment,
   translateRoutingConfidence,
 } from "@/lib/email-data";
@@ -211,6 +212,31 @@ async function getActiveWorkspaceSuggestions() {
   return listActiveWorkspaceStaffAssignees();
 }
 
+function parseMailboxSender(sender: string) {
+  const trimmedSender = sender.trim();
+  const matchedSender = /^(.*?)\s*<(.*)>$/.exec(trimmedSender);
+
+  if (matchedSender) {
+    const senderEmail = matchedSender[2]?.trim().toLowerCase() ?? "";
+    return {
+      senderName: matchedSender[1]?.trim() || senderEmail,
+      senderEmail: isValidEmailAddress(senderEmail) ? senderEmail : null,
+    };
+  }
+
+  if (isValidEmailAddress(trimmedSender)) {
+    return {
+      senderName: trimmedSender,
+      senderEmail: trimmedSender.toLowerCase(),
+    };
+  }
+
+  return {
+    senderName: trimmedSender || "Unknown sender",
+    senderEmail: null,
+  };
+}
+
 export async function listMailboxEmails(
   filter: EmailFilter = "All",
   assignmentFilter: StaffAssignmentFilter = "All",
@@ -256,6 +282,76 @@ export async function updateMailboxEmail(
   ]);
 
   return email ? applyActiveWorkspaceSuggestions(email, activeStaffAssignees) : null;
+}
+
+export async function regenerateMailboxEmailDraft(
+  id: string,
+  language: LanguagePreference = "English"
+) {
+  const existingEmail = await getMailboxEmail(id);
+
+  if (!existingEmail) {
+    throw new Error("Email not found.");
+  }
+
+  if (existingEmail.status === "Auto-sent") {
+    throw new Error("This reply was already sent.");
+  }
+
+  const sender = parseMailboxSender(existingEmail.sender);
+
+  if (!sender.senderEmail) {
+    throw new Error("The sender email address could not be parsed.");
+  }
+
+  const draftAdapter = await getAIDraftAdapter();
+  const [suggestion, activeStaffAssignees] = await Promise.all([
+    draftAdapter.generateDraftSuggestion(
+      {
+        senderName: sender.senderName,
+        senderEmail: sender.senderEmail,
+        subject: existingEmail.subject,
+        body: existingEmail.body,
+        category: getEmailDepartment(existingEmail),
+        priority: existingEmail.priority,
+      },
+      language
+    ),
+    getActiveWorkspaceSuggestions(),
+  ]);
+  const nextDepartment = suggestion.routingDecision.department;
+  const nextRoutingDecision = {
+    ...suggestion.routingDecision,
+    department: nextDepartment,
+    suggestedAssignees: getDepartmentSuggestedAssignees(
+      nextDepartment,
+      activeStaffAssignees
+    ),
+  };
+
+  const updatedEmail = await updateMailboxEmail(id, {
+    category: nextDepartment,
+    department: nextDepartment,
+    routingDecision: nextRoutingDecision,
+    approvalState: suggestion.manualReviewReason
+      ? "Escalated"
+      : suggestion.aiDraft
+        ? "Needs Review"
+        : "Awaiting Draft",
+    confidence: suggestion.confidence,
+    status: suggestion.manualReviewReason ? "Escalated" : "Draft",
+    aiDraft: suggestion.aiDraft,
+    source: suggestion.source,
+    summary: suggestion.summary,
+    manualReviewReason: suggestion.manualReviewReason,
+    sourceCitations: suggestion.sourceCitations,
+  });
+
+  if (!updatedEmail) {
+    throw new Error("Email not found.");
+  }
+
+  return updatedEmail;
 }
 
 export async function createMailboxEmail(

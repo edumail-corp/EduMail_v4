@@ -115,8 +115,17 @@ export type StaffEmail = {
 export type StaffEmailUpdateInput = {
   status?: EmailStatus;
   assignee?: StaffAssignee | null;
-  aiDraft?: string;
+  aiDraft?: string | null;
   staffNote?: string | null;
+  category?: EmailCategory;
+  department?: Department;
+  routingDecision?: RoutingDecision;
+  approvalState?: CaseApprovalState;
+  confidence?: number;
+  source?: string | null;
+  summary?: string;
+  manualReviewReason?: string | null;
+  sourceCitations?: EmailSourceCitation[];
   integration?: MailboxIntegration | null;
 };
 
