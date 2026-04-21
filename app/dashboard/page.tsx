@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import {
+  activityActionMeta,
+  getActivityActionLabel,
+} from "@/lib/activity-log";
+import {
   DashboardAvatar,
   DashboardIcon,
   dashboardPanelClassName,
@@ -169,6 +173,7 @@ export default async function DashboardRootPage({
     ? [operationsSnapshot.mostLoadedOwner.owner, operationsSnapshot.mostLoadedOwner.activeCount]
     : [isPolish ? "Nieprzypisane" : "Unassigned", 0];
   const mostPressuredDepartment = operationsSnapshot.mostPressuredDepartment;
+  const recentActivityEvents = activityEvents.slice(0, 5);
 
   const metricCards = [
     {
@@ -462,6 +467,83 @@ export default async function DashboardRootPage({
                 ))
               )}
             </div>
+        </article>
+      </section>
+
+      <section className="mt-4">
+        <article className={`${dashboardPanelClassName} p-6 md:p-7`}>
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+                {isPolish ? "Ostatnie wpisy" : "Recent Activity"}
+              </p>
+              <h3 className="mt-3 text-3xl font-semibold tracking-tight text-[#1E2340]">
+                {isPolish ? "Ostatnie wpisy" : "Recent Activity"}
+              </h3>
+              <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-500">
+                {isPolish
+                  ? "Najnowsze zmiany workflow, checkpointy synchronizacji i akcje administratorów bez opuszczania widoku głównego."
+                  : "Latest workflow changes, sync checkpoints, and admin actions without leaving the overview."}
+              </p>
+            </div>
+
+            <Link
+              href="/dashboard/activity"
+              className={`${dashboardSecondaryButtonClassName} gap-3`}
+            >
+              <DashboardIcon name="clock" className="h-[18px] w-[18px]" />
+              {isPolish ? "Otwórz pełny log" : "Open Full Log"}
+            </Link>
+          </div>
+
+          {recentActivityEvents.length === 0 ? (
+            <div className="mt-6 rounded-[24px] border border-dashed border-white/80 bg-white/54 px-4 py-6 text-sm text-slate-500">
+              {isPolish
+                ? "Aktywność pojawi się tutaj, gdy zespół zacznie pracować na wiadomościach, dokumentach i ustawieniach workspace."
+                : "Activity will appear here once the team starts working on messages, documents, and workspace settings."}
+            </div>
+          ) : (
+            <div className="mt-6 grid gap-3 xl:grid-cols-2">
+              {recentActivityEvents.map((event) => (
+                <div
+                  key={event.id}
+                  className="rounded-[24px] border border-white/80 bg-white/64 p-4"
+                >
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <span
+                      className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${activityActionMeta[event.action].classes}`}
+                    >
+                      {getActivityActionLabel(event.action, language)}
+                    </span>
+                    <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">
+                      {new Date(event.timestamp).toLocaleString(locale, {
+                        month: "short",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+
+                  <p className="mt-3 text-base font-semibold text-[#1E2340]">
+                    {event.title}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    {event.description}
+                  </p>
+
+                  {event.href ? (
+                    <Link
+                      href={event.href}
+                      className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#4F57E8] transition hover:text-[#3139D2]"
+                    >
+                      {isPolish ? "Przejdź do szczegółów" : "Go to details"}
+                    </Link>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          )}
         </article>
       </section>
     </>
