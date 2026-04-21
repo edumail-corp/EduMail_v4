@@ -1,4 +1,6 @@
 import type { MailProvider, StaffEmail } from "@/lib/email-data";
+import type { ActivityAction } from "@/lib/activity-log";
+import { getActivityAdapter } from "@/lib/server/adapters";
 import {
   getConfiguredInboxProvider,
   getConfiguredOutboundProvider,
@@ -16,6 +18,10 @@ import {
 } from "@/lib/server/services/mailbox-service";
 import type { AuthenticatedWorkspaceUser } from "@/lib/server/workspace-auth";
 
+const activityAdapter = getActivityAdapter();
+const inboxSyncEntityId = "workspace-inbox";
+const inboxSyncActivityLimit = 120;
+
 export type InboxSyncResult = {
   provider: MailProvider;
   live: boolean;
@@ -24,6 +30,18 @@ export type InboxSyncResult = {
   duplicateCount: number;
   summary: string;
   importedEmailIds: string[];
+  completedAt: string;
+};
+
+export type InboxSyncStatus = {
+  provider: MailProvider;
+  live: boolean;
+  lastAttempt: {
+    attemptedAt: string;
+    status: "success" | "failed";
+    title: string;
+    summary: string;
+  } | null;
 };
 
 export type SendMailboxReplyResult = {
@@ -38,65 +56,163 @@ function getSenderEmailAddress(sender: string) {
   return matchedSender?.[1]?.trim().toLowerCase() || null;
 }
 
+function getInboxSyncActivityAction(success: boolean): ActivityAction {
+  return success ? "inbox_sync_completed" : "inbox_sync_failed";
+}
+
+function isInboxSyncActivityAction(
+  action: ActivityAction
+): action is "inbox_sync_completed" | "inbox_sync_failed" {
+  return action === "inbox_sync_completed" || action === "inbox_sync_failed";
+}
+
+function getInboxProviderLabel(provider: MailProvider, live: boolean) {
+  if (provider === "microsoft_graph") {
+    return live ? "Microsoft Graph inbox sync" : "Microsoft Graph mailbox sync";
+  }
+
+  return live ? "Live inbox sync" : "Inbox sync";
+}
+
+async function appendInboxSyncActivityEvent(input: {
+  success: boolean;
+  provider: MailProvider;
+  live: boolean;
+  summary: string;
+}) {
+  try {
+    await activityAdapter.appendEvent({
+      action: getInboxSyncActivityAction(input.success),
+      entityType: "inbox",
+      entityId: inboxSyncEntityId,
+      title: input.success
+        ? `${getInboxProviderLabel(input.provider, input.live)} completed`
+        : `${getInboxProviderLabel(input.provider, input.live)} failed`,
+      description: input.summary,
+      href: "/dashboard/inbox",
+    });
+  } catch (error) {
+    console.error("Failed to append inbox sync activity event.", error);
+  }
+}
+
+export async function getInboxSyncStatus(): Promise<InboxSyncStatus> {
+  const runtimeStatus = getMailRuntimeStatus();
+  const events = await activityAdapter.listEvents(inboxSyncActivityLimit);
+  const latestEvent =
+    events.find(
+      (event) =>
+        event.entityType === "inbox" &&
+        event.entityId === inboxSyncEntityId &&
+        isInboxSyncActivityAction(event.action)
+    ) ?? null;
+
+  return {
+    provider: runtimeStatus.inboxProvider,
+    live: runtimeStatus.hasLiveInboxSync,
+    lastAttempt: latestEvent
+      ? {
+          attemptedAt: latestEvent.timestamp,
+          status:
+            latestEvent.action === "inbox_sync_failed" ? "failed" : "success",
+          title: latestEvent.title,
+          summary: latestEvent.description,
+        }
+      : null,
+  };
+}
+
 export async function syncConfiguredInbox(): Promise<InboxSyncResult> {
   const provider = getConfiguredInboxProvider();
   const runtimeStatus = getMailRuntimeStatus();
 
-  if (provider !== "microsoft_graph" || !runtimeStatus.hasLiveInboxSync) {
-    return {
-      provider,
-      live: false,
-      processedCount: 0,
-      importedCount: 0,
-      duplicateCount: 0,
-      importedEmailIds: [],
-      summary:
-        "No live inbox provider is configured yet. Manual compose remains available.",
-    };
-  }
+  try {
+    if (provider !== "microsoft_graph" || !runtimeStatus.hasLiveInboxSync) {
+      const result: InboxSyncResult = {
+        provider,
+        live: false,
+        processedCount: 0,
+        importedCount: 0,
+        duplicateCount: 0,
+        importedEmailIds: [],
+        summary:
+          "No live inbox provider is configured yet. Manual compose remains available.",
+        completedAt: new Date().toISOString(),
+      };
 
-  const config = getMicrosoftGraphMailConfig();
+      await appendInboxSyncActivityEvent({
+        success: true,
+        provider: result.provider,
+        live: result.live,
+        summary: result.summary,
+      });
 
-  if (!config) {
-    throw new Error(
-      "Microsoft Graph inbox sync is selected, but the mailbox credentials are incomplete."
-    );
-  }
-
-  const messages = await listMicrosoftGraphInboxMessages(config);
-  let importedCount = 0;
-  let duplicateCount = 0;
-  const importedEmailIds: string[] = [];
-
-  for (const message of messages) {
-    const result = await ingestMailboxEmail({
-      ...message,
-      provider,
-    });
-
-    if (result.duplicate) {
-      duplicateCount += 1;
-      continue;
+      return result;
     }
 
-    importedCount += 1;
-    importedEmailIds.push(result.email.id);
-  }
+    const config = getMicrosoftGraphMailConfig();
 
-  return {
-    provider,
-    live: true,
-    processedCount: messages.length,
-    importedCount,
-    duplicateCount,
-    importedEmailIds,
-    summary:
-      importedCount > 0
-        ? `Imported ${importedCount} new inbox message${importedCount === 1 ? "" : "s"} from Microsoft Graph.`
-        : duplicateCount > 0
-          ? "Microsoft Graph inbox sync found only messages that were already imported."
-          : "Microsoft Graph inbox sync did not return any importable messages.",
-  };
+    if (!config) {
+      throw new Error(
+        "Microsoft Graph inbox sync is selected, but the mailbox credentials are incomplete."
+      );
+    }
+
+    const messages = await listMicrosoftGraphInboxMessages(config);
+    let importedCount = 0;
+    let duplicateCount = 0;
+    const importedEmailIds: string[] = [];
+
+    for (const message of messages) {
+      const result = await ingestMailboxEmail({
+        ...message,
+        provider,
+      });
+
+      if (result.duplicate) {
+        duplicateCount += 1;
+        continue;
+      }
+
+      importedCount += 1;
+      importedEmailIds.push(result.email.id);
+    }
+
+    const result: InboxSyncResult = {
+      provider,
+      live: true,
+      processedCount: messages.length,
+      importedCount,
+      duplicateCount,
+      importedEmailIds,
+      summary:
+        importedCount > 0
+          ? `Imported ${importedCount} new inbox message${importedCount === 1 ? "" : "s"} from Microsoft Graph.`
+          : duplicateCount > 0
+            ? "Microsoft Graph inbox sync found only messages that were already imported."
+            : "Microsoft Graph inbox sync did not return any importable messages.",
+      completedAt: new Date().toISOString(),
+    };
+
+    await appendInboxSyncActivityEvent({
+      success: true,
+      provider: result.provider,
+      live: result.live,
+      summary: result.summary,
+    });
+
+    return result;
+  } catch (error) {
+    await appendInboxSyncActivityEvent({
+      success: false,
+      provider,
+      live: runtimeStatus.hasLiveInboxSync,
+      summary:
+        error instanceof Error ? error.message : "Unable to sync the inbox.",
+    });
+
+    throw error;
+  }
 }
 
 export async function sendMailboxReply(

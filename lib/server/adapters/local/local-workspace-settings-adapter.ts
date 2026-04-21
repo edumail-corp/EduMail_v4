@@ -194,8 +194,8 @@ export const localWorkspaceSettingsAdapter: WorkspaceSettingsAdapter = {
                         : "Microsoft Graph is now syncing live mailbox messages into EduMailAI with message-id deduplication.",
                     nextStep:
                       language === "Polish"
-                        ? "Przetestuj skrzynkę współdzieloną na prawdziwych wiadomościach i dopiero potem dołóż harmonogram odświeżania lub checkpointy."
-                        : "Test the shared mailbox on real traffic, then add scheduled refresh or checkpoints only if the team needs them.",
+                        ? "Przetestuj skrzynkę współdzieloną na prawdziwych wiadomościach i potwierdź, że checkpoint synchronizacji oraz odświeżanie harmonogramem zachowują się poprawnie."
+                        : "Test the shared mailbox on real traffic and confirm the sync checkpoint plus scheduled refresh behave correctly.",
                   }
               : integration.id === "email-outbound" &&
                   mailRuntimeStatus.hasLiveOutboundSend

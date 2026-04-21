@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import type { ActivityAction } from "@/lib/activity-log";
+import { getActivityAdapter } from "@/lib/server/adapters";
 import { getConfiguredDatabaseUrl } from "@/lib/server/adapters/database/database-url";
 import {
   createPostgresDatabaseAccess,
@@ -19,7 +21,7 @@ import type {
   WorkspaceStaffUser,
   WorkspaceUserStatus,
 } from "@/lib/workspace-config";
-import { workspaceStaffDirectory } from "@/lib/workspace-config";
+import { workspaceRoleLabels, workspaceStaffDirectory } from "@/lib/workspace-config";
 
 type WorkspaceStaffRow = {
   id: string;
@@ -51,6 +53,7 @@ const supportedWorkspaceRoles = [
   "knowledge_manager",
 ] as const;
 const supportedWorkspaceUserStatuses = ["active", "pending"] as const;
+const activityAdapter = getActivityAdapter();
 
 function normalizeEmailAddress(value: string) {
   return value.trim().toLowerCase();
@@ -198,6 +201,44 @@ function rethrowWorkspaceStaffMutationError(error: unknown): never {
   throw error instanceof Error
     ? error
     : new Error("Unable to save the workspace staff member.");
+}
+
+function buildWorkspaceStaffActivityDescription(
+  action: "created" | "updated" | "deleted",
+  staffUser: WorkspaceStaffUser
+) {
+  const roleLabel = workspaceRoleLabels[staffUser.role];
+
+  if (action === "created") {
+    return `Added ${staffUser.name} (${staffUser.email}) to the workspace as ${roleLabel} with ${staffUser.status} access.`;
+  }
+
+  if (action === "updated") {
+    return `Updated ${staffUser.name} (${staffUser.email}) and set the account to ${roleLabel} with ${staffUser.status} access.`;
+  }
+
+  return `Removed ${staffUser.name} (${staffUser.email}) from the workspace roster.`;
+}
+
+async function appendWorkspaceStaffActivityEvent(
+  action: ActivityAction,
+  staffUser: WorkspaceStaffUser
+) {
+  const description =
+    action === "staff_member_added"
+      ? buildWorkspaceStaffActivityDescription("created", staffUser)
+      : action === "staff_member_updated"
+        ? buildWorkspaceStaffActivityDescription("updated", staffUser)
+        : buildWorkspaceStaffActivityDescription("deleted", staffUser);
+
+  await activityAdapter.appendEvent({
+    action,
+    entityType: "staff",
+    entityId: staffUser.id,
+    title: staffUser.name,
+    description,
+    href: "/dashboard/admin",
+  });
 }
 
 function validateWorkspaceStaffMutationInput(
@@ -601,18 +642,20 @@ export async function findWorkspaceStaffUserByEmail(email: string) {
 
 export async function createWorkspaceStaffUser(input: WorkspaceStaffMutationInput) {
   const configuredDatabase = getRequiredConfiguredWorkspaceStaffDatabase();
+  const createdUser =
+    configuredDatabase.driver === "postgres"
+      ? await insertPostgresWorkspaceStaffUser(
+          createPostgresDatabaseAccess(configuredDatabase.connectionString),
+          input
+        )
+      : await insertSQLiteWorkspaceStaffUser(
+          createSQLiteDatabaseAccess(configuredDatabase.resolvedPath),
+          input
+        );
 
-  if (configuredDatabase.driver === "postgres") {
-    return insertPostgresWorkspaceStaffUser(
-      createPostgresDatabaseAccess(configuredDatabase.connectionString),
-      input
-    );
-  }
+  await appendWorkspaceStaffActivityEvent("staff_member_added", createdUser);
 
-  return insertSQLiteWorkspaceStaffUser(
-    createSQLiteDatabaseAccess(configuredDatabase.resolvedPath),
-    input
-  );
+  return createdUser;
 }
 
 export async function updateWorkspaceStaffUser(
@@ -625,19 +668,22 @@ export async function updateWorkspaceStaffUser(
     throw new Error("A staff member id is required.");
   }
 
-  if (configuredDatabase.driver === "postgres") {
-    return updatePostgresWorkspaceStaffUser(
-      createPostgresDatabaseAccess(configuredDatabase.connectionString),
-      userId.trim(),
-      input
-    );
-  }
+  const updatedUser =
+    configuredDatabase.driver === "postgres"
+      ? await updatePostgresWorkspaceStaffUser(
+          createPostgresDatabaseAccess(configuredDatabase.connectionString),
+          userId.trim(),
+          input
+        )
+      : await updateSQLiteWorkspaceStaffUser(
+          createSQLiteDatabaseAccess(configuredDatabase.resolvedPath),
+          userId.trim(),
+          input
+        );
 
-  return updateSQLiteWorkspaceStaffUser(
-    createSQLiteDatabaseAccess(configuredDatabase.resolvedPath),
-    userId.trim(),
-    input
-  );
+  await appendWorkspaceStaffActivityEvent("staff_member_updated", updatedUser);
+
+  return updatedUser;
 }
 
 async function deleteSQLiteWorkspaceStaffUser(
@@ -697,15 +743,18 @@ export async function deleteWorkspaceStaffUser(userId: string) {
     throw new Error("A staff member id is required.");
   }
 
-  if (configuredDatabase.driver === "postgres") {
-    return deletePostgresWorkspaceStaffUser(
-      createPostgresDatabaseAccess(configuredDatabase.connectionString),
-      normalizedUserId
-    );
-  }
+  const deletedUser =
+    configuredDatabase.driver === "postgres"
+      ? await deletePostgresWorkspaceStaffUser(
+          createPostgresDatabaseAccess(configuredDatabase.connectionString),
+          normalizedUserId
+        )
+      : await deleteSQLiteWorkspaceStaffUser(
+          createSQLiteDatabaseAccess(configuredDatabase.resolvedPath),
+          normalizedUserId
+        );
 
-  return deleteSQLiteWorkspaceStaffUser(
-    createSQLiteDatabaseAccess(configuredDatabase.resolvedPath),
-    normalizedUserId
-  );
+  await appendWorkspaceStaffActivityEvent("staff_member_removed", deletedUser);
+
+  return deletedUser;
 }

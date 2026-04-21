@@ -6,15 +6,20 @@ export type ActivityAction =
   | "assignment_updated"
   | "draft_saved"
   | "note_saved"
+  | "inbox_sync_completed"
+  | "inbox_sync_failed"
   | "document_uploaded"
-  | "document_deleted";
+  | "document_deleted"
+  | "staff_member_added"
+  | "staff_member_updated"
+  | "staff_member_removed";
 export type ActivityFilter = "All" | ActivityAction;
 
 export type ActivityEvent = {
   id: string;
   timestamp: string;
   action: ActivityAction;
-  entityType: "email" | "document";
+  entityType: "email" | "document" | "staff" | "inbox";
   entityId: string;
   title: string;
   description: string;
@@ -52,12 +57,32 @@ export const activityActionMeta: Record<
     label: "Note Saved",
     classes: "border-violet-200 bg-violet-100 text-violet-800",
   },
+  inbox_sync_completed: {
+    label: "Inbox Synced",
+    classes: "border-emerald-200 bg-emerald-100 text-emerald-800",
+  },
+  inbox_sync_failed: {
+    label: "Inbox Sync Failed",
+    classes: "border-rose-200 bg-rose-100 text-rose-800",
+  },
   document_uploaded: {
     label: "Document Added",
     classes: "border-blue-200 bg-blue-100 text-blue-800",
   },
   document_deleted: {
     label: "Document Removed",
+    classes: "border-rose-200 bg-rose-100 text-rose-800",
+  },
+  staff_member_added: {
+    label: "Staff Added",
+    classes: "border-emerald-200 bg-emerald-100 text-emerald-800",
+  },
+  staff_member_updated: {
+    label: "Staff Updated",
+    classes: "border-cyan-200 bg-cyan-100 text-cyan-800",
+  },
+  staff_member_removed: {
+    label: "Staff Removed",
     classes: "border-rose-200 bg-rose-100 text-rose-800",
   },
 };
@@ -69,8 +94,13 @@ export const activityFilters = [
   "assignment_updated",
   "draft_saved",
   "note_saved",
+  "inbox_sync_completed",
+  "inbox_sync_failed",
   "document_uploaded",
   "document_deleted",
+  "staff_member_added",
+  "staff_member_updated",
+  "staff_member_removed",
 ] as const satisfies readonly ActivityFilter[];
 
 export function isActivityFilter(value: string): value is ActivityFilter {
@@ -88,8 +118,13 @@ export function getActivityActionLabel(
       assignment_updated: "Zmieniono właściciela",
       draft_saved: "Zapisano szkic",
       note_saved: "Zapisano notatkę",
+      inbox_sync_completed: "Zsynchronizowano skrzynkę",
+      inbox_sync_failed: "Błąd synchronizacji skrzynki",
       document_uploaded: "Dodano dokument",
       document_deleted: "Usunięto dokument",
+      staff_member_added: "Dodano pracownika",
+      staff_member_updated: "Zmieniono pracownika",
+      staff_member_removed: "Usunięto pracownika",
     };
 
     return polishLabels[action];

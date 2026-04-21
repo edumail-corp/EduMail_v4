@@ -177,8 +177,8 @@ const environmentSignalDefinitions: readonly EnvironmentSignalDefinition[] = [
     getNextStep(configuredEnvVars, language) {
       if (getMailRuntimeStatus().hasLiveInboxSync) {
         return language === "Polish"
-          ? "Przetestuj synchronizację wspólnej skrzynki, a potem dodaj checkpointy lub harmonogram odświeżania, jeśli zespół ich potrzebuje."
-          : "Test the shared-mailbox sync flow, then add checkpoints or scheduled refresh if the team needs them.";
+          ? "Przetestuj synchronizację wspólnej skrzynki na prawdziwym ruchu i potwierdź, że checkpoint oraz ewentualne odświeżanie harmonogramem działają zgodnie z oczekiwaniami."
+          : "Test the shared-mailbox sync flow on real traffic and confirm the checkpoint plus any scheduled refresh behave as expected.";
       }
 
       if (getConfiguredInboxProvider() === "microsoft_graph") {

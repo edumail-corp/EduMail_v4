@@ -62,6 +62,18 @@ type InboxSyncResponse = {
   duplicateCount: number;
   summary: string;
   importedEmailIds: string[];
+  completedAt: string;
+};
+
+type InboxSyncStatusResponse = {
+  provider: string;
+  live: boolean;
+  lastAttempt: {
+    attemptedAt: string;
+    status: "success" | "failed";
+    title: string;
+    summary: string;
+  } | null;
 };
 
 type MailboxErrorResponse = {
@@ -99,6 +111,26 @@ async function fetchMailboxEmails(
   }
 
   return data.emails;
+}
+
+async function fetchInboxSyncStatus(isPolish: boolean) {
+  const response = await fetch("/api/inbox/sync", {
+    cache: "no-store",
+  });
+  const data = (await response.json()) as
+    | InboxSyncStatusResponse
+    | MailboxErrorResponse;
+
+  if (!response.ok || !("provider" in data)) {
+    throw new Error(
+      getMailboxErrorMessage(data) ??
+        (isPolish
+          ? "Nie udało się załadować statusu synchronizacji skrzynki."
+          : "Unable to load the inbox sync status.")
+    );
+  }
+
+  return data;
 }
 
 function matchesMailboxSearch(email: StaffEmail, query: string) {
@@ -153,8 +185,10 @@ export function MailboxView({
 }>) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { preferences, sendDesktopNotification } = useUserPreferences();
+  const { preferences, formatDateTime, sendDesktopNotification } =
+    useUserPreferences();
   const isPolish = preferences.language === "Polish";
+  const isEmailMode = interfaceMode === "email";
   const [emails, setEmails] = useState<StaffEmail[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -174,6 +208,9 @@ export function MailboxView({
   const [noteValue, setNoteValue] = useState("");
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [isSyncingInbox, setIsSyncingInbox] = useState(false);
+  const [inboxSyncStatus, setInboxSyncStatus] =
+    useState<InboxSyncStatusResponse | null>(null);
+  const [isLoadingInboxSyncStatus, setIsLoadingInboxSyncStatus] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const normalizedSearchQuery = deferredSearchQuery.trim().toLowerCase();
@@ -222,7 +259,6 @@ export function MailboxView({
     departmentFilter,
     preferences.language
   );
-  const isEmailMode = interfaceMode === "email";
   const meta = isLoading
     ? isPolish
       ? "Ładowanie wiadomości..."
@@ -284,6 +320,24 @@ export function MailboxView({
     return queryString.length > 0 ? `${pathname}?${queryString}` : pathname;
   }
 
+  async function refreshInboxSyncStatus() {
+    if (!isEmailMode) {
+      setInboxSyncStatus(null);
+      setIsLoadingInboxSyncStatus(false);
+      return;
+    }
+
+    setIsLoadingInboxSyncStatus(true);
+
+    try {
+      setInboxSyncStatus(await fetchInboxSyncStatus(isPolish));
+    } catch {
+      setInboxSyncStatus(null);
+    } finally {
+      setIsLoadingInboxSyncStatus(false);
+    }
+  }
+
   useEffect(() => {
     async function loadEmails() {
       setIsLoading(true);
@@ -308,6 +362,42 @@ export function MailboxView({
 
     void loadEmails();
   }, [filter, isPolish]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadInboxSyncStatus() {
+      if (!isEmailMode) {
+        setInboxSyncStatus(null);
+        setIsLoadingInboxSyncStatus(false);
+        return;
+      }
+
+      setIsLoadingInboxSyncStatus(true);
+
+      try {
+        const status = await fetchInboxSyncStatus(isPolish);
+
+        if (!cancelled) {
+          setInboxSyncStatus(status);
+        }
+      } catch {
+        if (!cancelled) {
+          setInboxSyncStatus(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingInboxSyncStatus(false);
+        }
+      }
+    }
+
+    void loadInboxSyncStatus();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isEmailMode, isPolish]);
 
   useEffect(() => {
     setSelectedId((currentId) => {
@@ -468,6 +558,7 @@ export function MailboxView({
             : "Unable to sync the inbox."
       );
     } finally {
+      await refreshInboxSyncStatus();
       setIsSyncingInbox(false);
     }
   }
@@ -804,6 +895,63 @@ export function MailboxView({
       : isPolish
         ? `${queueEmails.length} wiadomości`
         : `${queueEmails.length} messages`;
+  const resolvedInboxSyncProvider =
+    inboxSyncStatus?.provider ?? (canSyncInbox ? "microsoft_graph" : "local");
+  const resolvedInboxSyncLive = inboxSyncStatus?.live ?? canSyncInbox;
+  const inboxSyncProviderLabel =
+    resolvedInboxSyncProvider === "microsoft_graph"
+      ? "Microsoft Graph"
+      : isPolish
+        ? "Tryb lokalny"
+        : "Local mode";
+  const inboxSyncBadgeClassName = isLoadingInboxSyncStatus
+    ? "border-slate-200 bg-white/80 text-slate-500"
+    : inboxSyncStatus?.lastAttempt?.status === "failed"
+      ? "border-[#FFD2DA] bg-[#FFF1F4] text-[#B4375C]"
+      : inboxSyncStatus?.lastAttempt
+        ? "border-[#C7F0D6] bg-[#F0FBF4] text-[#19754C]"
+        : "border-[#DCE1FF] bg-[#F5F6FF] text-[#4F57E8]";
+  const inboxSyncBadgeLabel = isLoadingInboxSyncStatus
+    ? isPolish
+      ? "Ładowanie"
+      : "Loading"
+    : inboxSyncStatus?.lastAttempt?.status === "failed"
+      ? isPolish
+        ? "Błąd"
+        : "Failed"
+      : inboxSyncStatus?.lastAttempt
+        ? isPolish
+          ? "Gotowe"
+          : "Ready"
+        : canSyncInbox
+          ? isPolish
+            ? "Oczekuje"
+            : "Pending"
+          : isPolish
+            ? "Ręcznie"
+            : "Manual";
+  const inboxSyncSummary = isLoadingInboxSyncStatus
+    ? isPolish
+      ? "Ładowanie ostatniego checkpointu synchronizacji skrzynki..."
+      : "Loading the latest mailbox sync checkpoint..."
+    : inboxSyncStatus?.lastAttempt
+      ? inboxSyncStatus.lastAttempt.summary
+      : canSyncInbox
+        ? isPolish
+          ? "Nie uruchomiono jeszcze synchronizacji tej skrzynki. Pierwszy import zapisze checkpoint tutaj."
+          : "No mailbox sync has run yet. The first import will write its checkpoint here."
+        : isPolish
+          ? "Żywa synchronizacja skrzynki nie jest jeszcze skonfigurowana, ale ręczne tworzenie spraw nadal działa."
+          : "Live mailbox sync is not configured yet, but manual case intake is still available.";
+  const inboxSyncTimestampLabel = isLoadingInboxSyncStatus
+    ? isPolish
+      ? "Ładowanie..."
+      : "Loading..."
+    : inboxSyncStatus?.lastAttempt
+      ? formatDateTime(inboxSyncStatus.lastAttempt.attemptedAt)
+      : isPolish
+        ? "Jeszcze nie uruchomiono"
+        : "Not run yet";
 
   return (
     <>
@@ -856,42 +1004,76 @@ export function MailboxView({
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="rounded-full border border-white/80 bg-white/82 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 shadow-[0_14px_36px_rgba(140,153,179,0.16)]">
-                {compactMeta}
-              </span>
-              {canSyncInbox ? (
+            <div className="flex w-full max-w-[34rem] flex-col gap-3 lg:items-end">
+              <div className="w-full rounded-[24px] border border-white/80 bg-white/82 px-4 py-4 shadow-[0_14px_36px_rgba(140,153,179,0.16)]">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                      {isPolish ? "Checkpoint skrzynki" : "Mailbox Checkpoint"}
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-[#1E2340]">
+                      {inboxSyncProviderLabel}
+                      {resolvedInboxSyncLive
+                        ? isPolish
+                          ? " • tryb żywy"
+                          : " • live mode"
+                        : isPolish
+                          ? " • fallback"
+                          : " • fallback"}
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                      {inboxSyncSummary}
+                    </p>
+                    <p className="mt-2 text-xs font-medium uppercase tracking-[0.14em] text-slate-400">
+                      {isPolish ? "Ostatnia próba" : "Last Attempt"} •{" "}
+                      {inboxSyncTimestampLabel}
+                    </p>
+                  </div>
+                  <span
+                    className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${inboxSyncBadgeClassName}`}
+                  >
+                    {inboxSyncBadgeLabel}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="rounded-full border border-white/80 bg-white/82 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 shadow-[0_14px_36px_rgba(140,153,179,0.16)]">
+                  {compactMeta}
+                </span>
+                {canSyncInbox ? (
+                  <button
+                    type="button"
+                    onClick={handleSyncInbox}
+                    disabled={isSyncingInbox}
+                    className={
+                      isSyncingInbox
+                        ? "inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-400"
+                        : dashboardGhostButtonClassName
+                    }
+                  >
+                    {isSyncingInbox
+                      ? isPolish
+                        ? "Synchronizacja..."
+                        : "Syncing..."
+                      : isPolish
+                        ? "Synchronizuj skrzynkę"
+                        : "Sync Inbox"}
+                  </button>
+                ) : null}
                 <button
                   type="button"
-                  onClick={handleSyncInbox}
-                  disabled={isSyncingInbox}
+                  onClick={() => setSearchQuery("")}
+                  disabled={searchQuery.length === 0}
                   className={
-                    isSyncingInbox
-                      ? "inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-400"
-                      : dashboardGhostButtonClassName
+                    searchQuery.length > 0
+                      ? dashboardGhostButtonClassName
+                      : "inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-400"
                   }
                 >
-                  {isSyncingInbox
-                    ? isPolish
-                      ? "Synchronizacja..."
-                      : "Syncing..."
-                    : isPolish
-                      ? "Synchronizuj skrzynkę"
-                      : "Sync Inbox"}
+                  {isPolish ? "Wyczyść wyszukiwanie" : "Clear Search"}
                 </button>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => setSearchQuery("")}
-                disabled={searchQuery.length === 0}
-                className={
-                  searchQuery.length > 0
-                    ? dashboardGhostButtonClassName
-                    : "inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-400"
-                }
-              >
-                {isPolish ? "Wyczyść wyszukiwanie" : "Clear Search"}
-              </button>
+              </div>
             </div>
           </div>
 

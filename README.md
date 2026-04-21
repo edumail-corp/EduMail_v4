@@ -30,7 +30,8 @@ EduMailAI is a Next.js prototype for a university staff workflow tool. The app h
 - `/dashboard/knowledge-base` - knowledge document management
 - `/dashboard/settings` - personal language, appearance, and notification preferences
 - `/api/activity/export` - download the persisted audit trail as JSON
-- `/api/inbox/sync` - trigger a live inbox sync for the configured mailbox provider
+- `/api/inbox/sync` - read the latest mailbox sync checkpoint or trigger a live inbox sync for the configured mailbox provider
+- `/api/cron/inbox-sync` - Vercel cron endpoint for scheduled inbox refresh, secured by `CRON_SECRET`
 - `/api/emails/[id]/send` - send an approved reply through the configured outbound provider
 
 ## Local Development
@@ -82,6 +83,18 @@ Recommended Microsoft Entra app configuration:
 - Grant admin consent for those permissions
 - Point `EDUMAILAI_MICROSOFT_MAILBOX_USER` at the shared mailbox email or user id you want EduMailAI to read and send from
 - Optional: set `EDUMAILAI_MICROSOFT_SYNC_BATCH_SIZE` to control how many recent messages each sync import attempts
+
+## Scheduled Inbox Refresh
+
+EduMailAI now includes a Vercel cron endpoint at `/api/cron/inbox-sync` plus a default `vercel.json` schedule of `0 6 * * *` (daily at 06:00 UTC).
+
+To secure and enable it on Vercel:
+
+- Set `CRON_SECRET` in the Vercel project environment
+- Keep the committed `vercel.json` cron entry in production
+- Make sure live inbox sync is configured through Microsoft Graph; otherwise the scheduled route exits cleanly with a skipped result
+
+The scheduled route uses Vercel's standard `Authorization: Bearer ${CRON_SECRET}` pattern and only runs against production deployments. If you stay on Vercel Hobby, the current daily schedule is compatible with the once-per-day cron limit.
 
 ## OpenAI Draft Setup
 
@@ -136,7 +149,10 @@ Note: the production build uses `next/font` with Geist, so it may need network a
 - A local developer-access option is available on the sign-in page so the workspace stays reachable while external auth setup is still incomplete.
 - Workspace membership can now move behind `EDUMAILAI_WORKSPACE_SETTINGS_ADAPTER=database`, seeding the current staff directory into SQLite or PostgreSQL/Supabase on first boot so auth and the admin surface share one persisted roster.
 - When workspace membership uses the database-backed settings adapter, `/dashboard/admin` can now add, update, and remove staff members directly against that shared roster, with duplicate-email checks and protection against removing the last active operations admin.
+- Staff-directory add, update, and remove actions now also write into the shared activity stream so admin membership changes are visible alongside mailbox and document operations.
 - Live inbox sync and outbound reply delivery are now available through Microsoft Graph when the mailbox credentials are configured, while local manual intake and local auto-sent fallback remain available for unfinished environments.
+- Inbox sync attempts now write checkpoint events into the shared activity stream, and the inbox view surfaces the latest sync status, summary, and timestamp.
+- A production `vercel.json` cron entry now schedules one protected inbox refresh per day, so shared-mailbox imports can run automatically once Vercel and Microsoft Graph are configured.
 - OpenAI can now back the draft-generation layer when configured, while the local seeded adapter remains the safe fallback.
 - This is still a human-in-the-loop prototype, and knowledge grounding currently uses document metadata plus preview excerpts rather than full parsed document text.
 - The current product focus is keeping the operator workflow stable while hardening auth, persistence, mailbox operations, model-backed drafting, storage transparency, and adapter parity.
