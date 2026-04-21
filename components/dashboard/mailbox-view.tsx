@@ -501,6 +501,12 @@ export function MailboxView({
         data.summary
       );
     } catch (error) {
+      try {
+        setEmails(await fetchMailboxEmails(filter, isPolish));
+      } catch {
+        // Keep the current mailbox snapshot if the refresh also fails.
+      }
+
       setActionError(
         error instanceof Error
           ? error.message

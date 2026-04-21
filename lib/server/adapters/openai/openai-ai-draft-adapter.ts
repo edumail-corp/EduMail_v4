@@ -16,11 +16,18 @@ import {
   getOpenAIDraftConfig,
   type OpenAIDraftConfig,
 } from "@/lib/server/adapters/openai/openai-config";
+import {
+  buildGroundingPassages,
+  getKnowledgeDocumentGroundingText,
+} from "@/lib/server/knowledge-document-grounding";
 
 type GroundingCandidate = Pick<
   KnowledgeDocument,
   "name" | "category" | "summary" | "previewExcerpt"
 > & {
+  groundingText: string;
+  relevantPassages: string[];
+  citationExcerpt: string;
   relevanceScore: number;
 };
 
@@ -54,6 +61,7 @@ type OpenAIResponsesCreateResponse = {
 };
 
 const knowledgeBaseAdapter = getKnowledgeBaseAdapter();
+const maxRelevantPassagesPerDocument = 3;
 
 function normalizeSearchText(value: string) {
   return value
@@ -72,6 +80,54 @@ function tokenizeSearchText(value: string) {
   )];
 }
 
+function countTokenMatches(haystack: string, tokens: readonly string[]) {
+  return tokens.reduce(
+    (count, token) => count + (haystack.includes(token) ? 1 : 0),
+    0
+  );
+}
+
+function selectRelevantPassages(
+  passages: readonly string[],
+  caseTokens: readonly string[],
+  previewExcerpt: string,
+  summary: string
+) {
+  const scoredPassages = passages
+    .map((passage) => ({
+      passage,
+      tokenMatches: countTokenMatches(normalizeSearchText(passage), caseTokens),
+    }))
+    .sort((left, right) => {
+      if (right.tokenMatches !== left.tokenMatches) {
+        return right.tokenMatches - left.tokenMatches;
+      }
+
+      return right.passage.length - left.passage.length;
+    });
+  const matchedPassages = scoredPassages
+    .filter((entry) => entry.tokenMatches > 0)
+    .map((entry) => entry.passage);
+
+  if (matchedPassages.length > 0) {
+    return matchedPassages.slice(0, maxRelevantPassagesPerDocument);
+  }
+
+  const fallbackPassages = scoredPassages
+    .map((entry) => entry.passage)
+    .filter(Boolean)
+    .slice(0, maxRelevantPassagesPerDocument);
+
+  if (fallbackPassages.length > 0) {
+    return fallbackPassages;
+  }
+
+  return [previewExcerpt, summary]
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0)
+    .slice(0, maxRelevantPassagesPerDocument);
+}
+
 function selectGroundingCandidates(
   input: StaffEmailCreateInput,
   department: Department
@@ -82,22 +138,42 @@ function selectGroundingCandidates(
     );
     const rankedDocuments = documents
       .map((document) => {
-        const haystack = normalizeSearchText(
-          `${document.name} ${document.summary} ${document.previewExcerpt} ${document.category}`
+        const groundingText = getKnowledgeDocumentGroundingText({
+          name: document.name,
+          category: document.category,
+          summary: document.summary,
+          previewExcerpt: document.previewExcerpt,
+          groundingText: document.groundingText,
+        });
+        const relevantPassages = selectRelevantPassages(
+          buildGroundingPassages(groundingText),
+          caseTokens,
+          document.previewExcerpt,
+          document.summary
         );
-        const tokenMatches = caseTokens.reduce(
-          (count, token) => count + (haystack.includes(token) ? 1 : 0),
+        const haystack = normalizeSearchText(
+          `${document.name} ${document.summary} ${document.previewExcerpt} ${groundingText} ${document.category}`
+        );
+        const tokenMatches = countTokenMatches(haystack, caseTokens);
+        const passageMatches = relevantPassages.reduce(
+          (count, passage) =>
+            count + countTokenMatches(normalizeSearchText(passage), caseTokens),
           0
         );
         const categoryBonus = document.category === department ? 16 : 0;
         const originBonus = document.origin === "uploaded" ? 2 : 0;
-        const score = categoryBonus + originBonus + tokenMatches * 5;
+        const score =
+          categoryBonus + originBonus + tokenMatches * 4 + passageMatches * 6;
 
         return {
           name: document.name,
           category: document.category,
           summary: document.summary,
           previewExcerpt: document.previewExcerpt,
+          groundingText,
+          relevantPassages,
+          citationExcerpt:
+            relevantPassages[0] ?? document.previewExcerpt ?? document.summary,
           relevanceScore: score,
         } satisfies GroundingCandidate;
       })
@@ -213,12 +289,17 @@ function buildUserPrompt(
     `Body:\n${input.body.trim()}`,
     "Knowledge sources:",
     ...candidates.map(
-      (candidate, index) =>
-        `${index + 1}. ${candidate.name}\nCategory: ${candidate.category}\nSummary: ${candidate.summary}\nExcerpt: ${candidate.previewExcerpt}`
+      (candidate, index) => [
+        `${index + 1}. ${candidate.name}`,
+        `Category: ${candidate.category}`,
+        `Summary: ${candidate.summary}`,
+        "Relevant passages:",
+        ...candidate.relevantPassages.map((passage) => `- ${passage}`),
+      ].join("\n")
     ),
     language === "Polish"
-      ? "Przygotuj krótkie podsumowanie wewnętrzne i praktyczną, ostrożną odpowiedź dla nadawcy."
-      : "Prepare a concise internal summary and a practical, cautious reply for the sender.",
+      ? "Przygotuj krótkie podsumowanie wewnętrzne i praktyczną, ostrożną odpowiedź dla nadawcy. Cytuj tylko dokumenty, których fragmenty naprawdę wspierają odpowiedź."
+      : "Prepare a concise internal summary and a practical, cautious reply for the sender. Cite only documents whose passages directly support the reply.",
   ].join("\n\n");
 }
 
@@ -358,10 +439,38 @@ function buildSourceCitations(
     return {
       id: `SRC-OPENAI-${index + 1}`,
       documentName: citation.documentName,
-      excerpt: sourceDocument?.previewExcerpt ?? sourceDocument?.summary ?? "",
+      excerpt: sourceDocument?.citationExcerpt ?? sourceDocument?.summary ?? "",
       reason: citation.reason.trim(),
     };
   });
+}
+
+function buildFallbackSourceCitation(
+  primarySourceDocument: string | null,
+  candidateMap: Map<string, GroundingCandidate>,
+  language: LanguagePreference
+) {
+  if (!primarySourceDocument) {
+    return [] as EmailSourceCitation[];
+  }
+
+  const sourceDocument = candidateMap.get(primarySourceDocument);
+
+  if (!sourceDocument) {
+    return [] as EmailSourceCitation[];
+  }
+
+  return [
+    {
+      id: "SRC-OPENAI-1",
+      documentName: primarySourceDocument,
+      excerpt: sourceDocument.citationExcerpt,
+      reason:
+        language === "Polish"
+          ? "Główny dokument ugruntowujący wybrany dla tej odpowiedzi."
+          : "Primary grounding document selected for this reply.",
+    },
+  ];
 }
 
 function getOpenAIProviderStatus(
@@ -370,16 +479,16 @@ function getOpenAIProviderStatus(
 ): DraftProviderStatus {
   if (language === "Polish") {
     return {
-      summary: `Szkice są teraz generowane przez OpenAI (${config.model}) z lokalnym doborem dokumentów bazy wiedzy do ugruntowania odpowiedzi.`,
+      summary: `Szkice są teraz generowane przez OpenAI (${config.model}) z ugruntowaniem opartym na wybranych fragmentach dokumentów bazy wiedzy.`,
       nextStep:
-        "Następnym krokiem jest strojenie promptu, kontrola jakości odpowiedzi i ewentualne wzbogacenie ugruntowania o pełny tekst dokumentów.",
+        "Następnym krokiem jest strojenie promptu, kontrola jakości odpowiedzi i ocena cytatów na prawdziwych sprawach operacyjnych.",
     };
   }
 
   return {
-    summary: `Drafts are now generated through OpenAI (${config.model}) with local knowledge-base document selection used for grounding.`,
+    summary: `Drafts are now generated through OpenAI (${config.model}) with passage-based grounding from selected knowledge-base documents.`,
     nextStep:
-      "Next, tune the prompt, evaluate reply quality, and consider richer grounding from full document text if needed.",
+      "Next, tune the prompt, evaluate reply quality, and review citation quality on real operational cases.",
   };
 }
 
@@ -433,15 +542,19 @@ export const openAIAIDraftAdapter: AIDraftAdapter = {
       const candidateMap = new Map(
         candidates.map((candidate) => [candidate.name, candidate])
       );
-      const sourceCitations = buildSourceCitations(
+      const modelSourceCitations = buildSourceCitations(
         openAIResult.citations,
         candidateMap
       );
       const sourceDocument =
         openAIResult.primarySourceDocument ||
-        sourceCitations[0]?.documentName ||
+        modelSourceCitations[0]?.documentName ||
         candidates[0]?.name ||
         null;
+      const sourceCitations =
+        modelSourceCitations.length > 0
+          ? modelSourceCitations
+          : buildFallbackSourceCitation(sourceDocument, candidateMap, language);
       const manualReviewReason = openAIResult.requiresManualReview
         ? openAIResult.manualReviewReason ||
           (language === "Polish"

@@ -26,6 +26,7 @@ export type KnowledgeDocument = {
   downloadUrl?: string;
   summary: string;
   previewExcerpt: string;
+  groundingText?: string;
   origin: KnowledgeDocumentOrigin;
   storageProvider?: KnowledgeDocumentStorageProvider;
   storagePath?: string;
@@ -110,6 +111,8 @@ const seedKnowledgeDocuments: KnowledgeDocument[] = [
       "Core admissions policy for international applicants, language testing rules, and scholarship review timing.",
     previewExcerpt:
       "International applicants must document English-language proficiency unless their prior education was completed in English.",
+    groundingText:
+      "International applicants must document English-language proficiency unless their prior education was completed in English. Admissions may accept prior degree instruction in English as an alternative to a separate language test when official proof is included in the application file. Scholarship review begins only after the admissions file is complete, including translated transcripts and proof of financial support where required. Staff should avoid promising scholarship outcomes before the file reaches committee review.",
     origin: "seeded",
     referenceCount: 0,
   },
@@ -123,6 +126,8 @@ const seedKnowledgeDocuments: KnowledgeDocument[] = [
       "Billing handbook covering payment plans, overdue balances, and student-finance escalation paths.",
     previewExcerpt:
       "Monthly payment plans can be activated through the billing portal before the published tuition deadline.",
+    groundingText:
+      "Monthly payment plans can be activated through the billing portal before the published tuition deadline. Overdue balances may place registration or transcript services on hold until the finance team confirms a compliant repayment arrangement. Refund questions should be routed through the student finance workflow, and staff should reference the published billing calendar instead of promising immediate reversals.",
     origin: "seeded",
     referenceCount: 0,
   },
@@ -136,6 +141,8 @@ const seedKnowledgeDocuments: KnowledgeDocument[] = [
       "Registrar workflow for transcript requests, verification holds, and exception handling for identity mismatches.",
     previewExcerpt:
       "Requests with legal-name discrepancies remain on hold until Registrar Operations completes identity verification.",
+    groundingText:
+      "Requests with legal-name discrepancies remain on hold until Registrar Operations completes identity verification. Transcript fulfillment timelines begin only after required identity checks and any outstanding institutional holds are cleared. Staff should direct urgent exceptions through Registrar Operations and document the hold reason instead of confirming release dates before verification is complete.",
     origin: "seeded",
     referenceCount: 0,
   },
@@ -149,6 +156,8 @@ const seedKnowledgeDocuments: KnowledgeDocument[] = [
       "Academic records SOP covering grade corrections, faculty approvals, and registrar posting timelines.",
     previewExcerpt:
       "Grade corrections require department approval before the Registrar posts the updated record.",
+    groundingText:
+      "Grade corrections require department approval before the Registrar posts the updated record. Faculty or departmental approval must be recorded before Registrar staff can finalize the change in the academic record system. Staff should explain the approval dependency clearly and avoid committing to posting dates until the approval chain is complete.",
     origin: "seeded",
     referenceCount: 0,
   },
@@ -162,6 +171,8 @@ const seedKnowledgeDocuments: KnowledgeDocument[] = [
       "Registrar calendar for add/drop deadlines, registration cutoffs, and transcript-impact milestones.",
     previewExcerpt:
       "The last day to drop an elective without a W grade is April 4 at 11:59 PM local time.",
+    groundingText:
+      "The last day to drop an elective without a W grade is April 4 at 11:59 PM local time. Add and drop deadlines in the registrar calendar determine whether schedule changes appear as standard withdrawals or remain invisible on the transcript. Staff should always anchor schedule guidance to the published registrar calendar and flag exceptions for manual review if the request arrives after the relevant deadline.",
     origin: "seeded",
     referenceCount: 0,
   },

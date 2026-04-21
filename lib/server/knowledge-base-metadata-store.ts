@@ -5,6 +5,7 @@ import {
   type KnowledgeDocument,
   type KnowledgeDocumentOrigin,
 } from "@/lib/knowledge-base-data";
+import { getKnowledgeDocumentGroundingText } from "@/lib/server/knowledge-document-grounding";
 import {
   readJsonFileIfExists,
   writeJsonFileAtomically,
@@ -46,6 +47,7 @@ export type CreateKnowledgeDocumentRecordInput = {
   uploadedAt?: string;
   summary?: string;
   previewExcerpt?: string;
+  groundingText?: string;
   origin?: KnowledgeDocumentOrigin;
   fileAsset?: KnowledgeDocumentAssetRecord;
   mimeType?: string;
@@ -82,6 +84,7 @@ function normalizeKnowledgeDocumentRecord(
           document.name ?? "Untitled document",
           document.category ?? "Admissions"
         ),
+      groundingText: document.groundingText,
       origin: document.origin ?? "uploaded",
       referenceCount: 0,
     } satisfies KnowledgeDocument);
@@ -111,6 +114,13 @@ function normalizeKnowledgeDocumentRecord(
     mimeType: fileAsset?.mimeType ?? document.mimeType ?? baseDocument.mimeType,
     summary: document.summary ?? baseDocument.summary,
     previewExcerpt: document.previewExcerpt ?? baseDocument.previewExcerpt,
+    groundingText: getKnowledgeDocumentGroundingText({
+      name: document.name ?? baseDocument.name,
+      category: document.category ?? baseDocument.category,
+      summary: document.summary ?? baseDocument.summary,
+      previewExcerpt: document.previewExcerpt ?? baseDocument.previewExcerpt,
+      groundingText: document.groundingText ?? baseDocument.groundingText,
+    }),
     origin: document.origin ?? baseDocument.origin,
     fileAsset:
       fileAsset
@@ -137,6 +147,7 @@ export function toKnowledgeDocument(record: KnowledgeDocumentRecord): KnowledgeD
     mimeType: record.fileAsset?.mimeType ?? record.mimeType,
     summary: record.summary,
     previewExcerpt: record.previewExcerpt,
+    groundingText: record.groundingText,
     origin: record.origin,
     storageProvider: record.fileAsset?.storageProvider,
     storagePath: record.fileAsset?.storageKey,
@@ -194,6 +205,7 @@ export async function createKnowledgeDocumentRecord(
     pages: input.pages,
     summary: input.summary,
     previewExcerpt: input.previewExcerpt,
+    groundingText: input.groundingText,
     origin: input.origin,
     fileAsset: input.fileAsset,
     mimeType: input.mimeType,

@@ -3,6 +3,7 @@ import type { LanguagePreference, TimeFormatPreference } from "@/lib/user-prefer
 export type ActivityAction =
   | "case_created"
   | "email_approved"
+  | "email_send_failed"
   | "assignment_updated"
   | "draft_saved"
   | "note_saved"
@@ -44,6 +45,10 @@ export const activityActionMeta: Record<
   email_approved: {
     label: "Reply Sent",
     classes: "border-emerald-200 bg-emerald-100 text-emerald-800",
+  },
+  email_send_failed: {
+    label: "Reply Send Failed",
+    classes: "border-rose-200 bg-rose-100 text-rose-800",
   },
   assignment_updated: {
     label: "Assigned",
@@ -91,6 +96,7 @@ export const activityFilters = [
   "All",
   "case_created",
   "email_approved",
+  "email_send_failed",
   "assignment_updated",
   "draft_saved",
   "note_saved",
@@ -115,6 +121,7 @@ export function getActivityActionLabel(
     const polishLabels: Record<ActivityAction, string> = {
       case_created: "Utworzono sprawę",
       email_approved: "Wysłano odpowiedź",
+      email_send_failed: "Błąd wysyłki odpowiedzi",
       assignment_updated: "Zmieniono właściciela",
       draft_saved: "Zapisano szkic",
       note_saved: "Zapisano notatkę",

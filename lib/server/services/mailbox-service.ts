@@ -436,6 +436,10 @@ export async function ingestMailboxEmail(
         outboundProvider: null,
         outboundMessageId: null,
         outboundSentAt: null,
+        outboundAttemptCount: 0,
+        outboundLastAttemptAt: null,
+        outboundLastError: null,
+        outboundLastStatus: null,
       },
     })
   );

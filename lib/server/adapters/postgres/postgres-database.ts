@@ -135,9 +135,13 @@ async function initializePostgresDatabase(pool: Pool) {
       mime_type TEXT,
       summary TEXT NOT NULL,
       preview_excerpt TEXT NOT NULL,
+      grounding_text TEXT,
       origin TEXT NOT NULL,
       file_asset_json JSONB
     );
+
+    ALTER TABLE knowledge_documents
+      ADD COLUMN IF NOT EXISTS grounding_text TEXT;
 
     CREATE INDEX IF NOT EXISTS idx_knowledge_documents_uploaded_at
       ON knowledge_documents (uploaded_at DESC);

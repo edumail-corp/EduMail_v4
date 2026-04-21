@@ -16,6 +16,7 @@ import {
   toKnowledgeDocument,
 } from "@/lib/server/knowledge-base-metadata-store";
 import { buildKnowledgeBaseStorageKey } from "@/lib/server/knowledge-base-file-storage";
+import { deriveKnowledgeDocumentGrounding } from "@/lib/server/knowledge-document-grounding";
 
 type LocalKnowledgeBaseAdapterDependencies = {
   activityAdapter: ActivityAdapter;
@@ -48,6 +49,12 @@ function createRecordBackedKnowledgeBaseAdapter(
     async createDocument(input) {
       const documentId = `DOC-${randomUUID().slice(0, 8)}`;
       const storageKey = buildKnowledgeBaseStorageKey(documentId, input.name);
+      const grounding = deriveKnowledgeDocumentGrounding({
+        name: input.name,
+        category: input.category,
+        mimeType: input.mimeType,
+        fileBuffer: input.fileBuffer,
+      });
 
       await fileStorageAdapter.writeBinaryFile(storageKey, input.fileBuffer);
 
@@ -60,6 +67,9 @@ function createRecordBackedKnowledgeBaseAdapter(
             uploadedAt: new Date().toISOString().slice(0, 10),
             pages: input.pages,
             origin: "uploaded",
+            summary: grounding.summary,
+            previewExcerpt: grounding.previewExcerpt,
+            groundingText: grounding.groundingText,
             fileAsset: {
               storageKey,
               originalName: input.name,

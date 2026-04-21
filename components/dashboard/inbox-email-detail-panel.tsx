@@ -178,6 +178,11 @@ export function InboxEmailDetailPanel({
 
   const hasDraft = email.aiDraft !== null;
   const isAlreadySent = email.status === "Auto-sent";
+  const hasFailedSend =
+    !isAlreadySent &&
+    (email.integration?.outboundLastStatus === "failed" ||
+      Boolean(email.integration?.outboundLastError));
+  const outboundAttemptCount = email.integration?.outboundAttemptCount ?? 0;
   const canApprove =
     hasDraft &&
     !isAlreadySent &&
@@ -248,6 +253,10 @@ export function InboxEmailDetailPanel({
       ? isPolish
         ? "Już wysłane"
         : "Already Sent"
+      : hasFailedSend
+        ? isPolish
+          ? "Ponów wysyłkę"
+          : "Retry Send"
       : !hasDraft
         ? isPolish
           ? "Wymagany ręczny przegląd"
@@ -338,22 +347,45 @@ export function InboxEmailDetailPanel({
       ? "Ta sprawa nie ma zewnętrznego odnośnika do wiadomości źródłowej."
       : "This case does not have an external source-message link.";
   const outboundSourceValue =
-    email.integration?.outboundProvider === "microsoft_graph"
-      ? "Microsoft Graph"
-      : email.integration?.outboundSentAt
-        ? isPolish
-          ? "Lokalny fallback"
-          : "Local fallback"
-        : isPolish
-          ? "Jeszcze nie wysłano"
-          : "Not sent yet";
+    hasFailedSend
+      ? isPolish
+        ? "Wymaga ponowienia"
+        : "Retry needed"
+      : email.integration?.outboundProvider === "microsoft_graph"
+        ? "Microsoft Graph"
+        : email.integration?.outboundSentAt
+          ? isPolish
+            ? "Lokalny fallback"
+            : "Local fallback"
+          : isPolish
+            ? "Jeszcze nie wysłano"
+            : "Not sent yet";
   const outboundSourceCaption = email.integration?.outboundSentAt
     ? isPolish
       ? `Ostatnia wysyłka została zapisana ${formatDateTime(email.integration.outboundSentAt)}.`
       : `Last send was recorded at ${formatDateTime(email.integration.outboundSentAt)}.`
-    : isPolish
-      ? "Odpowiedź nie została jeszcze zatwierdzona do wysyłki."
-      : "The reply has not been approved for send yet.";
+    : hasFailedSend && email.integration?.outboundLastError
+      ? email.integration.outboundLastError
+      : isPolish
+        ? "Odpowiedź nie została jeszcze zatwierdzona do wysyłki."
+        : "The reply has not been approved for send yet.";
+  const outboundAttemptsValue =
+    outboundAttemptCount > 0
+      ? String(outboundAttemptCount)
+      : isPolish
+        ? "Brak"
+        : "None";
+  const outboundAttemptsCaption = hasFailedSend
+    ? isPolish
+      ? `${email.integration?.outboundLastAttemptAt ? `Ostatnia próba: ${formatDateTime(email.integration.outboundLastAttemptAt)}. ` : ""}Ostatni błąd: ${email.integration?.outboundLastError ?? "Nieznany błąd."}`
+      : `${email.integration?.outboundLastAttemptAt ? `Last attempt: ${formatDateTime(email.integration.outboundLastAttemptAt)}. ` : ""}Last error: ${email.integration?.outboundLastError ?? "Unknown error."}`
+    : email.integration?.outboundLastAttemptAt
+      ? isPolish
+        ? `Ostatnia próba wysyłki: ${formatDateTime(email.integration.outboundLastAttemptAt)}.`
+        : `Most recent send attempt: ${formatDateTime(email.integration.outboundLastAttemptAt)}.`
+      : isPolish
+        ? "Nie zapisano jeszcze żadnych prób wysyłki."
+        : "No outbound send attempts have been recorded yet.";
 
   return (
     <section className="space-y-4">
@@ -471,11 +503,18 @@ export function InboxEmailDetailPanel({
         </div>
 
         <div className="mt-3">
-          <MetaCard
-            label={isPolish ? "Źródło skrzynki" : "Mailbox source"}
-            value={inboundSourceValue}
-            caption={inboundSourceCaption}
-          />
+          <div className="grid gap-3 lg:grid-cols-2">
+            <MetaCard
+              label={isPolish ? "Źródło skrzynki" : "Mailbox source"}
+              value={inboundSourceValue}
+              caption={inboundSourceCaption}
+            />
+            <MetaCard
+              label={isPolish ? "Próby wysyłki" : "Send attempts"}
+              value={outboundAttemptsValue}
+              caption={outboundAttemptsCaption}
+            />
+          </div>
         </div>
 
         {email.manualReviewReason ? (
@@ -485,6 +524,25 @@ export function InboxEmailDetailPanel({
             </p>
             <p className="mt-2 text-sm leading-6 text-[#7A2440]">
               {email.manualReviewReason}
+            </p>
+          </div>
+        ) : null}
+
+        {hasFailedSend ? (
+          <div className="mt-5 rounded-[24px] border border-[#FFD5DB] bg-[#FFF5F7] p-4 shadow-[0_14px_32px_rgba(143,155,181,0.08)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#B4375C]">
+              {isPolish ? "Ostatnia wysyłka nie powiodła się" : "Last send failed"}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-[#7A2440]">
+              {email.integration?.outboundLastError ??
+                (isPolish
+                  ? "Ta odpowiedź wymaga ponownej próby wysyłki."
+                  : "This reply needs another send attempt.")}
+            </p>
+            <p className="mt-2 text-xs text-[#8A3B54]">
+              {isPolish
+                ? "Po sprawdzeniu szkicu i konfiguracji dostawcy możesz ponowić wysyłkę z tego panelu."
+                : "After checking the draft and mail-provider setup, you can retry directly from this panel."}
             </p>
           </div>
         ) : null}

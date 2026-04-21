@@ -1,8 +1,4 @@
 import { randomUUID } from "node:crypto";
-import {
-  buildKnowledgeDocumentPreview,
-  buildKnowledgeDocumentSummary,
-} from "@/lib/knowledge-base-data";
 import type {
   ActivityAdapter,
   FileStorageAdapter,
@@ -23,6 +19,7 @@ import {
 import {
   buildKnowledgeBaseStorageKey,
 } from "@/lib/server/knowledge-base-file-storage";
+import { deriveKnowledgeDocumentGrounding } from "@/lib/server/knowledge-document-grounding";
 import {
   toKnowledgeDocument,
   type KnowledgeDocumentRecord,
@@ -45,6 +42,7 @@ type PostgresKnowledgeDocumentRow = {
   mime_type: string | null;
   summary: string;
   preview_excerpt: string;
+  grounding_text: string | null;
   origin: KnowledgeDocumentRecord["origin"];
   file_asset_json: unknown;
 };
@@ -63,6 +61,7 @@ function toKnowledgeDocumentRecord(
     mimeType: row.mime_type ?? undefined,
     summary: row.summary,
     previewExcerpt: row.preview_excerpt,
+    groundingText: row.grounding_text ?? undefined,
     origin: row.origin,
     fileAsset: parsePostgresJson<
       KnowledgeDocumentRecord["fileAsset"] | undefined
@@ -86,9 +85,10 @@ function upsertKnowledgeDocumentRecord(
         mime_type,
         summary,
         preview_excerpt,
+        grounding_text,
         origin,
         file_asset_json
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb)
       ON CONFLICT (id) DO UPDATE SET
         name = EXCLUDED.name,
         category = EXCLUDED.category,
@@ -98,6 +98,7 @@ function upsertKnowledgeDocumentRecord(
         mime_type = EXCLUDED.mime_type,
         summary = EXCLUDED.summary,
         preview_excerpt = EXCLUDED.preview_excerpt,
+        grounding_text = EXCLUDED.grounding_text,
         origin = EXCLUDED.origin,
         file_asset_json = EXCLUDED.file_asset_json
     `,
@@ -111,6 +112,7 @@ function upsertKnowledgeDocumentRecord(
       record.mimeType ?? null,
       record.summary,
       record.previewExcerpt,
+      record.groundingText ?? null,
       record.origin,
       record.fileAsset ? serializePostgresJson(record.fileAsset) : null,
     ]
@@ -158,9 +160,10 @@ export function createPostgresKnowledgeBaseAdapter({
                     mime_type,
                     summary,
                     preview_excerpt,
+                    grounding_text,
                     origin,
                     file_asset_json
-                  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb)
+                  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb)
                 `,
                 [
                   record.id,
@@ -172,6 +175,7 @@ export function createPostgresKnowledgeBaseAdapter({
                   record.mimeType ?? null,
                   record.summary,
                   record.previewExcerpt,
+                  record.groundingText ?? null,
                   record.origin,
                   record.fileAsset ? serializePostgresJson(record.fileAsset) : null,
                 ]
@@ -204,6 +208,7 @@ export function createPostgresKnowledgeBaseAdapter({
           mime_type,
           summary,
           preview_excerpt,
+          grounding_text,
           origin,
           file_asset_json
         FROM knowledge_documents
@@ -224,6 +229,12 @@ export function createPostgresKnowledgeBaseAdapter({
 
       const documentId = `DOC-${randomUUID().slice(0, 8)}`;
       const storageKey = buildKnowledgeBaseStorageKey(documentId, input.name);
+      const grounding = deriveKnowledgeDocumentGrounding({
+        name: input.name,
+        category: input.category,
+        mimeType: input.mimeType,
+        fileBuffer: input.fileBuffer,
+      });
 
       await fileStorageAdapter.writeBinaryFile(storageKey, input.fileBuffer);
 
@@ -236,8 +247,9 @@ export function createPostgresKnowledgeBaseAdapter({
           pages: input.pages,
           sizeInBytes: input.sizeInBytes,
           mimeType: input.mimeType,
-          summary: buildKnowledgeDocumentSummary(input.name, input.category),
-          previewExcerpt: buildKnowledgeDocumentPreview(input.name, input.category),
+          summary: grounding.summary,
+          previewExcerpt: grounding.previewExcerpt,
+          groundingText: grounding.groundingText,
           origin: "uploaded",
           fileAsset: {
             storageKey,
@@ -279,6 +291,7 @@ export function createPostgresKnowledgeBaseAdapter({
             mime_type,
             summary,
             preview_excerpt,
+            grounding_text,
             origin,
             file_asset_json
           FROM knowledge_documents
@@ -331,6 +344,7 @@ export function createPostgresKnowledgeBaseAdapter({
             mime_type,
             summary,
             preview_excerpt,
+            grounding_text,
             origin,
             file_asset_json
           FROM knowledge_documents

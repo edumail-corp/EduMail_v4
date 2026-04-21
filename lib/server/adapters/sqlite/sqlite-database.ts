@@ -92,6 +92,7 @@ async function createSQLiteDatabase(databasePath: string) {
       mime_type TEXT,
       summary TEXT NOT NULL,
       preview_excerpt TEXT NOT NULL,
+      grounding_text TEXT,
       origin TEXT NOT NULL,
       file_asset_json TEXT
     );
@@ -122,6 +123,20 @@ async function createSQLiteDatabase(databasePath: string) {
     database.exec(`
       ALTER TABLE mailbox_cases
       ADD COLUMN integration_json TEXT
+    `);
+  }
+
+  const knowledgeDocumentColumns = database
+    .prepare("PRAGMA table_info(knowledge_documents)")
+    .all() as Array<{ name?: string }>;
+  const hasGroundingTextColumn = knowledgeDocumentColumns.some(
+    (column) => column.name === "grounding_text"
+  );
+
+  if (!hasGroundingTextColumn) {
+    database.exec(`
+      ALTER TABLE knowledge_documents
+      ADD COLUMN grounding_text TEXT
     `);
   }
 

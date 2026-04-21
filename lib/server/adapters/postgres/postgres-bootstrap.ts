@@ -47,6 +47,7 @@ type SQLiteKnowledgeDocumentRow = {
   mime_type: string | null;
   summary: string;
   preview_excerpt: string;
+  grounding_text: string | null;
   origin: KnowledgeDocumentRecord["origin"];
   file_asset_json: string | null;
 };
@@ -144,6 +145,7 @@ function toKnowledgeDocumentRecord(
     mimeType: row.mime_type ?? undefined,
     summary: row.summary,
     previewExcerpt: row.preview_excerpt,
+    groundingText: row.grounding_text ?? undefined,
     origin: row.origin,
     fileAsset: parseSQLiteJson<
       KnowledgeDocumentRecord["fileAsset"] | undefined
@@ -199,6 +201,7 @@ function getKnowledgeRecordCompletenessScore(record: KnowledgeDocumentRecord) {
     record.mimeType ? 1 : 0,
     record.summary.trim().length > 0 ? 1 : 0,
     record.previewExcerpt.trim().length > 0 ? 1 : 0,
+    record.groundingText?.trim().length ? 2 : 0,
   ].reduce((total, score) => total + score, 0);
 }
 
@@ -276,6 +279,7 @@ async function listSQLiteKnowledgeDocumentRecords() {
           mime_type,
           summary,
           preview_excerpt,
+          grounding_text,
           origin,
           file_asset_json
         FROM knowledge_documents

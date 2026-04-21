@@ -1,4 +1,9 @@
-import type { MailProvider, StaffEmail } from "@/lib/email-data";
+import {
+  getEmailWorkflowHref,
+  type MailProvider,
+  type MailboxIntegration,
+  type StaffEmail,
+} from "@/lib/email-data";
 import type { ActivityAction } from "@/lib/activity-log";
 import { getActivityAdapter } from "@/lib/server/adapters";
 import {
@@ -74,6 +79,35 @@ function getInboxProviderLabel(provider: MailProvider, live: boolean) {
   return live ? "Live inbox sync" : "Inbox sync";
 }
 
+function getOutboundProviderLabel(provider: MailProvider, live: boolean) {
+  if (provider === "microsoft_graph") {
+    return live ? "Microsoft Graph outbound delivery" : "Microsoft Graph send";
+  }
+
+  return live ? "Live outbound delivery" : "Local outbound delivery";
+}
+
+function buildMailboxIntegrationState(
+  email: StaffEmail,
+  overrides?: Partial<MailboxIntegration>
+): MailboxIntegration {
+  return {
+    inboundProvider: email.integration?.inboundProvider ?? null,
+    inboundMessageId: email.integration?.inboundMessageId ?? null,
+    inboundConversationId: email.integration?.inboundConversationId ?? null,
+    inboundSyncedAt: email.integration?.inboundSyncedAt ?? null,
+    inboundReferenceUrl: email.integration?.inboundReferenceUrl ?? null,
+    outboundProvider: email.integration?.outboundProvider ?? null,
+    outboundMessageId: email.integration?.outboundMessageId ?? null,
+    outboundSentAt: email.integration?.outboundSentAt ?? null,
+    outboundAttemptCount: email.integration?.outboundAttemptCount ?? 0,
+    outboundLastAttemptAt: email.integration?.outboundLastAttemptAt ?? null,
+    outboundLastError: email.integration?.outboundLastError ?? null,
+    outboundLastStatus: email.integration?.outboundLastStatus ?? null,
+    ...overrides,
+  };
+}
+
 async function appendInboxSyncActivityEvent(input: {
   success: boolean;
   provider: MailProvider;
@@ -93,6 +127,26 @@ async function appendInboxSyncActivityEvent(input: {
     });
   } catch (error) {
     console.error("Failed to append inbox sync activity event.", error);
+  }
+}
+
+async function appendSendFailureActivityEvent(input: {
+  email: StaffEmail;
+  provider: MailProvider;
+  live: boolean;
+  summary: string;
+}) {
+  try {
+    await activityAdapter.appendEvent({
+      action: "email_send_failed",
+      entityType: "email",
+      entityId: input.email.id,
+      title: `${getOutboundProviderLabel(input.provider, input.live)} failed`,
+      description: input.summary,
+      href: getEmailWorkflowHref(input.email),
+    });
+  } catch (error) {
+    console.error("Failed to append outbound send failure activity event.", error);
   }
 }
 
@@ -242,40 +296,64 @@ export async function sendMailboxReply(
   const provider = getConfiguredOutboundProvider();
   const runtimeStatus = getMailRuntimeStatus();
   const live = provider === "microsoft_graph" && runtimeStatus.hasLiveOutboundSend;
+  const attemptedAt = new Date().toISOString();
+  const attemptCount = (email.integration?.outboundAttemptCount ?? 0) + 1;
   let providerMessageId: string | null = null;
-  let sentAt = new Date().toISOString();
+  let sentAt = attemptedAt;
 
-  if (live) {
-    const config = getMicrosoftGraphMailConfig();
+  try {
+    if (live) {
+      const config = getMicrosoftGraphMailConfig();
 
-    if (!config) {
-      throw new Error(
-        "Microsoft Graph outbound mail is selected, but the mailbox credentials are incomplete."
-      );
+      if (!config) {
+        throw new Error(
+          "Microsoft Graph outbound mail is selected, but the mailbox credentials are incomplete."
+        );
+      }
+
+      const delivery = await sendMicrosoftGraphMail(config, {
+        to: recipientEmail,
+        subject: email.subject,
+        body: email.aiDraft,
+      });
+
+      providerMessageId = delivery.providerMessageId;
+      sentAt = delivery.sentAt;
     }
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unable to send the reply.";
 
-    const delivery = await sendMicrosoftGraphMail(config, {
-      to: recipientEmail,
-      subject: email.subject,
-      body: email.aiDraft,
+    await updateMailboxEmail(email.id, {
+      integration: buildMailboxIntegrationState(email, {
+        outboundAttemptCount: attemptCount,
+        outboundLastAttemptAt: attemptedAt,
+        outboundLastError: errorMessage,
+        outboundLastStatus: "failed",
+      }),
+    }).catch(() => null);
+
+    await appendSendFailureActivityEvent({
+      email,
+      provider,
+      live,
+      summary: `Attempt ${attemptCount} to send the reply to ${recipientEmail} failed. ${errorMessage}`,
     });
 
-    providerMessageId = delivery.providerMessageId;
-    sentAt = delivery.sentAt;
+    throw error;
   }
 
   const updatedEmail = await updateMailboxEmail(email.id, {
     status: "Auto-sent",
-    integration: {
-      inboundProvider: email.integration?.inboundProvider ?? null,
-      inboundMessageId: email.integration?.inboundMessageId ?? null,
-      inboundConversationId: email.integration?.inboundConversationId ?? null,
-      inboundSyncedAt: email.integration?.inboundSyncedAt ?? null,
-      inboundReferenceUrl: email.integration?.inboundReferenceUrl ?? null,
+    integration: buildMailboxIntegrationState(email, {
       outboundProvider: live ? provider : "local",
       outboundMessageId: providerMessageId,
       outboundSentAt: sentAt,
-    },
+      outboundAttemptCount: attemptCount,
+      outboundLastAttemptAt: attemptedAt,
+      outboundLastError: null,
+      outboundLastStatus: "sent",
+    }),
     assignee: email.assignee ?? workspaceUser.name,
   });
 

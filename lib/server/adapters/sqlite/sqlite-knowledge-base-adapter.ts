@@ -1,8 +1,4 @@
 import { randomUUID } from "node:crypto";
-import {
-  buildKnowledgeDocumentPreview,
-  buildKnowledgeDocumentSummary,
-} from "@/lib/knowledge-base-data";
 import type {
   ActivityAdapter,
   FileStorageAdapter,
@@ -15,6 +11,7 @@ import {
 import {
   buildKnowledgeBaseStorageKey,
 } from "@/lib/server/knowledge-base-file-storage";
+import { deriveKnowledgeDocumentGrounding } from "@/lib/server/knowledge-document-grounding";
 import {
   listKnowledgeDocumentRecords,
   toKnowledgeDocument,
@@ -46,6 +43,7 @@ type SQLiteKnowledgeDocumentRow = {
   mime_type: string | null;
   summary: string;
   preview_excerpt: string;
+  grounding_text: string | null;
   origin: KnowledgeDocumentRecord["origin"];
   file_asset_json: string | null;
 };
@@ -62,6 +60,7 @@ function toKnowledgeDocumentRecord(row: SQLiteKnowledgeDocumentRow): KnowledgeDo
     mimeType: row.mime_type ?? undefined,
     summary: row.summary,
     previewExcerpt: row.preview_excerpt,
+    groundingText: row.grounding_text ?? undefined,
     origin: row.origin,
     fileAsset: parseSQLiteJson<
       KnowledgeDocumentRecord["fileAsset"] | undefined
@@ -86,9 +85,10 @@ function upsertKnowledgeDocumentRecord(
           mime_type,
           summary,
           preview_excerpt,
+          grounding_text,
           origin,
           file_asset_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           name = excluded.name,
           category = excluded.category,
@@ -98,6 +98,7 @@ function upsertKnowledgeDocumentRecord(
           mime_type = excluded.mime_type,
           summary = excluded.summary,
           preview_excerpt = excluded.preview_excerpt,
+          grounding_text = excluded.grounding_text,
           origin = excluded.origin,
           file_asset_json = excluded.file_asset_json
       `)
@@ -111,6 +112,7 @@ function upsertKnowledgeDocumentRecord(
         record.mimeType ?? null,
         record.summary,
         record.previewExcerpt,
+        record.groundingText ?? null,
         record.origin,
         record.fileAsset ? serializeSQLiteJson(record.fileAsset) : null
       );
@@ -156,9 +158,10 @@ export function createSQLiteKnowledgeBaseAdapter({
             mime_type,
             summary,
             preview_excerpt,
+            grounding_text,
             origin,
             file_asset_json
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
         runSQLiteTransaction(database, () => {
@@ -173,6 +176,7 @@ export function createSQLiteKnowledgeBaseAdapter({
               record.mimeType ?? null,
               record.summary,
               record.previewExcerpt,
+              record.groundingText ?? null,
               record.origin,
               record.fileAsset ? serializeSQLiteJson(record.fileAsset) : null
             );
@@ -204,6 +208,7 @@ export function createSQLiteKnowledgeBaseAdapter({
             mime_type,
             summary,
             preview_excerpt,
+            grounding_text,
             origin,
             file_asset_json
           FROM knowledge_documents
@@ -225,6 +230,12 @@ export function createSQLiteKnowledgeBaseAdapter({
 
       const documentId = `DOC-${randomUUID().slice(0, 8)}`;
       const storageKey = buildKnowledgeBaseStorageKey(documentId, input.name);
+      const grounding = deriveKnowledgeDocumentGrounding({
+        name: input.name,
+        category: input.category,
+        mimeType: input.mimeType,
+        fileBuffer: input.fileBuffer,
+      });
 
       await fileStorageAdapter.writeBinaryFile(storageKey, input.fileBuffer);
 
@@ -237,8 +248,9 @@ export function createSQLiteKnowledgeBaseAdapter({
           pages: input.pages,
           sizeInBytes: input.sizeInBytes,
           mimeType: input.mimeType,
-          summary: buildKnowledgeDocumentSummary(input.name, input.category),
-          previewExcerpt: buildKnowledgeDocumentPreview(input.name, input.category),
+          summary: grounding.summary,
+          previewExcerpt: grounding.previewExcerpt,
+          groundingText: grounding.groundingText,
           origin: "uploaded",
           fileAsset: {
             storageKey,
@@ -281,6 +293,7 @@ export function createSQLiteKnowledgeBaseAdapter({
               mime_type,
               summary,
               preview_excerpt,
+              grounding_text,
               origin,
               file_asset_json
             FROM knowledge_documents
@@ -337,6 +350,7 @@ export function createSQLiteKnowledgeBaseAdapter({
               mime_type,
               summary,
               preview_excerpt,
+              grounding_text,
               origin,
               file_asset_json
             FROM knowledge_documents

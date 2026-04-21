@@ -43,6 +43,10 @@ export type MailboxIntegration = {
   outboundProvider: MailProvider | null;
   outboundMessageId: string | null;
   outboundSentAt: string | null;
+  outboundAttemptCount?: number;
+  outboundLastAttemptAt?: string | null;
+  outboundLastError?: string | null;
+  outboundLastStatus?: "sent" | "failed" | null;
 };
 
 export type EmailSourceCitation = {
