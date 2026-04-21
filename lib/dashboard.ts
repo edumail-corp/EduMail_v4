@@ -12,6 +12,12 @@ export const dashboardNavItems = [
   { label: "Dashboard", shortLabel: "Home", href: "/dashboard", icon: "overview" },
   { label: "Inbox", shortLabel: "All", href: "/dashboard/inbox", icon: "inbox" },
   {
+    label: "Activity",
+    shortLabel: "Log",
+    href: "/dashboard/activity",
+    icon: "clock",
+  },
+  {
     label: "Knowledge Base",
     shortLabel: "Docs",
     href: "/dashboard/knowledge-base",

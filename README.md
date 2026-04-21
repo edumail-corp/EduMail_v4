@@ -25,7 +25,7 @@ EduMailAI is a Next.js prototype for a university staff workflow tool. The app h
 - `/dashboard/inbox` - full message queue
 - `/dashboard/drafts` - redirects to `/dashboard/inbox` (preserves `emailId` when present)
 - `/dashboard/escalations` - redirects to `/dashboard/inbox` (preserves `emailId` when present)
-- `/dashboard/activity` - redirects to `/dashboard`
+- `/dashboard/activity` - searchable activity timeline with JSON export
 - `/dashboard/admin` - staff directory plus storage footprint and locations
 - `/dashboard/knowledge-base` - knowledge document management
 - `/dashboard/settings` - personal language, appearance, and notification preferences
@@ -153,6 +153,7 @@ Note: the production build uses `next/font` with Geist, so it may need network a
 - Live inbox sync and outbound reply delivery are now available through Microsoft Graph when the mailbox credentials are configured, while local manual intake and local auto-sent fallback remain available for unfinished environments.
 - Inbox sync attempts now write checkpoint events into the shared activity stream, and the inbox view surfaces the latest sync status, summary, and timestamp.
 - A production `vercel.json` cron entry now schedules one protected inbox refresh per day, so shared-mailbox imports can run automatically once Vercel and Microsoft Graph are configured.
+- `/dashboard/activity` now exposes the persisted audit stream in-app with filters, search, and export, instead of keeping activity visible only through behind-the-scenes logs.
 - OpenAI can now back the draft-generation layer when configured, while the local seeded adapter remains the safe fallback.
 - This is still a human-in-the-loop prototype, and knowledge grounding currently uses document metadata plus preview excerpts rather than full parsed document text.
 - The current product focus is keeping the operator workflow stable while hardening auth, persistence, mailbox operations, model-backed drafting, storage transparency, and adapter parity.
