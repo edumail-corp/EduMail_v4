@@ -177,12 +177,6 @@ export default async function AdminPage({
   );
   const localWritableRootIsTemporary =
     snapshot.localStorage.rootPath.startsWith("/tmp");
-  const hasRemoteDatabase = snapshot.localStorage.locations.some(
-    (location) => location.kind === "postgres" && location.active
-  );
-  const hasRemoteFileBucket = snapshot.localStorage.locations.some(
-    (location) => location.kind === "remote" && location.active
-  );
   const activeAdminCount = snapshot.staffDirectory.filter(
     (user) =>
       user.role === "operations_admin" && user.status === "active"
@@ -196,13 +190,9 @@ export default async function AdminPage({
         eyebrow={isPolish ? "Operacje workspace" : "Workspace Operations"}
         title={isPolish ? "Panel administracyjny" : "Admin"}
         description={
-          hasRemoteLocations
-            ? isPolish
-              ? "Na razie ta sekcja trzyma tylko to, co jest naprawdę praktyczne: katalog zespołu i przegląd lokalnych oraz zdalnych lokalizacji danych."
-              : "For now, this section keeps only what is genuinely practical: the staff directory and a clear view of local plus remote data locations."
-            : isPolish
-              ? "Na razie ta sekcja trzyma tylko to, co jest naprawdę praktyczne: katalog zespołu i lokalny ślad danych na dysku."
-              : "For now, this section keeps only what is genuinely practical: the staff directory and the local on-disk data footprint."
+          isPolish
+            ? "Utrzymuj dostęp zespołu, role i podstawowy obraz tego, jak workspace wspiera operacje obsługi studentów."
+            : "Keep staff access, roles, and a clear view of how the workspace supports student services operations."
         }
         meta={
           isPolish
@@ -235,21 +225,21 @@ export default async function AdminPage({
           <p className="mt-2 text-sm leading-6 text-slate-500">
             {snapshot.staffDirectorySource === "database"
               ? isPolish
-                ? "Ten katalog jest teraz odczytywany z bazy danych, więc panel admina i logowanie korzystają z tego samego członkostwa workspace."
-                : "This directory is now read from the database, so the admin surface and sign-in flow share the same workspace membership."
+                ? "Ta lista jest współdzielona przez dostęp do workspace i codzienną własność spraw, więc zespół pracuje na jednym rosterze."
+                : "This roster is shared across workspace access and day-to-day case ownership, so the team works from one approved list."
               : isPolish
-                ? "Ten katalog pozostaje źródłem prawdy dla dostępu i ról, dopóki członkostwo workspace nie trafi do bazy danych."
-                : "This directory remains the source of truth for access and roles until workspace membership moves into the database."}
+                ? "Ta lista pełni rolę zatwierdzonego rosteru zespołu dla bieżącego workspace."
+                : "This roster acts as the approved team list for the current workspace."}
           </p>
 
           <div className="mt-4 inline-flex items-center rounded-full border border-white/75 bg-slate-50/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
             {snapshot.staffDirectorySource === "database"
               ? isPolish
-                ? "Źródło: baza danych"
-                : "Source: database"
+                ? "Współdzielony roster"
+                : "Shared roster"
               : isPolish
-                ? "Źródło: katalog statyczny"
-                : "Source: static directory"}
+                ? "Zatwierdzony roster"
+                : "Approved roster"}
           </div>
 
           {staffMessage ? (
@@ -267,8 +257,8 @@ export default async function AdminPage({
           {snapshot.staffDirectorySource !== "database" ? (
             <div className="mt-4 rounded-[22px] border border-[#DCE1FF] bg-[#F7F8FF] px-4 py-4 text-sm leading-6 text-slate-600">
               {isPolish
-                ? "Edycja członkostwa jest dostępna po ustawieniu EDUMAILAI_WORKSPACE_SETTINGS_ADAPTER=database. Wtedy panel admina i logowanie będą pracować na tej samej zapisanej liście użytkowników."
-                : "Membership editing is available once EDUMAILAI_WORKSPACE_SETTINGS_ADAPTER=database. Then the admin surface and sign-in will use the same persisted roster."}
+                ? "W tej prezentacyjnej wersji roster pozostaje tutaj tylko do odczytu. W pełnym trybie pracy ten sam roster można edytować bezpośrednio z panelu Admin."
+                : "In this presentation workspace, the roster stays read-only here. In the full workspace, that same roster can be edited directly from Admin."}
             </div>
           ) : null}
 
@@ -517,29 +507,25 @@ export default async function AdminPage({
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
             {hasRemoteLocations
               ? isPolish
-                ? "Lokalne i zdalne przechowywanie"
-                : "Local and Remote Storage"
+                ? "Zarządzanie workspace"
+                : "Workspace stewardship"
               : isPolish
-                ? "Lokalne przechowywanie"
-                : "Local Storage"}
+                ? "Zarządzanie workspace"
+                : "Workspace stewardship"}
           </p>
           <h3 className="mt-3 text-2xl font-semibold tracking-tight text-[#1E2340]">
             {hasRemoteLocations
               ? isPolish
-                ? "Ślad i lokalizacje danych"
-                : "Data Footprint and Locations"
+                ? "Ślad operacyjny"
+                : "Operational footprint"
               : isPolish
-                ? "Ślad danych na dysku"
-                : "On-Disk Data Footprint"}
+                ? "Ślad operacyjny"
+                : "Operational footprint"}
           </h3>
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            {hasRemoteLocations
-              ? isPolish
-                ? "Ta sekcja rozdziela lokalne ścieżki robocze od zdalnej bazy i bucketa plików. Zdalne rozmiary nie są mierzone z tego środowiska."
-                : "This section separates local writable paths from the remote database and file bucket. Remote usage is not measured from this environment."
-              : isPolish
-                ? "To jest jedyna inna rzecz, która realnie pomaga teraz: pokazuje gdzie dane są zapisywane i ile miejsca zajmują."
-                : "This is the only other thing that materially helps right now: it shows where the data is written and how much space it uses."}
+            {isPolish
+              ? "Zachowaj lekki obraz tego, jak dużo materiału workspace aktualnie śledzi. Głębsze szczegóły środowiska pozostają schowane, dopóki naprawdę nie są potrzebne."
+              : "Keep a light view of how much material the workspace is currently tracking. Deeper environment details stay tucked away until they are genuinely needed."}
           </p>
 
           {hasRemoteLocations || localWritableRootIsTemporary ? (
@@ -548,29 +534,10 @@ export default async function AdminPage({
                 {isPolish ? "Jak czytać tę sekcję" : "How to read this section"}
               </p>
               <p className="mt-2">
-                {hasRemoteDatabase && hasRemoteFileBucket
-                  ? isPolish
-                    ? "Metadane skrzynki, aktywności i bazy wiedzy działają teraz na zdalnym PostgreSQL/Supabase, a pliki dokumentów trafiają do Supabase Storage."
-                    : "Mailbox, activity, and knowledge-base metadata now run on remote PostgreSQL/Supabase, while document files go to Supabase Storage."
-                  : hasRemoteDatabase
-                    ? isPolish
-                      ? "Metadane działają na zdalnej bazie PostgreSQL/Supabase."
-                      : "Metadata is running on a remote PostgreSQL/Supabase database."
-                    : hasRemoteFileBucket
-                      ? isPolish
-                        ? "Pliki dokumentów działają na zdalnym bucketcie Supabase Storage."
-                        : "Document files are running on a remote Supabase Storage bucket."
-                      : isPolish
-                        ? "Ta sekcja pokazuje aktualne lokalizacje zapisu dla tego środowiska."
-                        : "This section shows the current storage locations for this environment."}
+                {isPolish
+                  ? "Sprawy, historia aktywności i dokumenty są już utrzymywane dla tego workspace. Otwórz szczegóły zaawansowane tylko wtedy, gdy ktoś zapyta o konkretne środowisko lub ścieżki zapisu."
+                  : "Cases, activity history, and documents are already being maintained for this workspace. Open the advanced details only if someone asks about a specific environment or storage path."}
               </p>
-              {localWritableRootIsTemporary ? (
-                <p className="mt-2">
-                  {isPolish
-                    ? "Lokalny katalog roboczy jest tymczasowy w tym środowisku, więc trwałe dane muszą iść przez zdalne adaptery."
-                    : "The local writable root is temporary in this environment, so durable data must flow through the remote adapters."}
-                </p>
-              ) : null}
             </div>
           ) : null}
 
@@ -579,11 +546,11 @@ export default async function AdminPage({
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                 {hasRemoteLocations
                   ? isPolish
-                    ? "Lokalnie mierzony rozmiar"
-                    : "Locally Measured Size"
+                    ? "Śledzony rozmiar workspace"
+                    : "Tracked workspace size"
                   : isPolish
-                    ? "Śledzony rozmiar"
-                    : "Tracked Size"}
+                    ? "Śledzony rozmiar workspace"
+                    : "Tracked workspace size"}
               </p>
               <p className="mt-2 text-lg font-semibold text-slate-900">
                 {formatStorageBytes(snapshot.localStorage.totalTrackedBytes, locale)}
@@ -593,11 +560,11 @@ export default async function AdminPage({
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                 {hasRemoteLocations
                   ? isPolish
-                    ? "Lokalnie mierzone pliki"
-                    : "Locally Measured Files"
+                    ? "Śledzone pliki"
+                    : "Tracked files"
                   : isPolish
                     ? "Śledzone pliki"
-                    : "Tracked Files"}
+                    : "Tracked files"}
               </p>
               <p className="mt-2 text-lg font-semibold text-slate-900">
                 {snapshot.localStorage.totalTrackedFiles.toLocaleString(locale)}
@@ -605,107 +572,117 @@ export default async function AdminPage({
             </div>
           </div>
 
-          <div className="mt-4 rounded-[22px] border border-white/75 bg-white/62 p-4 shadow-[0_14px_32px_rgba(141,153,179,0.12)]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-              {isPolish ? "Lokalny katalog roboczy" : "Local Writable Root"}
-            </p>
-            <p className="mt-2 break-all font-mono text-xs text-slate-600">
-              {snapshot.localStorage.rootPath}
-            </p>
-          </div>
+          <details className="mt-4 rounded-[22px] border border-white/75 bg-white/62 shadow-[0_14px_32px_rgba(141,153,179,0.12)]">
+            <summary className="cursor-pointer list-none px-4 py-4 text-sm font-semibold text-slate-900">
+              {isPolish
+                ? "Zaawansowane szczegóły środowiska"
+                : "Advanced environment details"}
+            </summary>
 
-          <div className="mt-4 space-y-3">
-            {snapshot.localStorage.locations.map((location) => {
-              const locationStatus = location.active
-                ? "active"
-                : location.present
-                  ? "stored"
-                  : "missing";
+            <div className="border-t border-slate-100/80 px-4 py-4">
+              <div className="rounded-[22px] border border-white/75 bg-white/62 p-4 shadow-[0_14px_32px_rgba(141,153,179,0.12)]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                  {isPolish ? "Lokalny katalog roboczy" : "Local Writable Root"}
+                </p>
+                <p className="mt-2 break-all font-mono text-xs text-slate-600">
+                  {snapshot.localStorage.rootPath}
+                </p>
+              </div>
 
-              return (
-                <div
-                  key={location.id}
-                  className="rounded-[22px] border border-white/75 bg-white/62 p-4 shadow-[0_14px_32px_rgba(141,153,179,0.12)]"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-semibold text-slate-900">
-                          {location.label}
-                        </p>
-                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                          {getStorageKindLabel(location.kind, language)}
+              <div className="mt-4 space-y-3">
+                {snapshot.localStorage.locations.map((location) => {
+                  const locationStatus = location.active
+                    ? "active"
+                    : location.present
+                      ? "stored"
+                      : "missing";
+
+                  return (
+                    <div
+                      key={location.id}
+                      className="rounded-[22px] border border-white/75 bg-white/62 p-4 shadow-[0_14px_32px_rgba(141,153,179,0.12)]"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm font-semibold text-slate-900">
+                              {location.label}
+                            </p>
+                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                              {getStorageKindLabel(location.kind, language)}
+                            </span>
+                          </div>
+                          <p className="mt-2 text-sm leading-6 text-slate-500">
+                            {location.summary}
+                          </p>
+                        </div>
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${getStorageStatusClassName(
+                            locationStatus
+                          )}`}
+                        >
+                          {location.active
+                            ? isPolish
+                              ? "Aktywne"
+                              : "Active"
+                            : location.present
+                              ? isPolish
+                                ? "Zapisane"
+                                : "Stored"
+                              : isPolish
+                                ? "Brak"
+                                : "Missing"}
                         </span>
                       </div>
-                      <p className="mt-2 text-sm leading-6 text-slate-500">
-                        {location.summary}
-                      </p>
-                    </div>
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${getStorageStatusClassName(
-                        locationStatus
-                      )}`}
-                    >
-                      {location.active
-                        ? isPolish
-                          ? "Aktywne"
-                          : "Active"
-                        : location.present
-                          ? isPolish
-                            ? "Zapisane"
-                            : "Stored"
-                          : isPolish
-                            ? "Brak"
-                            : "Missing"}
-                    </span>
-                  </div>
 
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-[18px] bg-slate-50/80 px-4 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                        {isRemoteStorageKind(location.kind)
-                          ? isPolish
-                            ? "Pomiar lokalny"
-                            : "Local Measurement"
-                          : isPolish
-                            ? "Rozmiar"
-                            : "Size"}
-                      </p>
-                      <p className="mt-2 text-sm font-semibold text-slate-900">
-                        {isRemoteStorageKind(location.kind)
-                          ? isPolish
-                            ? "Nie mierzymy"
-                            : "Not Measured"
-                          : formatStorageBytes(location.approxSizeBytes, locale)}
-                      </p>
-                    </div>
-                    <div className="rounded-[18px] bg-slate-50/80 px-4 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                        {isRemoteStorageKind(location.kind)
-                          ? isPolish
-                            ? "Liczba obiektów"
-                            : "Object Count"
-                          : isPolish
-                            ? "Pliki"
-                            : "Files"}
-                      </p>
-                      <p className="mt-2 text-sm font-semibold text-slate-900">
-                        {isRemoteStorageKind(location.kind)
-                          ? isPolish
-                            ? "Nie śledzimy"
-                            : "Not Tracked"
-                          : location.fileCount.toLocaleString(locale)}
-                      </p>
-                    </div>
-                  </div>
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                        <div className="rounded-[18px] bg-slate-50/80 px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            {isRemoteStorageKind(location.kind)
+                              ? isPolish
+                                ? "Pomiar lokalny"
+                                : "Local Measurement"
+                              : isPolish
+                                ? "Rozmiar"
+                                : "Size"}
+                          </p>
+                          <p className="mt-2 text-sm font-semibold text-slate-900">
+                            {isRemoteStorageKind(location.kind)
+                              ? isPolish
+                                ? "Nie mierzymy"
+                                : "Not Measured"
+                              : formatStorageBytes(location.approxSizeBytes, locale)}
+                          </p>
+                        </div>
+                        <div className="rounded-[18px] bg-slate-50/80 px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            {isRemoteStorageKind(location.kind)
+                              ? isPolish
+                                ? "Liczba obiektów"
+                                : "Object Count"
+                              : isPolish
+                                ? "Pliki"
+                                : "Files"}
+                          </p>
+                          <p className="mt-2 text-sm font-semibold text-slate-900">
+                            {isRemoteStorageKind(location.kind)
+                              ? isPolish
+                                ? "Nie śledzimy"
+                                : "Not Tracked"
+                              : location.fileCount.toLocaleString(locale)}
+                          </p>
+                        </div>
+                      </div>
 
-                  <p className="mt-4 break-all font-mono text-xs text-slate-600">
-                    {location.path}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
+                      <p className="mt-4 break-all font-mono text-xs text-slate-600">
+                        {location.path}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </details>
         </article>
       </section>
     </>

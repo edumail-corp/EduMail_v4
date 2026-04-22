@@ -32,13 +32,13 @@ export default function Home() {
             </div>
             <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 md:text-6xl">
               {isPolish
-                ? "Obsługuj zgłoszenia szybciej, odpowiadaj pewnie i trzymaj polityki zawsze pod ręką."
-                : "Triage faster, answer with confidence, and keep policy context close."}
+                ? "Pomagaj zespołom obsługi studentów odpowiadać szybciej, pewniej i bardziej spójnie."
+                : "Help student services teams answer faster, more confidently, and more consistently."}
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600 md:text-lg">
               {isPolish
-                ? "EduMailAI to przestrzeń pracy dla zespołu uczelni do przeglądania przychodzących emaili studentów, sprawdzania szkiców generowanych przez AI i zarządzania dokumentami wiedzy, od których zależą odpowiedzi."
-                : "EduMailAI is a staff-facing workspace for reviewing inbound student emails, checking AI-generated drafts, and managing the knowledge documents those replies depend on."}
+                ? "EduMailAI daje zespołom uczelni jedno miejsce do przeglądania wiadomości studentów, sprawdzania odpowiedzi wspieranych przez AI i utrzymywania polityk uczelni zawsze pod ręką."
+                : "EduMailAI gives university teams one place to review student email, check AI-assisted replies, and keep institutional guidance close at hand."}
             </p>
 
             <div className="mt-8">
@@ -63,39 +63,39 @@ export default function Home() {
               <div className="rounded-[24px] border border-white/75 bg-white/66 p-4 shadow-[0_16px_34px_rgba(143,155,181,0.1)]">
                 <p className="text-sm font-semibold text-[#1E2340]">
                   {isPolish
-                    ? "Przegląd skrzynki, routing i ręczne przyjęcie"
-                    : "Inbox Review, Routing, and Manual Intake"}
+                    ? "Triage skrzynki i własność spraw"
+                    : "Inbox triage and case ownership"}
                 </p>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                   {isPolish
-                    ? "Przeglądaj przychodzące wiadomości, twórz nowe lokalne sprawy, przypisuj właścicieli i porównuj wstępne szkice odpowiedzi przed zatwierdzeniem."
-                    : "Browse incoming messages, create new local cases, assign ownership, and compare seeded draft responses before anything is approved."}
+                    ? "Przeglądaj przychodzące wiadomości, przypisuj właścicieli i szybko przechodź od zapytania studenta do gotowej odpowiedzi."
+                    : "Review incoming messages, assign ownership, and move quickly from student inquiry to ready-to-review response."}
                 </p>
               </div>
 
               <div className="rounded-[24px] border border-white/75 bg-white/66 p-4 shadow-[0_16px_34px_rgba(143,155,181,0.1)]">
                 <p className="text-sm font-semibold text-[#1E2340]">
                   {isPolish
-                    ? "Szkice, ręczny przegląd i notatki"
-                    : "Draft, Manual Review, and Notes Workflow"}
+                    ? "Odpowiedzi oparte na źródłach"
+                    : "Grounded reply review"}
                 </p>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                   {isPolish
-                    ? "Oznaczaj sprawy wymagające głębszej interwencji człowieka, zachowując notatki zespołu przy każdej sprawie w jednym widoku skrzynki."
-                    : "Flag the cases that need deeper human intervention while keeping internal staff notes attached inside one inbox view."}
+                    ? "Sprawdzaj sugerowane odpowiedzi, źródła cytowań i notatki zespołu przed podjęciem ostatecznej decyzji przez człowieka."
+                    : "Review suggested replies, source citations, and team notes before a human makes the final call."}
                 </p>
               </div>
 
               <div className="rounded-[24px] border border-white/75 bg-white/66 p-4 shadow-[0_16px_34px_rgba(143,155,181,0.1)]">
                 <p className="text-sm font-semibold text-[#1E2340]">
                   {isPolish
-                    ? "Baza wiedzy, admin i ustawienia"
-                    : "Knowledge Base, Admin, and Settings"}
+                    ? "Polityki, role i widoczność operacyjna"
+                    : "Policies, roles, and operational visibility"}
                 </p>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                   {isPolish
-                    ? "Przesyłaj lokalne pliki PDF i DOCX, utrzymuj prosty katalog zespołu i sprawdzaj lokalny ślad danych zapisanych na dysku."
-                    : "Upload local PDF and DOCX files, keep a simple staff directory, and inspect the local data footprint written to disk."}
+                    ? "Utrzymuj bibliotekę dokumentów, kontroluj dostęp zespołu i obserwuj najważniejsze działania w jednym miejscu."
+                    : "Keep a document library, manage staff access, and review the most important workspace activity in one place."}
                 </p>
               </div>
             </div>

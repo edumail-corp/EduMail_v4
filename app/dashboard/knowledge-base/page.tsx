@@ -125,13 +125,12 @@ function KnowledgeBasePageContent() {
     (document) =>
       matchesKnowledgeDocumentSearch(document, normalizedDocumentQuery)
   );
-  const storedDocumentCount = documents.filter(
-    (document) => typeof document.downloadUrl === "string"
-  ).length;
   const referencedDocumentCount = documents.filter(
     (document) => document.referenceCount > 0
   ).length;
-  const metadataOnlyCount = documents.length - storedDocumentCount;
+  const coveredCategoryCount = new Set(
+    documents.map((document) => document.category)
+  ).size;
 
   const canUpload =
     draftFile !== null &&
@@ -204,7 +203,7 @@ function KnowledgeBasePageContent() {
 
     if (!isAcceptedKnowledgeFile(file)) {
       setDraftFile(null);
-      setUploadError("Only PDF and DOCX files can be staged in this prototype.");
+      setUploadError("Only PDF and DOCX files are supported right now.");
       return;
     }
 
@@ -333,7 +332,7 @@ function KnowledgeBasePageContent() {
       <DashboardTopBar
         searchValue={documentQuery}
         onSearchChange={setDocumentQuery}
-        searchPlaceholder="Search documents, categories, file types, or dates..."
+        searchPlaceholder="Search policies, calendars, or case references..."
       />
 
       <DashboardPageHeader
@@ -343,7 +342,7 @@ function KnowledgeBasePageContent() {
         meta={
           isLoadingDocuments
             ? "Loading library..."
-            : `${storedDocumentCount} stored files • ${referencedDocumentCount} linked refs • ${documents.length} total entries`
+            : `${documents.length} core references • ${referencedDocumentCount} cited in inbox • ${coveredCategoryCount} domains covered`
         }
       />
 
@@ -352,17 +351,17 @@ function KnowledgeBasePageContent() {
           <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                Upload Document
+                Add knowledge
               </p>
               <h3 className="mt-3 text-3xl font-semibold tracking-tight text-[#1E2340]">
-                Upload Document
+                Add source document
               </h3>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-500">
-                Drag and drop a PDF or DOCX file into the intake area, then assign it to the right knowledge domain so drafts can cite it later.
+                Bring in policy, calendar, or process documents so replies can cite the right institutional guidance later.
               </p>
             </div>
             <span className="rounded-full border border-white/80 bg-white/82 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#5C61FF] shadow-[0_14px_36px_rgba(141,153,179,0.14)]">
-              {storedDocumentCount} stored files
+              {documents.length} library entries
             </span>
           </div>
 
@@ -384,7 +383,7 @@ function KnowledgeBasePageContent() {
               Upload Document
             </p>
             <p className="mt-3 max-w-lg text-sm leading-7 text-slate-500">
-              Drag and drop PDF or DOCX files to sync with the local knowledge library.
+              Drag and drop PDF or DOCX files to add them to the shared reference library.
             </p>
             <span className={`${dashboardSecondaryButtonClassName} mt-6`}>
               Select Files
@@ -404,7 +403,7 @@ function KnowledgeBasePageContent() {
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                    Staged Document
+                    Selected document
                   </p>
                   <p className="mt-2 text-lg font-semibold text-[#1E2340]">
                     {draftFile.name}
@@ -465,7 +464,7 @@ function KnowledgeBasePageContent() {
             </div>
           ) : (
             <div className="mt-5 rounded-[24px] border border-white/75 bg-white/54 px-4 py-4 text-sm text-slate-500">
-              No file staged yet. Choose a file or drop one into the intake area.
+              No document selected yet. Choose a file or drop one into the intake area.
             </div>
           )}
 
@@ -489,7 +488,7 @@ function KnowledgeBasePageContent() {
                 Document Library
               </h3>
               <p className="mt-3 text-sm leading-7 text-slate-500">
-                Browse stored source documents, review metadata-only seed entries, and jump into the policy files supporting current drafts.
+                Browse core policies, calendars, and process documents supporting current replies.
               </p>
             </div>
             <button
@@ -509,26 +508,26 @@ function KnowledgeBasePageContent() {
           <div className="mb-5 grid gap-3 md:grid-cols-3">
             <div className="rounded-[24px] border border-white/75 bg-white/62 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                Stored Files
+                Library entries
               </p>
               <p className="mt-3 text-3xl font-semibold tracking-tight text-[#1E2340]">
-                {storedDocumentCount}
+                {documents.length}
               </p>
             </div>
             <div className="rounded-[24px] border border-white/75 bg-white/62 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                Metadata Only
-              </p>
-              <p className="mt-3 text-3xl font-semibold tracking-tight text-[#1E2340]">
-                {metadataOnlyCount}
-              </p>
-            </div>
-            <div className="rounded-[24px] border border-white/75 bg-white/62 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                Linked in Inbox
+                Case-linked references
               </p>
               <p className="mt-3 text-3xl font-semibold tracking-tight text-[#1E2340]">
                 {referencedDocumentCount}
+              </p>
+            </div>
+            <div className="rounded-[24px] border border-white/75 bg-white/62 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                Coverage areas
+              </p>
+              <p className="mt-3 text-3xl font-semibold tracking-tight text-[#1E2340]">
+                {coveredCategoryCount}
               </p>
             </div>
           </div>
@@ -553,15 +552,15 @@ function KnowledgeBasePageContent() {
           <p className="mb-5 text-sm text-slate-500">
             {normalizedDocumentQuery.length > 0
               ? `${visibleDocs.length} documents match the current search.`
-              : `${visibleDocs.length} documents shown for the selected category filter.`}
+              : `${visibleDocs.length} documents shown for the selected filter.`}
           </p>
 
           {normalizedRequestedDocumentQuery.length > 0 ? (
             <div className="mb-5 rounded-[24px] border border-[#DCE1FF] bg-[#F5F6FF] px-4 py-3 text-sm text-[#4F57E8]">
-              <p>Opened from a draft source reference. Matching documents are highlighted below.</p>
+              <p>Opened from a source citation. Matching documents are highlighted below.</p>
               {requestedReasonQuery.length > 0 ? (
                 <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#2E5FA3]">
-                  Why this source matters: {requestedReasonQuery}
+                  Why this document matters: {requestedReasonQuery}
                 </p>
               ) : null}
             </div>
@@ -639,15 +638,15 @@ function KnowledgeBasePageContent() {
                     {doc.storageProvider && doc.storagePath ? (
                       <div className="mt-5 rounded-[22px] border border-[#DCE1FF] bg-[#F7F8FF] px-4 py-3 text-sm text-slate-600">
                         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6673B0]">
-                          Storage Details
+                          Library status
                         </p>
                         <p className="mt-2 font-semibold text-[#1E2340]">
                           {getKnowledgeDocumentStorageProviderLabel(
                             doc.storageProvider
                           )}
                         </p>
-                        <p className="mt-2 break-all rounded-[16px] bg-white/80 px-3 py-2 font-mono text-xs text-slate-500">
-                          {doc.storagePath}
+                        <p className="mt-2 text-xs leading-5 text-slate-500">
+                          Available for grounded drafting and document download.
                         </p>
                       </div>
                     ) : null}
@@ -665,7 +664,7 @@ function KnowledgeBasePageContent() {
                         </a>
                       ) : (
                         <span className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-400">
-                          Metadata Only
+                          Reference ready
                         </span>
                       )}
                       <button

@@ -496,8 +496,8 @@ export function MailboxView({
             ? "Odpowiedź wysłana"
             : "Reply sent"
           : isPolish
-            ? "Odpowiedź oznaczona lokalnie"
-            : "Reply marked locally",
+            ? "Odpowiedź zapisana w workspace"
+            : "Reply recorded in workspace",
         data.summary
       );
     } catch (error) {
@@ -908,8 +908,8 @@ export function MailboxView({
     resolvedInboxSyncProvider === "microsoft_graph"
       ? "Microsoft Graph"
       : isPolish
-        ? "Tryb lokalny"
-        : "Local mode";
+        ? "Kolejka prezentacyjna"
+        : "Presentation queue";
   const inboxSyncBadgeClassName = isLoadingInboxSyncStatus
     ? "border-slate-200 bg-white/80 text-slate-500"
     : inboxSyncStatus?.lastAttempt?.status === "failed"
@@ -934,8 +934,8 @@ export function MailboxView({
             ? "Oczekuje"
             : "Pending"
           : isPolish
-            ? "Ręcznie"
-            : "Manual";
+            ? "Przygotowane"
+            : "Prepared";
   const inboxSyncSummary = isLoadingInboxSyncStatus
     ? isPolish
       ? "Ładowanie ostatniego checkpointu synchronizacji skrzynki..."
@@ -944,11 +944,11 @@ export function MailboxView({
       ? inboxSyncStatus.lastAttempt.summary
       : canSyncInbox
         ? isPolish
-          ? "Nie uruchomiono jeszcze synchronizacji tej skrzynki. Pierwszy import zapisze checkpoint tutaj."
-          : "No mailbox sync has run yet. The first import will write its checkpoint here."
+          ? "Nie uruchomiono jeszcze odświeżenia tej skrzynki. Pierwsze podsumowanie pojawi się tutaj."
+          : "No inbox refresh has run yet. The first summary will appear here."
         : isPolish
-          ? "Żywa synchronizacja skrzynki nie jest jeszcze skonfigurowana, ale ręczne tworzenie spraw nadal działa."
-          : "Live mailbox sync is not configured yet, but manual case intake is still available.";
+          ? "To demo korzysta z przygotowanej kolejki spraw, aby zespół mógł przejść przez stały przebieg przeglądu."
+          : "This demo uses a prepared queue of cases so the team can walk through a consistent review flow.";
   const inboxSyncTimestampLabel = isLoadingInboxSyncStatus
     ? isPolish
       ? "Ładowanie..."
@@ -1021,11 +1021,11 @@ export function MailboxView({
                       {inboxSyncProviderLabel}
                       {resolvedInboxSyncLive
                         ? isPolish
-                          ? " • tryb żywy"
-                          : " • live mode"
+                          ? " • połączona skrzynka"
+                          : " • connected inbox"
                         : isPolish
-                          ? " • fallback"
-                          : " • fallback"}
+                          ? " • widok demo"
+                          : " • demo view"}
                     </p>
                     <p className="mt-1 text-sm leading-6 text-slate-500">
                       {inboxSyncSummary}

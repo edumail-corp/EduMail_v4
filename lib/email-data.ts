@@ -1346,95 +1346,96 @@ export const defaultStaffAssignmentSelection = "Unassigned";
 const seedEmails: StaffEmail[] = [
   {
     id: "EM-1001",
-    sender: "Maya Thompson <maya.thompson@student.edu>",
-    subject: "Questions about international admission requirements",
-    body: "Hello Admissions Team, I am applying as an international student for Fall 2027 and wanted to confirm if IELTS scores are mandatory when I already have SAT verbal scores. Could you also share the deadline for scholarship consideration?",
+    sender: "Maya Thompson <maya.thompson@students.northbridge.edu>",
+    subject: "Can prior study in English waive IELTS for Fall 2027 admissions?",
+    body: "Hello Admissions Team, I am applying as an international student for Fall 2027 and wanted to confirm whether my previous degree taught fully in English could satisfy the language requirement. I also want to make sure I do not miss scholarship review while I gather translated transcripts. Thank you.",
     category: "Admissions",
     confidence: 93,
     priority: "Medium",
     status: "Draft",
     assignee: "Ava Patel",
     aiDraft:
-      "Hello Maya,\n\nThank you for your interest in EduMail University. For international applicants, IELTS or TOEFL is generally required unless your prior education was completed in English. SAT verbal scores are helpful but do not replace the English proficiency requirement in most cases.\n\nFor scholarship consideration, please submit your full application by December 15.\n\nBest regards,\nAdmissions Office",
-    staffNote: null,
-    source: "Admissions-International-Policy-2026.pdf",
+      "Hello Maya,\n\nThank you for your question. For international applicants, Northbridge University normally asks for English-language proficiency documentation unless prior study was completed in English and official proof is included in the application file. SAT verbal scores can support the application, but they do not replace this requirement on their own.\n\nScholarship review begins once the admissions file is complete, so we recommend submitting your translated transcripts and supporting documents as early as possible.\n\nBest regards,\nAdmissions Office",
+    staffNote:
+      "Keep the reply clear that scholarship review starts after the file is complete and avoid promising an award outcome.",
+    source: "International Admissions Guidance 2026.pdf",
     summary:
-      "International applicant asking about English-language requirements and scholarship timing for Fall 2027.",
+      "International applicant asking whether prior study in English can satisfy language requirements and how scholarship review timing works.",
     manualReviewReason: null,
-    receivedAt: "2026-03-27T09:12:00.000Z",
-    lastUpdatedAt: "2026-03-27T10:05:00.000Z",
+    receivedAt: "2026-04-19T09:12:00.000Z",
+    lastUpdatedAt: "2026-04-19T10:05:00.000Z",
     threadHistory: [
       {
         id: "EM-1001-TH-1",
         kind: "Inbound",
         label: "Student inquiry",
         author: "Maya Thompson",
-        sentAt: "2026-03-27T09:12:00.000Z",
+        sentAt: "2026-04-19T09:12:00.000Z",
         body:
-          "Hello Admissions Team, I am applying as an international student for Fall 2027 and wanted to confirm if IELTS scores are mandatory when I already have SAT verbal scores. Could you also share the deadline for scholarship consideration?",
+          "Hello Admissions Team, I am applying as an international student for Fall 2027 and wanted to confirm whether my previous degree taught fully in English could satisfy the language requirement. I also want to make sure I do not miss scholarship review while I gather translated transcripts. Thank you.",
       },
       {
         id: "EM-1001-TH-2",
         kind: "Internal",
         label: "Routing note",
         author: "Admissions triage",
-        sentAt: "2026-03-27T09:20:00.000Z",
+        sentAt: "2026-04-19T09:20:00.000Z",
         body:
-          "Assigned to international admissions review because scholarship timing is bundled into the same response.",
+          "Assigned to international admissions review because the student needs one reply covering language proof and scholarship timing.",
       },
     ],
     sourceCitations: [
       {
         id: "EM-1001-SRC-1",
-        documentName: "Admissions-International-Policy-2026.pdf",
+        documentName: "International Admissions Guidance 2026.pdf",
         excerpt:
-          "International applicants must provide IELTS or TOEFL scores unless prior study was completed in English.",
-        reason: "Supports the English proficiency requirement.",
+          "International applicants must document English-language proficiency unless prior study was completed in English and official proof is included.",
+        reason: "Supports the language-requirement explanation.",
       },
       {
         id: "EM-1001-SRC-2",
-        documentName: "Admissions-International-Policy-2026.pdf",
+        documentName: "International Admissions Guidance 2026.pdf",
         excerpt:
-          "Priority scholarship review requires a complete application submitted by December 15.",
-        reason: "Supports the scholarship deadline in the draft.",
+          "Scholarship review begins only after the admissions file is complete, including translated transcripts and required supporting documents.",
+        reason: "Supports the scholarship-timing guidance without over-promising an outcome.",
       },
     ],
   },
   {
     id: "EM-1002",
-    sender: "Liam Patel <liam.patel@student.edu>",
-    subject: "Installment plan for spring tuition payment",
-    body: "Hi Finance Office, I cannot pay the full spring tuition this month. Is there a monthly installment option and what are the late fee rules if one payment is delayed?",
+    sender: "Liam Patel <liam.patel@students.northbridge.edu>",
+    subject: "Need a payment plan for my spring tuition balance",
+    body: "Hi Finance Office, I cannot pay the full spring tuition this month. Is there a monthly payment-plan option, and what happens if one installment is late by a few days?",
     category: "Finance",
     confidence: 89,
     priority: "High",
     status: "Auto-sent",
     assignee: "Noah Kim",
     aiDraft:
-      "Hello Liam,\n\nYes, we offer a monthly installment plan for spring tuition. You can enroll through the student billing portal under Payment Plans. Please note that each missed installment may incur a late fee based on our tuition policy.\n\nIf needed, we can also connect you with Financial Aid to discuss additional support options.\n\nRegards,\nStudent Finance Team",
+      "Hello Liam,\n\nYes, Northbridge University offers a monthly payment plan for spring tuition. You can enroll through the student billing portal under Payment Plans before the published tuition deadline.\n\nIf an installment is delayed, late-fee rules may apply based on the billing calendar. If you need added support, the Student Finance team can also help direct you to the right next step.\n\nRegards,\nStudent Finance Team",
     staffNote: null,
-    source: "Student-Billing-Handbook-2026.docx",
+    source: "Student Billing and Payment Plans 2026.docx",
     summary:
       "Finance inquiry about tuition installments and late-fee exposure for spring billing.",
     manualReviewReason: null,
-    receivedAt: "2026-03-27T11:46:00.000Z",
-    lastUpdatedAt: "2026-03-27T12:18:00.000Z",
+    receivedAt: "2026-04-19T11:46:00.000Z",
+    lastUpdatedAt: "2026-04-19T12:18:00.000Z",
     threadHistory: [
       {
         id: "EM-1002-TH-1",
         kind: "Inbound",
         label: "Student inquiry",
         author: "Liam Patel",
-        sentAt: "2026-03-27T11:46:00.000Z",
+        sentAt: "2026-04-19T11:46:00.000Z",
         body:
-          "Hi Finance Office, I cannot pay the full spring tuition this month. Is there a monthly installment option and what are the late fee rules if one payment is delayed?",
+          "Hi Finance Office, I cannot pay the full spring tuition this month. Is there a monthly payment-plan option, and what happens if one installment is late by a few days?",
       },
       {
         id: "EM-1002-TH-2",
         kind: "Outbound",
         label: "Approved reply",
         author: "Noah Kim",
-        sentAt: "2026-03-27T12:18:00.000Z",
+        sentAt: "2026-04-19T12:18:00.000Z",
         body:
           "Confirmed installment-plan availability, pointed the student to the billing portal, and called out late-fee policy plus financial-aid escalation.",
       },
@@ -1442,7 +1443,7 @@ const seedEmails: StaffEmail[] = [
     sourceCitations: [
       {
         id: "EM-1002-SRC-1",
-        documentName: "Student-Billing-Handbook-2026.docx",
+        documentName: "Student Billing and Payment Plans 2026.docx",
         excerpt:
           "Students may enroll in a monthly payment plan through the billing portal before the published spring tuition deadline.",
         reason: "Supports the installment-plan availability in the reply.",
@@ -1451,9 +1452,9 @@ const seedEmails: StaffEmail[] = [
   },
   {
     id: "EM-1003",
-    sender: "Registrar Queue <noreply@registrar.edu>",
-    subject: "Name mismatch on transcript request",
-    body: "A transcript request from student ID 224198 was flagged due to a legal name mismatch between SIS and the transcript form. Please review and advise next steps.",
+    sender: "Registrar Queue <records@northbridge.edu>",
+    subject: "Transcript request on hold because of legal-name mismatch",
+    body: "A transcript request from student ID 224198 was flagged because the legal name in SIS does not match the submitted request form. Please review the hold reason and confirm the next response to the student.",
     category: "Registrar",
     confidence: 74,
     priority: "High",
@@ -1462,20 +1463,20 @@ const seedEmails: StaffEmail[] = [
     aiDraft: null,
     staffNote:
       "Potential legal-name exception. Confirm the registrar identity-match policy before replying.",
-    source: "Transcript-Request-Workflow-v4.pdf",
+    source: "Transcript Identity Verification Workflow.pdf",
     summary:
       "Registrar exception case involving identity verification before a transcript request can proceed.",
     manualReviewReason:
       "This case requires policy confirmation because the request involves a legal-name mismatch across systems.",
-    receivedAt: "2026-03-28T07:30:00.000Z",
-    lastUpdatedAt: "2026-03-28T08:14:00.000Z",
+    receivedAt: "2026-04-20T07:30:00.000Z",
+    lastUpdatedAt: "2026-04-20T08:14:00.000Z",
     threadHistory: [
       {
         id: "EM-1003-TH-1",
         kind: "System",
         label: "Queue alert",
         author: "Registrar Queue",
-        sentAt: "2026-03-28T07:30:00.000Z",
+        sentAt: "2026-04-20T07:30:00.000Z",
         body:
           "Transcript request flagged due to a legal-name mismatch between SIS and the submitted transcript form.",
       },
@@ -1484,7 +1485,7 @@ const seedEmails: StaffEmail[] = [
         kind: "Internal",
         label: "Escalation note",
         author: "Priya Shah",
-        sentAt: "2026-03-28T08:14:00.000Z",
+        sentAt: "2026-04-20T08:14:00.000Z",
         body:
           "Needs registrar identity-match policy confirmation before the student is contacted.",
       },
@@ -1492,7 +1493,7 @@ const seedEmails: StaffEmail[] = [
     sourceCitations: [
       {
         id: "EM-1003-SRC-1",
-        documentName: "Transcript-Request-Workflow-v4.pdf",
+        documentName: "Transcript Identity Verification Workflow.pdf",
         excerpt:
           "Transcript requests with legal-name discrepancies must be held until identity verification is completed by Registrar Operations.",
         reason: "Explains why this case cannot be auto-sent yet.",
@@ -1501,47 +1502,47 @@ const seedEmails: StaffEmail[] = [
   },
   {
     id: "EM-1004",
-    sender: "Prof. Elena Cruz <ecruz@faculty.edu>",
-    subject: "Grade change approval process for capstone course",
-    body: "Good afternoon, I need to submit a grade correction for two capstone students due to an LMS export issue. Can you confirm the approval chain and expected processing timeline?",
+    sender: "Prof. Elena Cruz <elena.cruz@northbridge.edu>",
+    subject: "Approval path for a capstone grade correction",
+    body: "Good afternoon, I need to submit a grade correction for two capstone students because of an LMS export issue. Can you confirm the approval path and what I should tell the students about next steps?",
     category: "Academic",
     confidence: 91,
     priority: "Medium",
     status: "Draft",
     assignee: null,
     aiDraft:
-      "Dear Professor Cruz,\n\nThank you for reaching out. Grade correction requests for capstone courses should be submitted via the Academic Records portal. After submission, requests route to your department chair for approval and then to the Registrar for final posting.\n\nTypical processing time is 3-5 business days.\n\nBest,\nAcademic Operations",
+      "Dear Professor Cruz,\n\nThank you for reaching out. Grade correction requests should be submitted through the Academic Records portal and routed first for department approval. Once that approval is recorded, Registrar Operations can post the updated record.\n\nIf helpful, we can also confirm the documentation needed before you submit the correction.\n\nBest,\nAcademic Operations",
     staffNote: null,
-    source: "Academic-Records-SOP-2026.pdf",
+    source: "Academic Records Change Process 2026.pdf",
     summary:
-      "Faculty request about grade-correction approvals and turnaround for capstone records.",
+      "Faculty request about the approval path for grade corrections affecting capstone students.",
     manualReviewReason: null,
-    receivedAt: "2026-03-28T14:22:00.000Z",
-    lastUpdatedAt: "2026-03-28T14:41:00.000Z",
+    receivedAt: "2026-04-20T14:22:00.000Z",
+    lastUpdatedAt: "2026-04-20T14:41:00.000Z",
     threadHistory: [
       {
         id: "EM-1004-TH-1",
         kind: "Inbound",
         label: "Faculty inquiry",
         author: "Prof. Elena Cruz",
-        sentAt: "2026-03-28T14:22:00.000Z",
+        sentAt: "2026-04-20T14:22:00.000Z",
         body:
-          "Good afternoon, I need to submit a grade correction for two capstone students due to an LMS export issue. Can you confirm the approval chain and expected processing timeline?",
+          "Good afternoon, I need to submit a grade correction for two capstone students because of an LMS export issue. Can you confirm the approval path and what I should tell the students about next steps?",
       },
       {
         id: "EM-1004-TH-2",
         kind: "Internal",
         label: "Draft queued",
         author: "Academic Operations",
-        sentAt: "2026-03-28T14:41:00.000Z",
+        sentAt: "2026-04-20T14:41:00.000Z",
         body:
-          "Draft created from academic-records SOP. Waiting for assignment before final review.",
+          "Draft created from the academic-records process guide. Waiting for assignment before final review.",
       },
     ],
     sourceCitations: [
       {
         id: "EM-1004-SRC-1",
-        documentName: "Academic-Records-SOP-2026.pdf",
+        documentName: "Academic Records Change Process 2026.pdf",
         excerpt:
           "Grade corrections route to the department chair first and then to the Registrar for posting after approval.",
         reason: "Supports the approval-chain explanation.",
@@ -1550,9 +1551,9 @@ const seedEmails: StaffEmail[] = [
   },
   {
     id: "EM-1005",
-    sender: "Noah Kim <noah.kim@student.edu>",
-    subject: "Deadline to drop elective without W grade",
-    body: "Hi, could you tell me the last date to drop an elective this semester without receiving a W on my transcript? I am considering a schedule adjustment.",
+    sender: "Amelia Ross <amelia.ross@students.northbridge.edu>",
+    subject: "Last date to drop an elective without a W",
+    body: "Hi, could you tell me the last date to drop an elective this semester without receiving a W on my transcript? I am deciding whether to adjust my schedule this week.",
     category: "Registrar",
     confidence: 96,
     priority: "Low",
@@ -1561,28 +1562,28 @@ const seedEmails: StaffEmail[] = [
     aiDraft:
       "Hello Noah,\n\nThe last date to drop an elective course without receiving a W grade this semester is April 4. You can process the change through the registration portal before 11:59 PM local time.\n\nIf you want help evaluating schedule impacts, we recommend speaking with your academic advisor.\n\nRegards,\nRegistrar Office",
     staffNote: null,
-    source: "Academic-Calendar-2026.pdf",
+    source: "Registrar Calendar and Enrollment Deadlines 2026.pdf",
     summary:
       "Registrar deadline question about course-drop timing and transcript impact.",
     manualReviewReason: null,
-    receivedAt: "2026-03-29T08:05:00.000Z",
-    lastUpdatedAt: "2026-03-29T08:21:00.000Z",
+    receivedAt: "2026-04-21T08:05:00.000Z",
+    lastUpdatedAt: "2026-04-21T08:21:00.000Z",
     threadHistory: [
       {
         id: "EM-1005-TH-1",
         kind: "Inbound",
         label: "Student inquiry",
-        author: "Noah Kim",
-        sentAt: "2026-03-29T08:05:00.000Z",
+        author: "Amelia Ross",
+        sentAt: "2026-04-21T08:05:00.000Z",
         body:
-          "Hi, could you tell me the last date to drop an elective this semester without receiving a W on my transcript? I am considering a schedule adjustment.",
+          "Hi, could you tell me the last date to drop an elective this semester without receiving a W on my transcript? I am deciding whether to adjust my schedule this week.",
       },
       {
         id: "EM-1005-TH-2",
         kind: "Outbound",
         label: "Approved reply",
         author: "Jordan Lee",
-        sentAt: "2026-03-29T08:21:00.000Z",
+        sentAt: "2026-04-21T08:21:00.000Z",
         body:
           "Confirmed the no-W drop deadline and directed the student to academic advising for schedule planning.",
       },
@@ -1590,7 +1591,7 @@ const seedEmails: StaffEmail[] = [
     sourceCitations: [
       {
         id: "EM-1005-SRC-1",
-        documentName: "Academic-Calendar-2026.pdf",
+        documentName: "Registrar Calendar and Enrollment Deadlines 2026.pdf",
         excerpt:
           "The last day to drop an elective without a W grade is April 4 at 11:59 PM local time.",
         reason: "Supports the deadline quoted in the approved reply.",

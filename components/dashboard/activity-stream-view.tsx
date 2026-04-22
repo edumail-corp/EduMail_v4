@@ -172,8 +172,8 @@ export function ActivityStreamView({
         title={isPolish ? "Aktywność" : "Activity"}
         description={
           isPolish
-            ? "Przeglądaj pełny strumień działań workspace, w tym zmiany zespołu, checkpointy synchronizacji skrzynki, wysyłki odpowiedzi i aktualizacje dokumentów."
-            : "Review the full workspace activity stream, including staff changes, inbox sync checkpoints, reply sends, and document updates."
+            ? "Przeglądaj najważniejsze decyzje i zmiany w workspace, w tym ruch spraw, dokumenty, odświeżenia skrzynki i działania zespołu."
+            : "Review the key decisions and changes across the workspace, including case movement, documents, inbox refreshes, and team actions."
         }
         meta={
           isPolish
@@ -186,7 +186,7 @@ export function ActivityStreamView({
             className={`${dashboardSecondaryButtonClassName} gap-3`}
           >
             <DashboardIcon name="download" className="h-[18px] w-[18px]" />
-            {isPolish ? "Eksportuj JSON" : "Export JSON"}
+            {isPolish ? "Eksportuj log aktywności" : "Export activity log"}
           </a>
         }
       />
@@ -201,8 +201,8 @@ export function ActivityStreamView({
           </p>
           <p className="mt-2 text-sm leading-6 text-slate-500">
             {isPolish
-              ? "Wszystkie zapisane zdarzenia workflow dostępne dla tego workspace."
-              : "All persisted workflow events currently available for this workspace."}
+              ? "Wszystkie zapisane decyzje i zdarzenia dostępne dla tego workspace."
+              : "All recorded decisions and workflow events currently available in this workspace."}
           </p>
         </article>
 
@@ -215,8 +215,8 @@ export function ActivityStreamView({
           </p>
           <p className="mt-2 text-sm leading-6 text-slate-500">
             {isPolish
-              ? "Świeże zmiany we wszystkich obszarach: sprawy, dokumenty, członkostwo i synchronizacja skrzynki."
-              : "Fresh changes across cases, documents, membership, and mailbox sync."}
+              ? "Świeże zmiany dotyczące spraw, dokumentów, dostępu zespołu i odświeżeń skrzynki."
+              : "Fresh changes across cases, documents, team access, and inbox refresh."}
           </p>
         </article>
 
@@ -230,7 +230,7 @@ export function ActivityStreamView({
           <p className="mt-2 text-sm leading-6 text-slate-500">
             {isPolish
               ? `${inboxCheckpointCount} checkpointów skrzynki • ${staffChangeCount} zmian zespołu`
-              : `${inboxCheckpointCount} inbox checkpoints • ${staffChangeCount} staff changes`}
+              : `${inboxCheckpointCount} inbox refreshes • ${staffChangeCount} staff changes`}
           </p>
         </article>
       </section>
@@ -243,8 +243,8 @@ export function ActivityStreamView({
             </p>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
               {isPolish
-                ? "Zawęź widok do konkretnego typu aktywności albo przeszukaj opisy zdarzeń bez opuszczania dashboardu."
-                : "Narrow the feed to a specific activity type or search event descriptions without leaving the dashboard."}
+                ? "Zawęź widok do konkretnego typu aktywności albo przeszukaj sprawy, dokumenty i działania zespołu bez opuszczania dashboardu."
+                : "Narrow the feed to a specific activity type or search cases, documents, and team actions without leaving the dashboard."}
             </p>
           </div>
 

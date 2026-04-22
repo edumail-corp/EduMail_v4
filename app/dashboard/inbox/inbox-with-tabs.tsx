@@ -21,15 +21,15 @@ export function InboxWithTabs({
       title={isPolish ? "Skrzynka" : "Inbox"}
       description={
         isPolish
-          ? "Otwórz wiadomość, przeczytaj zapytanie i przejrzyj wygenerowaną odpowiedź w widoku skrzynki, niezależnie od tego, czy sprawa przyszła z synchronizacji, czy z ręcznego intake."
-          : "Open a message, read the inquiry, and review the generated reply in the inbox view, whether the case came from live sync or manual intake."
+          ? "Otwórz wiadomość, przeczytaj zapytanie i przejdź od szkicu opartego na źródłach do końcowej decyzji człowieka."
+          : "Open a message, read the inquiry, and move from a grounded draft to a final human decision."
       }
       metaSuffix={isPolish ? "wszystkich wiadomości" : "total messages"}
       listTitle={isPolish ? "Wiadomości" : "Messages"}
       listDescription={
         isPolish
-          ? "Wszystkie przechwycone wiadomości przychodzące, zarówno z żywej synchronizacji, jak i z ręcznie utworzonych spraw."
-          : "All captured inbound messages, including live-sync imports and manually created cases."
+          ? "Bieżące wiadomości i sprawy gotowe do przeglądu przez zespół."
+          : "Current messages and cases ready for staff review."
       }
       emptyMessage={isPolish ? "Brak dostępnych wiadomości." : "No messages available."}
       staffAssigneeOptions={staffAssigneeOptions}

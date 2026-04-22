@@ -152,7 +152,85 @@ export function getActivityFilterLabel(
 }
 
 export function getInitialActivityEvents() {
-  return [] as ActivityEvent[];
+  return [
+    {
+      id: "ACT-1001",
+      timestamp: "2026-04-18T08:10:00.000Z",
+      action: "document_uploaded",
+      entityType: "document",
+      entityId: "DOC-1",
+      title: "International admissions guidance refreshed",
+      description:
+        "Updated policy guidance is available to support language-proof and scholarship-timing replies.",
+      href: "/dashboard/knowledge-base?document=International%20Admissions%20Guidance%202026.pdf",
+    },
+    {
+      id: "ACT-1002",
+      timestamp: "2026-04-19T09:12:00.000Z",
+      action: "case_created",
+      entityType: "email",
+      entityId: "EM-1001",
+      title: "International admissions case entered the queue",
+      description:
+        "A new applicant question was captured and prepared for admissions review.",
+      href: "/dashboard/inbox?emailId=EM-1001",
+    },
+    {
+      id: "ACT-1003",
+      timestamp: "2026-04-19T09:20:00.000Z",
+      action: "assignment_updated",
+      entityType: "email",
+      entityId: "EM-1001",
+      title: "International admissions case assigned to Ava Patel",
+      description:
+        "Ownership is set so the team can move from intake to reply review without delay.",
+      href: "/dashboard/inbox?emailId=EM-1001",
+    },
+    {
+      id: "ACT-1004",
+      timestamp: "2026-04-19T12:18:00.000Z",
+      action: "email_approved",
+      entityType: "email",
+      entityId: "EM-1002",
+      title: "Finance team approved a tuition-plan reply",
+      description:
+        "The response guided the student to the payment-plan portal and clarified late-fee expectations.",
+      href: "/dashboard/inbox?emailId=EM-1002",
+    },
+    {
+      id: "ACT-1005",
+      timestamp: "2026-04-20T08:14:00.000Z",
+      action: "note_saved",
+      entityType: "email",
+      entityId: "EM-1003",
+      title: "Registrar exception flagged for manual review",
+      description:
+        "The team recorded an identity-verification note before replying on the transcript request.",
+      href: "/dashboard/inbox?emailId=EM-1003",
+    },
+    {
+      id: "ACT-1006",
+      timestamp: "2026-04-20T14:41:00.000Z",
+      action: "draft_saved",
+      entityType: "email",
+      entityId: "EM-1004",
+      title: "Academic records draft prepared for a faculty request",
+      description:
+        "The suggested reply explains the approval path without over-promising a timeline.",
+      href: "/dashboard/inbox?emailId=EM-1004",
+    },
+    {
+      id: "ACT-1007",
+      timestamp: "2026-04-21T07:40:00.000Z",
+      action: "inbox_sync_completed",
+      entityType: "inbox",
+      entityId: "INBOX-DAILY-001",
+      title: "Morning inbox review completed",
+      description:
+        "New student inquiries were added to the Admissions, Finance, and Registrar queues for the team to review.",
+      href: "/dashboard/inbox",
+    },
+  ] as ActivityEvent[];
 }
 
 export function formatActivityTimestamp(

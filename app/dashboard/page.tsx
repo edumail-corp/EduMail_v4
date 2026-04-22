@@ -252,20 +252,20 @@ export default async function DashboardRootPage({
         title={isPolish ? "Przegląd panelu" : "Dashboard Overview"}
         description={
           isPolish
-            ? `Witaj ponownie, ${currentUser.name}. Oto szybka migawka presji kolejki, własności i ostatniej aktywności.`
-            : `Welcome back, ${currentUser.name}. Here is a quick snapshot of queue pressure, ownership, and recent activity.`
+            ? `Witaj ponownie, ${currentUser.name}. Oto dzisiejszy obraz kolejki, własności spraw i ostatniej aktywności zespołu.`
+            : `Welcome back, ${currentUser.name}. Here is today’s view of queue pressure, ownership, and recent team activity.`
         }
         meta={
           isPolish
-            ? "Migawka workspace niezależnego od dostawcy"
-            : "Provider-agnostic workspace snapshot"
+            ? "Migawka operacyjna"
+            : "Operational snapshot"
         }
         actions={
           <Link
-            href="/dashboard/compose"
+            href="/dashboard/inbox"
             className={dashboardSecondaryButtonClassName}
           >
-            {isPolish ? "Nowa sprawa" : "Compose New"}
+            {isPolish ? "Otwórz skrzynkę" : "Open Inbox"}
           </Link>
         }
       />
@@ -307,8 +307,8 @@ export default async function DashboardRootPage({
               </h3>
               <p className="mt-2 text-sm leading-7 text-slate-500">
                 {isPolish
-                  ? "Wolumen poczty przychodzącej względem zarejestrowanej aktywności przepływu w ostatnich siedmiu aktywnych dniach lokalnego prototypu."
-                  : "Inbound mail volume versus logged workflow activity across the latest seven active days in the local prototype."}
+                  ? "Wolumen wiadomości przychodzących względem zarejestrowanych działań zespołu w ostatnich aktywnych dniach."
+                  : "Inbound mail volume versus recorded team activity across the most recent active days."}
               </p>
             </div>
             <div className="flex items-center gap-4 text-sm text-slate-500">
@@ -417,8 +417,8 @@ export default async function DashboardRootPage({
               ) ? (
                 <div className="rounded-[22px] border border-dashed border-white/80 bg-white/54 px-4 py-6 text-sm text-slate-500">
                   {isPolish
-                    ? "Równoważenie właścicieli pojawi się tutaj, gdy lokalna kolejka będzie miała więcej przypisanej pracy."
-                    : "Owner balancing will appear here once the local queue has more assigned work."}
+                    ? "Przegląd obciążenia właścicieli pojawi się tutaj, gdy więcej spraw zostanie przypisanych."
+                    : "Owner balancing will appear here as more cases move into assigned review."}
                 </div>
               ) : (
                 operationsSnapshot.ownerSummaries.map((summary) => (

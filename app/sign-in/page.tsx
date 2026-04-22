@@ -34,6 +34,17 @@ export default async function SignInPage({
   const developmentAccessUsers = developmentAccessEnabled
     ? (await listWorkspaceStaffDirectory())
         .filter((user) => user.status === "active")
+        .sort((left, right) => {
+          if (left.role === "operations_admin" && right.role !== "operations_admin") {
+            return -1;
+          }
+
+          if (right.role === "operations_admin" && left.role !== "operations_admin") {
+            return 1;
+          }
+
+          return left.name.localeCompare(right.name);
+        })
         .map((user) => ({
           id: user.id,
           name: user.name,

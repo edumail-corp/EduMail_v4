@@ -249,8 +249,8 @@ export function EmailDetailPanel({
 
   let reviewMessage =
     isPolish
-      ? "Zatwierdź tę odpowiedź, aby wysłać ją do odbiorcy albo zakończyć lokalny fallback, jeśli dostawca poczty nie jest jeszcze skonfigurowany."
-      : "Approve this response to send it to the recipient, or finish in the local fallback when outbound mail is not configured yet.";
+      ? "Zatwierdź tę odpowiedź, aby zakończyć sprawę końcową decyzją człowieka."
+      : "Approve this response to complete the case with a final human decision.";
 
   if (isEditingDraft) {
     reviewMessage = isPolish
@@ -258,8 +258,8 @@ export function EmailDetailPanel({
       : "Update the draft, save it to the mailbox store, and approve it when the response is ready.";
   } else if (isAlreadySent) {
     reviewMessage = isPolish
-      ? "Ta wiadomość została już wysłana albo zakończona w lokalnym fallbacku."
-      : "This message has already been sent or completed in the local fallback.";
+      ? "Ta wiadomość została już zatwierdzona."
+      : "This message has already been approved.";
   } else if (!hasDraft) {
     reviewMessage = isPolish
       ? "Szkic AI nie jest jeszcze dostępny, więc ta sprawa nadal wymaga ręcznej odpowiedzi."
@@ -735,7 +735,7 @@ export function EmailDetailPanel({
               placeholder="Write the response that should be sent to the student or staff member."
             />
             <p className="text-xs font-medium text-slate-500">
-              Saving this draft will persist it for the current prototype mailbox.
+              Saving this draft will update the prepared response for this case.
             </p>
           </div>
         ) : email.aiDraft ? (

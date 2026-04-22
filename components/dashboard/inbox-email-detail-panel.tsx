@@ -247,23 +247,23 @@ export function InboxEmailDetailPanel({
 
   const approveLabel = isApproving
     ? isPolish
-      ? "Wysyłanie..."
-      : "Sending..."
+      ? "Zatwierdzanie..."
+      : "Approving..."
     : isAlreadySent
       ? isPolish
-        ? "Już wysłane"
-        : "Already Sent"
+        ? "Już zatwierdzone"
+        : "Already approved"
       : hasFailedSend
         ? isPolish
-          ? "Ponów wysyłkę"
-          : "Retry Send"
+          ? "Ponów dostarczenie"
+          : "Retry delivery"
       : !hasDraft
         ? isPolish
           ? "Wymagany ręczny przegląd"
           : "Manual Review Required"
         : isPolish
-          ? "Zatwierdź i wyślij"
-          : "Approve & Send";
+          ? "Zatwierdź odpowiedź"
+          : "Approve reply";
   const editLabel = isAlreadySent
     ? isPolish
       ? "Zablokowane po wysłaniu"
@@ -334,18 +334,18 @@ export function InboxEmailDetailPanel({
       ? "Microsoft Graph"
       : email.caseOrigin === "Manual intake"
         ? isPolish
-          ? "Ręczne przyjęcie"
-          : "Manual intake"
+          ? "Sprawa dodana przez zespół"
+          : "Staff-created case"
         : isPolish
-          ? "Lokalny fallback"
-          : "Local fallback";
+          ? "Kolejka workspace"
+          : "Workspace queue";
   const inboundSourceCaption = email.integration?.inboundReferenceUrl
     ? isPolish
       ? "Ta sprawa zachowuje odnośnik do źródłowej wiadomości w skrzynce."
-      : "This case keeps a reference link back to the source mailbox message."
+      : "This case keeps a direct link back to the source mailbox message."
     : isPolish
-      ? "Ta sprawa nie ma zewnętrznego odnośnika do wiadomości źródłowej."
-      : "This case does not have an external source-message link.";
+      ? "Ta sprawa jest przeglądana bezpośrednio w tym workspace."
+      : "This case is being reviewed directly inside the workspace.";
   const outboundSourceValue =
     hasFailedSend
       ? isPolish
@@ -355,20 +355,20 @@ export function InboxEmailDetailPanel({
         ? "Microsoft Graph"
         : email.integration?.outboundSentAt
           ? isPolish
-            ? "Lokalny fallback"
-            : "Local fallback"
+            ? "Zapisano w workspace"
+            : "Recorded in workspace"
           : isPolish
-            ? "Jeszcze nie wysłano"
-            : "Not sent yet";
+            ? "Oczekuje na zatwierdzenie"
+            : "Awaiting approval";
   const outboundSourceCaption = email.integration?.outboundSentAt
     ? isPolish
-      ? `Ostatnia wysyłka została zapisana ${formatDateTime(email.integration.outboundSentAt)}.`
-      : `Last send was recorded at ${formatDateTime(email.integration.outboundSentAt)}.`
+      ? `Ostatnia decyzja o odpowiedzi została zapisana ${formatDateTime(email.integration.outboundSentAt)}.`
+      : `The latest reply decision was recorded at ${formatDateTime(email.integration.outboundSentAt)}.`
     : hasFailedSend && email.integration?.outboundLastError
       ? email.integration.outboundLastError
       : isPolish
-        ? "Odpowiedź nie została jeszcze zatwierdzona do wysyłki."
-        : "The reply has not been approved for send yet.";
+        ? "Odpowiedź jest gotowa do końcowej decyzji człowieka."
+        : "The reply is ready for final human approval.";
   const outboundAttemptsValue =
     outboundAttemptCount > 0
       ? String(outboundAttemptCount)
@@ -451,8 +451,8 @@ export function InboxEmailDetailPanel({
             </h4>
             <p className="mt-2 text-sm leading-6 text-slate-500">
               {isPolish
-                ? "Otwórz wiadomość, przejrzyj przygotowaną odpowiedź i wyślij ją po końcowym przeglądzie człowieka albo zakończ lokalnym fallbackiem, jeśli provider poczty nie jest jeszcze gotowy."
-                : "Open the message, review the prepared response, and send it after final human review, or finish in the local fallback if the mail provider is not ready yet."}
+                ? "Przejrzyj przygotowaną odpowiedź, popraw ją w razie potrzeby i zakończ sprawę końcową decyzją człowieka."
+                : "Review the prepared response, refine it if needed, and complete the case with a final human decision."}
             </p>
           </div>
 
@@ -541,8 +541,8 @@ export function InboxEmailDetailPanel({
             </p>
             <p className="mt-2 text-xs text-[#8A3B54]">
               {isPolish
-                ? "Po sprawdzeniu szkicu i konfiguracji dostawcy możesz ponowić wysyłkę z tego panelu."
-                : "After checking the draft and mail-provider setup, you can retry directly from this panel."}
+                ? "Po sprawdzeniu szkicu możesz ponowić próbę dostarczenia bezpośrednio z tego panelu."
+                : "After checking the reply, you can retry delivery directly from this panel."}
             </p>
           </div>
         ) : null}
@@ -563,8 +563,8 @@ export function InboxEmailDetailPanel({
               />
               <p className="text-xs font-medium text-slate-500">
                 {isPolish
-                  ? "Zapis aktualizuje przygotowaną odpowiedź przechowywaną w lokalnym przepływie skrzynki."
-                  : "Saving updates the prepared reply stored in the local mailbox workflow."}
+                  ? "Zapis aktualizuje przygotowaną odpowiedź dla tej sprawy."
+                  : "Saving updates the prepared reply for this case."}
               </p>
             </div>
           ) : email.aiDraft ? (
@@ -675,7 +675,7 @@ export function InboxEmailDetailPanel({
         className={`${dashboardPanelClassName} overflow-hidden`}
       >
           <summary className="cursor-pointer list-none px-5 py-4 text-sm font-semibold text-[#1E2340] md:px-6">
-          {isPolish ? "Wewnętrzne narzędzia przepływu" : "Internal workflow tools"}
+          {isPolish ? "Narzędzia przeglądu sprawy" : "Case review tools"}
         </summary>
 
         <div className="border-t border-white/70 px-5 py-5 md:px-6">
@@ -687,8 +687,8 @@ export function InboxEmailDetailPanel({
                 </p>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
                   {isPolish
-                    ? "Zachowaj przypisanie dostępne, ale poza głównym torem czytania wiadomości."
-                    : "Keep assignment available, but out of the way of the core email reading flow."}
+                    ? "Zachowaj własność sprawy pod ręką, nie odrywając uwagi od wiadomości studenta."
+                    : "Keep case ownership close at hand without pulling focus away from the student message."}
                 </p>
 
                 <label

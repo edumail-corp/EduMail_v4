@@ -103,24 +103,24 @@ export const acceptedKnowledgeMimeTypes = [
 const seedKnowledgeDocuments: KnowledgeDocument[] = [
   {
     id: "DOC-1",
-    name: "Admissions-International-Policy-2026.pdf",
+    name: "International Admissions Guidance 2026.pdf",
     category: "Admissions",
-    uploadedAt: "2026-03-20",
+    uploadedAt: "2026-04-18",
     pages: 34,
     summary:
-      "Core admissions policy for international applicants, language testing rules, and scholarship review timing.",
+      "Admissions guidance for international applicants, language-proof exceptions, and scholarship review timing.",
     previewExcerpt:
-      "International applicants must document English-language proficiency unless their prior education was completed in English.",
+      "International applicants must document English-language proficiency unless prior study was completed in English and official proof is included.",
     groundingText:
-      "International applicants must document English-language proficiency unless their prior education was completed in English. Admissions may accept prior degree instruction in English as an alternative to a separate language test when official proof is included in the application file. Scholarship review begins only after the admissions file is complete, including translated transcripts and proof of financial support where required. Staff should avoid promising scholarship outcomes before the file reaches committee review.",
+      "International applicants must document English-language proficiency unless prior study was completed in English and official proof is included in the application file. Admissions may accept prior degree instruction in English as an alternative to a separate language test when the documentation is clear. Scholarship review begins only after the admissions file is complete, including translated transcripts and any required financial-support documents. Staff should avoid promising scholarship outcomes before the file reaches committee review.",
     origin: "seeded",
     referenceCount: 0,
   },
   {
     id: "DOC-2",
-    name: "Student-Billing-Handbook-2026.docx",
+    name: "Student Billing and Payment Plans 2026.docx",
     category: "Finance",
-    uploadedAt: "2026-03-18",
+    uploadedAt: "2026-04-17",
     pages: 21,
     summary:
       "Billing handbook covering payment plans, overdue balances, and student-finance escalation paths.",
@@ -133,9 +133,9 @@ const seedKnowledgeDocuments: KnowledgeDocument[] = [
   },
   {
     id: "DOC-3",
-    name: "Transcript-Request-Workflow-v4.pdf",
+    name: "Transcript Identity Verification Workflow.pdf",
     category: "Registrar",
-    uploadedAt: "2026-03-14",
+    uploadedAt: "2026-04-16",
     pages: 12,
     summary:
       "Registrar workflow for transcript requests, verification holds, and exception handling for identity mismatches.",
@@ -148,12 +148,12 @@ const seedKnowledgeDocuments: KnowledgeDocument[] = [
   },
   {
     id: "DOC-4",
-    name: "Academic-Records-SOP-2026.pdf",
+    name: "Academic Records Change Process 2026.pdf",
     category: "Academic",
-    uploadedAt: "2026-03-10",
+    uploadedAt: "2026-04-15",
     pages: 27,
     summary:
-      "Academic records SOP covering grade corrections, faculty approvals, and registrar posting timelines.",
+      "Academic records process covering grade corrections, faculty approvals, and registrar posting dependencies.",
     previewExcerpt:
       "Grade corrections require department approval before the Registrar posts the updated record.",
     groundingText:
@@ -163,9 +163,9 @@ const seedKnowledgeDocuments: KnowledgeDocument[] = [
   },
   {
     id: "DOC-5",
-    name: "Academic-Calendar-2026.pdf",
+    name: "Registrar Calendar and Enrollment Deadlines 2026.pdf",
     category: "Registrar",
-    uploadedAt: "2026-03-08",
+    uploadedAt: "2026-04-14",
     pages: 9,
     summary:
       "Registrar calendar for add/drop deadlines, registration cutoffs, and transcript-impact milestones.",
@@ -255,10 +255,10 @@ export function getKnowledgeDocumentOriginLabel(
   language: LanguagePreference = "English"
 ) {
   if (language === "Polish") {
-    return origin === "uploaded" ? "Zapisany plik" : "Dane testowe";
+    return origin === "uploaded" ? "Dodany dokument" : "Główna polityka";
   }
 
-  return origin === "uploaded" ? "Stored File" : "Seeded Metadata";
+  return origin === "uploaded" ? "Uploaded" : "Core policy";
 }
 
 export function getKnowledgeDocumentStorageProviderLabel(
@@ -268,12 +268,12 @@ export function getKnowledgeDocumentStorageProviderLabel(
   if (language === "Polish") {
     return provider === "supabase_storage"
       ? "Supabase Storage"
-      : "Lokalna pamięć robocza";
+      : "Biblioteka workspace";
   }
 
   return provider === "supabase_storage"
     ? "Supabase Storage"
-    : "Local Workspace Storage";
+    : "Workspace library";
 }
 
 export function getKnowledgeCategorySelectionLabel(
@@ -288,14 +288,14 @@ export function buildKnowledgeDocumentSummary(
   name: string,
   category: KnowledgeBaseCategory
 ) {
-  return `${category} reference document for ${name.replace(/\.[^.]+$/, "")}.`;
+  return `${category} reference document supporting ${name.replace(/\.[^.]+$/, "")}.`;
 }
 
 export function buildKnowledgeDocumentPreview(
   name: string,
   category: KnowledgeBaseCategory
 ) {
-  return `Local ${category.toLowerCase()} guidance is available in ${name} for future retrieval-grounded replies.`;
+  return `${category} guidance from ${name} is available for future grounded replies.`;
 }
 
 export function estimateKnowledgeDocumentPages(file: File) {

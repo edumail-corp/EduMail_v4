@@ -68,8 +68,8 @@ function getErrorMessage(
 
   if (normalizedCode === "config-missing") {
     return isPolish
-      ? "Supabase Auth nie jest jeszcze skonfigurowany w tym środowisku."
-      : "Supabase Auth is not configured in this environment yet.";
+      ? "Preferowana ścieżka logowania nie jest jeszcze aktywna w tym środowisku."
+      : "The preferred sign-in path is not active in this environment yet.";
   }
 
   if (normalizedCode === "auth-failed") {
@@ -157,23 +157,20 @@ export function SignInClient({
   const builtInAccessRoleClassName = shouldPrioritizeBuiltInAccess
     ? "mt-1 block truncate text-xs font-medium text-white/80"
     : "mt-1 block truncate text-xs font-medium text-slate-500";
-  const builtInAccessEmailClassName = shouldPrioritizeBuiltInAccess
-    ? "mt-1 block truncate text-xs text-white/70"
-    : "mt-1 block truncate text-xs text-slate-400";
   const accessNoticeTitle = shouldPrioritizeBuiltInAccess
     ? isPolish
-      ? "Wbudowany dostęp do workspace"
-      : "Built-in workspace access"
+      ? "Dostęp zatwierdzonego zespołu"
+      : "Approved staff access"
     : isPolish
-      ? "Lokalny dostęp developerski"
-      : "Local developer access";
+      ? "Alternatywny dostęp zespołu"
+      : "Alternative staff access";
   const accessNoticeDescription = shouldPrioritizeBuiltInAccess
     ? isPolish
-      ? "Supabase Auth nie jest jeszcze skonfigurowany w tym środowisku, więc możesz wejść do workspace jako zatwierdzony pracownik z bieżącego katalogu."
-      : "Supabase Auth is not configured in this environment yet, so you can still enter the workspace as an approved staff member from the current directory."
+      ? "Ta prezentacyjna wersja workspace zachowuje bezpieczną ścieżkę wejścia dla zatwierdzonych pracowników, aby demo przebiegało płynnie."
+      : "This presentation workspace keeps a safe entry path available for approved staff so the demo can stay smooth."
     : isPolish
-      ? "Jeśli zewnętrzne logowanie nie jest jeszcze gotowe, możesz wejść do workspace jako członek zespołu z bieżącego katalogu."
-      : "If external sign-in is not ready yet, you can enter the workspace as a staff member from the current directory.";
+      ? "Jeśli główne logowanie nie jest teraz dostępne, zatwierdzony członek zespołu może nadal wejść do workspace alternatywną ścieżką."
+      : "If the primary sign-in route is unavailable, an approved staff member can still enter the workspace through an alternative path.";
 
   function buildCallbackUrl() {
     const callbackUrl = new URL("/auth/callback", window.location.origin);
@@ -276,21 +273,21 @@ export function SignInClient({
             <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 md:text-6xl">
               {shouldPrioritizeBuiltInAccess
                 ? isPolish
-                  ? "Wejdź do EduMailAI przez wbudowany dostęp pracowników."
-                  : "Enter EduMailAI through built-in staff access."
+                  ? "Wejdź do EduMailAI jako zatwierdzony członek zespołu."
+                  : "Enter EduMailAI as an approved staff member."
                 : isPolish
-                  ? "Zaloguj zespół do EduMailAI przez Supabase Auth."
-                  : "Sign your team into EduMailAI through Supabase Auth."}
+                  ? "Kontynuuj do workspace obsługi studentów."
+                  : "Continue into the student services workspace."}
             </h1>
 
             <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600 md:text-lg">
               {shouldPrioritizeBuiltInAccess
                 ? isPolish
-                  ? "To środowisko nadal korzysta z repozytoryjnego katalogu pracowników jako ścieżki wejścia. Wybierz zatwierdzony profil poniżej, aby przejść dalej do /dashboard."
-                  : "This environment is still using the repo-backed staff directory as the entry path. Choose an approved staff profile below to continue into /dashboard."
+                  ? "Wybierz zatwierdzony profil pracownika poniżej, aby otworzyć dashboard i przejść przez przepływ operacyjny."
+                  : "Choose an approved staff profile below to open the dashboard and walk through the operations flow."
                 : isPolish
-                  ? "Pierwsze wdrożenie ogranicza dostęp do zatwierdzonego katalogu pracowników. Zaloguj się przez Google lub Microsoft albo poproś o magic link wysłany na konto z allowlisty."
-                  : "This first rollout is limited to the approved staff directory. Sign in with Google or Microsoft, or request a magic link sent to an allowlisted account."}
+                  ? "Zatwierdzeni pracownicy mogą wejść przez Google, Microsoft albo link logowania wysłany na konto uczelniane."
+                  : "Approved staff can continue with Google, Microsoft, or a sign-in link sent to their university account."}
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
@@ -298,7 +295,7 @@ export function SignInClient({
                 {isPolish ? "Wróć do strony głównej" : "Back to Home"}
               </Link>
               <span className="inline-flex items-center rounded-full border border-white/80 bg-white/82 px-4 py-3 text-sm font-semibold text-slate-500 shadow-[0_14px_38px_rgba(141,156,186,0.14)]">
-                {isPolish ? "Po zalogowaniu wejdziesz do /dashboard" : "After sign-in you will land in /dashboard"}
+                {isPolish ? "Po wejściu otworzy się dashboard operacyjny" : "You will land on the operations dashboard"}
               </span>
             </div>
           </section>
@@ -312,8 +309,8 @@ export function SignInClient({
             </h2>
             <p className="mt-3 text-sm leading-7 text-slate-500">
               {isPolish
-                ? "Google i Microsoft są głównymi ścieżkami SSO, a magic link pozostaje zapasową opcją dla zatwierdzonych kont pracowników."
-                : "Google and Microsoft are the primary SSO paths, while magic link remains the fallback for approved staff accounts."}
+                ? "Google i Microsoft są głównymi ścieżkami wejścia, a link logowania pozostaje zapasową opcją dla zatwierdzonych kont pracowników."
+                : "Google and Microsoft are the primary sign-in paths, while magic link stays available as a backup for approved staff accounts."}
             </p>
 
             {showBuiltInWorkspaceAccess ? (
@@ -340,8 +337,8 @@ export function SignInClient({
             {!authConfigured && !shouldPrioritizeBuiltInAccess ? (
               <div className="mt-5 rounded-[24px] border border-[#FFD2DA] bg-[#FFF1F4] px-4 py-3 text-sm text-[#B4375C] shadow-[0_14px_36px_rgba(141,153,179,0.12)]">
                 {isPolish
-                  ? "Dodaj NEXT_PUBLIC_SUPABASE_URL i NEXT_PUBLIC_SUPABASE_ANON_KEY, aby włączyć logowanie."
-                  : "Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to enable sign-in."}
+                  ? "Główna ścieżka logowania jest jeszcze przygotowywana dla tego środowiska."
+                  : "The primary sign-in route is still being prepared for this environment."}
               </div>
             ) : null}
 
@@ -423,8 +420,8 @@ export function SignInClient({
                   <span className="h-px flex-1 bg-slate-200" />
                   {authConfigured
                     ? isPolish
-                      ? "albo dostęp lokalny"
-                      : "or local access"
+                      ? "albo zatwierdzony dostęp zespołu"
+                      : "or approved staff access"
                     : isPolish
                       ? "wejdź do workspace"
                       : "enter the workspace"}
@@ -446,13 +443,10 @@ export function SignInClient({
                         <span className={builtInAccessTitleClassName}>
                           {isPolish
                             ? `Wejdź jako ${user.name}`
-                            : `Continue as ${user.name}`}
+                            : `Enter as ${user.name}`}
                         </span>
                         <span className={builtInAccessRoleClassName}>
                           {translateWorkspaceRole(user.role, preferences.language)}
-                        </span>
-                        <span className={builtInAccessEmailClassName}>
-                          {user.email}
                         </span>
                       </span>
                       <span className="shrink-0 text-current">

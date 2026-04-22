@@ -26,14 +26,14 @@ export function DashboardShell({
   const isComposePage = pathname === "/dashboard/compose";
   const { preferences } = useUserPreferences();
   const composeLabel = preferences.language === "Polish"
-    ? "Nowa wiadomość"
-      : "Compose New";
+    ? "Dodaj sprawę"
+      : "Add Case";
   const assistantLabel =
-    preferences.language === "Polish" ? "Asystent AI" : "AI Assistant";
+    preferences.language === "Polish" ? "Obsługa studentów" : "Student Services";
   const workspaceDescription =
     preferences.language === "Polish"
-      ? "Przeglądaj uczelnianą korespondencję, zarządzaj źródłami zasad i utrzymuj przepływ prototypu w jednym miejscu."
-      : "Review university communications, manage policy sources, and keep the prototype workflow moving in one place.";
+      ? "Przeglądaj wiadomości studentów, sprawdzaj sugerowane odpowiedzi i utrzymuj polityki uczelni w jednym miejscu."
+      : "Review student email, check suggested replies, and keep institutional guidance in one place.";
   const roleLabel = translateWorkspaceRole(currentUser.role, preferences.language);
   const visibleNavItems = dashboardNavItems.filter((item) =>
     item.href === "/dashboard/admin"
