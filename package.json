@@ -12,6 +12,7 @@
     "build:json-file": "node scripts/build-json-file.mjs",
     "build:database": "node scripts/build-database.mjs",
     "build:sqlite": "node scripts/build-sqlite.mjs",
+    "reset:demo-inbox": "node scripts/reset-demo-mailbox.mjs",
     "migrate:supabase-storage": "node scripts/migrate-supabase-storage.mjs",
     "start": "next start --hostname 127.0.0.1",
     "lint": "node scripts/basic-lint.mjs",

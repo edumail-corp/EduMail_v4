@@ -1362,15 +1362,15 @@ const seedEmails: StaffEmail[] = [
     summary:
       "International applicant needs clear guidance on English-language proof and scholarship review while a translated transcript is still pending.",
     manualReviewReason: null,
-    receivedAt: "2026-04-24T08:18:00.000Z",
-    lastUpdatedAt: "2026-04-24T08:43:00.000Z",
+    receivedAt: "2026-04-24T14:45:00.000Z",
+    lastUpdatedAt: "2026-04-24T15:05:00.000Z",
     threadHistory: [
       {
         id: "EM-1010-TH-1",
         kind: "Inbound",
         label: "Student inquiry",
         author: "Sofia Alvarez",
-        sentAt: "2026-04-24T08:18:00.000Z",
+        sentAt: "2026-04-24T14:45:00.000Z",
         body:
           "Hello Admissions Team, I submitted my international application for Fall 2027 and uploaded my English-taught bachelor degree certificate. My official translated transcript will arrive next week. Can my application still stay in scholarship review, and do I need to book IELTS now?",
       },
@@ -1379,7 +1379,7 @@ const seedEmails: StaffEmail[] = [
         kind: "Internal",
         label: "Grounded draft prepared",
         author: "Admissions triage",
-        sentAt: "2026-04-24T08:43:00.000Z",
+        sentAt: "2026-04-24T15:05:00.000Z",
         body:
           "Prepared a staff-review draft using international admissions guidance. The reply avoids promising scholarship review until the file is complete.",
       },
@@ -1421,15 +1421,15 @@ const seedEmails: StaffEmail[] = [
       "Student missed a payment-plan installment and wants a registration hold removed after paying today.",
     manualReviewReason:
       "The reply should not promise hold removal until Student Finance verifies the account balance and repayment status.",
-    receivedAt: "2026-04-24T09:04:00.000Z",
-    lastUpdatedAt: "2026-04-24T09:27:00.000Z",
+    receivedAt: "2026-04-24T14:15:00.000Z",
+    lastUpdatedAt: "2026-04-24T14:32:00.000Z",
     threadHistory: [
       {
         id: "EM-1011-TH-1",
         kind: "Inbound",
         label: "Student inquiry",
         author: "Daniel Weber",
-        sentAt: "2026-04-24T09:04:00.000Z",
+        sentAt: "2026-04-24T14:15:00.000Z",
         body:
           "Hi Student Finance, I missed one installment on my payment plan because my employer reimbursement came late. I am worried my summer registration will be blocked. Can I pay today and have the hold removed?",
       },
@@ -1438,7 +1438,7 @@ const seedEmails: StaffEmail[] = [
         kind: "Internal",
         label: "Escalation note",
         author: "Finance triage",
-        sentAt: "2026-04-24T09:27:00.000Z",
+        sentAt: "2026-04-24T14:32:00.000Z",
         body:
           "Escalated because account-specific hold removal must be confirmed by Student Finance before replying.",
       },
@@ -1472,15 +1472,15 @@ const seedEmails: StaffEmail[] = [
       "Urgent transcript request is blocked by an identity verification hold caused by legal-name and preferred-name mismatch.",
     manualReviewReason:
       "Identity verification must be completed by Registrar Operations before release timing can be confirmed.",
-    receivedAt: "2026-04-24T10:15:00.000Z",
-    lastUpdatedAt: "2026-04-24T10:38:00.000Z",
+    receivedAt: "2026-04-24T13:40:00.000Z",
+    lastUpdatedAt: "2026-04-24T13:58:00.000Z",
     threadHistory: [
       {
         id: "EM-1012-TH-1",
         kind: "Inbound",
         label: "Student inquiry",
         author: "Aisha Rahman",
-        sentAt: "2026-04-24T10:15:00.000Z",
+        sentAt: "2026-04-24T13:40:00.000Z",
         body:
           "Hello Registrar, my graduate application deadline is Monday and my transcript request still says identity verification hold. My passport uses my full legal name, but my student profile shows my preferred first name. Can this be released today?",
       },
@@ -1489,7 +1489,7 @@ const seedEmails: StaffEmail[] = [
         kind: "Internal",
         label: "Manual review required",
         author: "Registrar triage",
-        sentAt: "2026-04-24T10:38:00.000Z",
+        sentAt: "2026-04-24T13:58:00.000Z",
         body:
           "Release timing cannot be promised until the identity hold is reviewed by Registrar Operations.",
       },
@@ -1531,15 +1531,15 @@ const seedEmails: StaffEmail[] = [
     summary:
       "Faculty member asks what to tell students after a department-chair-approved grade correction moves to registrar posting.",
     manualReviewReason: null,
-    receivedAt: "2026-04-24T11:22:00.000Z",
-    lastUpdatedAt: "2026-04-24T11:46:00.000Z",
+    receivedAt: "2026-04-24T13:05:00.000Z",
+    lastUpdatedAt: "2026-04-24T13:26:00.000Z",
     threadHistory: [
       {
         id: "EM-1013-TH-1",
         kind: "Inbound",
         label: "Faculty inquiry",
         author: "Prof. Marcus Chen",
-        sentAt: "2026-04-24T11:22:00.000Z",
+        sentAt: "2026-04-24T13:05:00.000Z",
         body:
           "Good morning, the department chair approved my grade correction request for a senior project course. The students are asking when the corrected grades will show on their records. What should I tell them?",
       },
@@ -1548,7 +1548,7 @@ const seedEmails: StaffEmail[] = [
         kind: "Internal",
         label: "Draft queued",
         author: "Academic Operations",
-        sentAt: "2026-04-24T11:46:00.000Z",
+        sentAt: "2026-04-24T13:26:00.000Z",
         body:
           "Draft prepared from the academic records change process. Needs owner assignment before final review.",
       },
@@ -1590,15 +1590,15 @@ const seedEmails: StaffEmail[] = [
     summary:
       "Student asks whether a post-deadline elective drop can avoid a W grade because of a possible medical exception.",
     manualReviewReason: null,
-    receivedAt: "2026-04-24T12:05:00.000Z",
-    lastUpdatedAt: "2026-04-24T12:29:00.000Z",
+    receivedAt: "2026-04-24T12:20:00.000Z",
+    lastUpdatedAt: "2026-04-24T12:44:00.000Z",
     threadHistory: [
       {
         id: "EM-1014-TH-1",
         kind: "Inbound",
         label: "Student inquiry",
         author: "Ethan Brooks",
-        sentAt: "2026-04-24T12:05:00.000Z",
+        sentAt: "2026-04-24T12:20:00.000Z",
         body:
           "Hi Registrar Office, I dropped an elective after April 4 because of a medical appointment conflict. I thought it would not show on my transcript. Can you confirm whether I will receive a W or if an exception is possible?",
       },
@@ -1607,7 +1607,7 @@ const seedEmails: StaffEmail[] = [
         kind: "Internal",
         label: "Exception-sensitive draft",
         author: "Registrar triage",
-        sentAt: "2026-04-24T12:29:00.000Z",
+        sentAt: "2026-04-24T12:44:00.000Z",
         body:
           "Draft cites the published deadline and keeps the exception path under human review.",
       },
@@ -1649,15 +1649,15 @@ const seedEmails: StaffEmail[] = [
     summary:
       "Student asks whether switching to part-time enrollment creates a refund and whether billing status could affect transcript access.",
     manualReviewReason: null,
-    receivedAt: "2026-04-24T13:11:00.000Z",
-    lastUpdatedAt: "2026-04-24T13:34:00.000Z",
+    receivedAt: "2026-04-24T11:35:00.000Z",
+    lastUpdatedAt: "2026-04-24T11:58:00.000Z",
     threadHistory: [
       {
         id: "EM-1015-TH-1",
         kind: "Inbound",
         label: "Student inquiry",
         author: "Nora Singh",
-        sentAt: "2026-04-24T13:11:00.000Z",
+        sentAt: "2026-04-24T11:35:00.000Z",
         body:
           "Hello Student Finance, I changed from full-time to part-time enrollment and my billing portal still shows the original tuition amount. Does the refund happen automatically, and will this affect my transcript request?",
       },
@@ -1666,7 +1666,7 @@ const seedEmails: StaffEmail[] = [
         kind: "Internal",
         label: "Draft queued",
         author: "Finance triage",
-        sentAt: "2026-04-24T13:34:00.000Z",
+        sentAt: "2026-04-24T11:58:00.000Z",
         body:
           "Draft prepared with billing-calendar caution and transcript-service hold context.",
       },
@@ -1707,15 +1707,15 @@ const seedEmails: StaffEmail[] = [
     summary:
       "Low-risk finance question asking how to confirm a payment plan is active before registration opens.",
     manualReviewReason: null,
-    receivedAt: "2026-04-24T14:02:00.000Z",
-    lastUpdatedAt: "2026-04-24T14:10:00.000Z",
+    receivedAt: "2026-04-24T10:55:00.000Z",
+    lastUpdatedAt: "2026-04-24T11:03:00.000Z",
     threadHistory: [
       {
         id: "EM-1016-TH-1",
         kind: "Inbound",
         label: "Student inquiry",
         author: "Owen Miller",
-        sentAt: "2026-04-24T14:02:00.000Z",
+        sentAt: "2026-04-24T10:55:00.000Z",
         body:
           "Hi, I enrolled in the spring monthly payment plan yesterday and want to make sure I do not need to do anything else before registration opens. Could you confirm the next step?",
       },
@@ -1724,7 +1724,7 @@ const seedEmails: StaffEmail[] = [
         kind: "Outbound",
         label: "Approved reply",
         author: "Noah Kim",
-        sentAt: "2026-04-24T14:10:00.000Z",
+        sentAt: "2026-04-24T11:03:00.000Z",
         body:
           "Directed the student to confirm payment-plan status in the billing portal and contact Finance if the plan is not visible.",
       },
