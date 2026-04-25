@@ -130,6 +130,23 @@ async function getDevelopmentAccessWorkspaceUser(
   return staffUser ? buildDevelopmentAccessWorkspaceUser(staffUser) : null;
 }
 
+async function getDefaultDevelopmentAccessWorkspaceUser() {
+  if (!isDevelopmentAccessEnabled() || hasConfiguredSupabaseAuth()) {
+    return null;
+  }
+
+  const staffDirectory = await listWorkspaceStaffDirectory();
+  const staffUser =
+    staffDirectory.find(
+      (candidate) =>
+        candidate.status === "active" && candidate.role === "operations_admin"
+    ) ??
+    staffDirectory.find((candidate) => candidate.status === "active") ??
+    null;
+
+  return staffUser ? buildDevelopmentAccessWorkspaceUser(staffUser) : null;
+}
+
 async function resolveWorkspaceUser(
   authUser: User | null
 ): Promise<WorkspaceAuthResolution> {
@@ -196,6 +213,13 @@ export async function getCurrentWorkspaceUser() {
 
   if (developmentAccessUser) {
     return developmentAccessUser;
+  }
+
+  const defaultDevelopmentAccessUser =
+    await getDefaultDevelopmentAccessWorkspaceUser();
+
+  if (defaultDevelopmentAccessUser) {
+    return defaultDevelopmentAccessUser;
   }
 
   if (!hasConfiguredSupabaseAuth()) {
@@ -270,6 +294,15 @@ export async function requireWorkspaceUserForApi() {
   if (developmentAccessUser) {
     return {
       workspaceUser: developmentAccessUser,
+    } as const;
+  }
+
+  const defaultDevelopmentAccessUser =
+    await getDefaultDevelopmentAccessWorkspaceUser();
+
+  if (defaultDevelopmentAccessUser) {
+    return {
+      workspaceUser: defaultDevelopmentAccessUser,
     } as const;
   }
 
