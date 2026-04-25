@@ -1345,6 +1345,402 @@ export const defaultStaffAssignmentSelection = "Unassigned";
 
 const seedEmails: StaffEmail[] = [
   {
+    id: "EM-1010",
+    sender: "Sofia Alvarez <sofia.alvarez@students.northbridge.edu>",
+    subject: "Can I stay in scholarship review while my translated transcript is pending?",
+    body: "Hello Admissions Team, I submitted my international application for Fall 2027 and uploaded my English-taught bachelor degree certificate. My official translated transcript will arrive next week. Can my application still stay in scholarship review, and do I need to book IELTS now?",
+    category: "Admissions",
+    confidence: 94,
+    priority: "High",
+    status: "Draft",
+    assignee: "Ava Patel",
+    aiDraft:
+      "Hello Sofia,\n\nThank you for checking with us. If your previous degree was taught in English, the admissions team can review that documentation as possible English-language proof, but it must be included clearly in your application file. A separate IELTS booking is not always required when official proof of English-taught prior study is accepted.\n\nFor scholarship review, your file needs to be complete, including translated transcripts and required supporting documents. Please upload the official translated transcript as soon as it is available so your application can move forward without delay.\n\nBest regards,\nAdmissions Office",
+    staffNote:
+      "Good featured pitch case: shows grounded answer, no invented scholarship promise, and a clear next step for the student.",
+    source: "International Admissions Guidance 2026.pdf",
+    summary:
+      "International applicant needs clear guidance on English-language proof and scholarship review while a translated transcript is still pending.",
+    manualReviewReason: null,
+    receivedAt: "2026-04-24T08:18:00.000Z",
+    lastUpdatedAt: "2026-04-24T08:43:00.000Z",
+    threadHistory: [
+      {
+        id: "EM-1010-TH-1",
+        kind: "Inbound",
+        label: "Student inquiry",
+        author: "Sofia Alvarez",
+        sentAt: "2026-04-24T08:18:00.000Z",
+        body:
+          "Hello Admissions Team, I submitted my international application for Fall 2027 and uploaded my English-taught bachelor degree certificate. My official translated transcript will arrive next week. Can my application still stay in scholarship review, and do I need to book IELTS now?",
+      },
+      {
+        id: "EM-1010-TH-2",
+        kind: "Internal",
+        label: "Grounded draft prepared",
+        author: "Admissions triage",
+        sentAt: "2026-04-24T08:43:00.000Z",
+        body:
+          "Prepared a staff-review draft using international admissions guidance. The reply avoids promising scholarship review until the file is complete.",
+      },
+    ],
+    sourceCitations: [
+      {
+        id: "EM-1010-SRC-1",
+        documentName: "International Admissions Guidance 2026.pdf",
+        excerpt:
+          "International applicants must document English-language proficiency unless prior study was completed in English and official proof is included in the application file.",
+        reason:
+          "Supports the answer about English-taught prior study as possible language proof.",
+      },
+      {
+        id: "EM-1010-SRC-2",
+        documentName: "International Admissions Guidance 2026.pdf",
+        excerpt:
+          "Scholarship review begins only after the admissions file is complete, including translated transcripts and required supporting documents.",
+        reason:
+          "Supports the next step without promising that scholarship review can proceed early.",
+      },
+    ],
+  },
+  {
+    id: "EM-1011",
+    sender: "Daniel Weber <daniel.weber@students.northbridge.edu>",
+    subject: "Registration hold after missing one payment-plan installment",
+    body: "Hi Student Finance, I missed one installment on my payment plan because my employer reimbursement came late. I am worried my summer registration will be blocked. Can I pay today and have the hold removed?",
+    category: "Finance",
+    confidence: 86,
+    priority: "High",
+    status: "Escalated",
+    assignee: "Noah Kim",
+    aiDraft: null,
+    staffNote:
+      "Use this one to show human control: AI can summarize the rule, but a staff member must verify the account before promising hold removal.",
+    source: "Student Billing and Payment Plans 2026.docx",
+    summary:
+      "Student missed a payment-plan installment and wants a registration hold removed after paying today.",
+    manualReviewReason:
+      "The reply should not promise hold removal until Student Finance verifies the account balance and repayment status.",
+    receivedAt: "2026-04-24T09:04:00.000Z",
+    lastUpdatedAt: "2026-04-24T09:27:00.000Z",
+    threadHistory: [
+      {
+        id: "EM-1011-TH-1",
+        kind: "Inbound",
+        label: "Student inquiry",
+        author: "Daniel Weber",
+        sentAt: "2026-04-24T09:04:00.000Z",
+        body:
+          "Hi Student Finance, I missed one installment on my payment plan because my employer reimbursement came late. I am worried my summer registration will be blocked. Can I pay today and have the hold removed?",
+      },
+      {
+        id: "EM-1011-TH-2",
+        kind: "Internal",
+        label: "Escalation note",
+        author: "Finance triage",
+        sentAt: "2026-04-24T09:27:00.000Z",
+        body:
+          "Escalated because account-specific hold removal must be confirmed by Student Finance before replying.",
+      },
+    ],
+    sourceCitations: [
+      {
+        id: "EM-1011-SRC-1",
+        documentName: "Student Billing and Payment Plans 2026.docx",
+        excerpt:
+          "Overdue balances may place registration or transcript services on hold until the finance team confirms a compliant repayment arrangement.",
+        reason:
+          "Explains why this case needs account verification before the staff response is approved.",
+      },
+    ],
+  },
+  {
+    id: "EM-1012",
+    sender: "Aisha Rahman <aisha.rahman@students.northbridge.edu>",
+    subject: "Urgent transcript for graduate application is still on hold",
+    body: "Hello Registrar, my graduate application deadline is Monday and my transcript request still says identity verification hold. My passport uses my full legal name, but my student profile shows my preferred first name. Can this be released today?",
+    category: "Registrar",
+    confidence: 81,
+    priority: "High",
+    status: "Escalated",
+    assignee: "Priya Shah",
+    aiDraft: null,
+    staffNote:
+      "Strong governance example: urgent tone, but the system correctly blocks auto-response because identity verification is involved.",
+    source: "Transcript Identity Verification Workflow.pdf",
+    summary:
+      "Urgent transcript request is blocked by an identity verification hold caused by legal-name and preferred-name mismatch.",
+    manualReviewReason:
+      "Identity verification must be completed by Registrar Operations before release timing can be confirmed.",
+    receivedAt: "2026-04-24T10:15:00.000Z",
+    lastUpdatedAt: "2026-04-24T10:38:00.000Z",
+    threadHistory: [
+      {
+        id: "EM-1012-TH-1",
+        kind: "Inbound",
+        label: "Student inquiry",
+        author: "Aisha Rahman",
+        sentAt: "2026-04-24T10:15:00.000Z",
+        body:
+          "Hello Registrar, my graduate application deadline is Monday and my transcript request still says identity verification hold. My passport uses my full legal name, but my student profile shows my preferred first name. Can this be released today?",
+      },
+      {
+        id: "EM-1012-TH-2",
+        kind: "Internal",
+        label: "Manual review required",
+        author: "Registrar triage",
+        sentAt: "2026-04-24T10:38:00.000Z",
+        body:
+          "Release timing cannot be promised until the identity hold is reviewed by Registrar Operations.",
+      },
+    ],
+    sourceCitations: [
+      {
+        id: "EM-1012-SRC-1",
+        documentName: "Transcript Identity Verification Workflow.pdf",
+        excerpt:
+          "Requests with legal-name discrepancies remain on hold until Registrar Operations completes identity verification.",
+        reason:
+          "Supports escalation and prevents the draft from promising same-day transcript release.",
+      },
+      {
+        id: "EM-1012-SRC-2",
+        documentName: "Transcript Identity Verification Workflow.pdf",
+        excerpt:
+          "Staff should direct urgent exceptions through Registrar Operations and document the hold reason instead of confirming release dates before verification is complete.",
+        reason:
+          "Supports the recommended internal next step.",
+      },
+    ],
+  },
+  {
+    id: "EM-1013",
+    sender: "Prof. Marcus Chen <marcus.chen@northbridge.edu>",
+    subject: "Grade correction approved by chair, what happens next?",
+    body: "Good morning, the department chair approved my grade correction request for a senior project course. The students are asking when the corrected grades will show on their records. What should I tell them?",
+    category: "Academic",
+    confidence: 92,
+    priority: "Medium",
+    status: "Draft",
+    assignee: null,
+    aiDraft:
+      "Dear Professor Chen,\n\nThank you for confirming that department approval has been recorded. After chair approval, the correction is routed to Registrar Operations for final posting in the academic record system.\n\nWe recommend telling students that the correction is moving through the final registrar posting step and that they should wait for the official record update rather than relying on an estimated posting date.\n\nBest,\nAcademic Operations",
+    staffNote:
+      "Unassigned by design so the pitch can show owner assignment and queue recommendations.",
+    source: "Academic Records Change Process 2026.pdf",
+    summary:
+      "Faculty member asks what to tell students after a department-chair-approved grade correction moves to registrar posting.",
+    manualReviewReason: null,
+    receivedAt: "2026-04-24T11:22:00.000Z",
+    lastUpdatedAt: "2026-04-24T11:46:00.000Z",
+    threadHistory: [
+      {
+        id: "EM-1013-TH-1",
+        kind: "Inbound",
+        label: "Faculty inquiry",
+        author: "Prof. Marcus Chen",
+        sentAt: "2026-04-24T11:22:00.000Z",
+        body:
+          "Good morning, the department chair approved my grade correction request for a senior project course. The students are asking when the corrected grades will show on their records. What should I tell them?",
+      },
+      {
+        id: "EM-1013-TH-2",
+        kind: "Internal",
+        label: "Draft queued",
+        author: "Academic Operations",
+        sentAt: "2026-04-24T11:46:00.000Z",
+        body:
+          "Draft prepared from the academic records change process. Needs owner assignment before final review.",
+      },
+    ],
+    sourceCitations: [
+      {
+        id: "EM-1013-SRC-1",
+        documentName: "Academic Records Change Process 2026.pdf",
+        excerpt:
+          "Grade corrections require department approval before the Registrar posts the updated record.",
+        reason:
+          "Supports the explanation that the case is now in the registrar posting step.",
+      },
+      {
+        id: "EM-1013-SRC-2",
+        documentName: "Academic Records Change Process 2026.pdf",
+        excerpt:
+          "Staff should explain the approval dependency clearly and avoid committing to posting dates until the approval chain is complete.",
+        reason:
+          "Supports the careful wording around timing.",
+      },
+    ],
+  },
+  {
+    id: "EM-1014",
+    sender: "Ethan Brooks <ethan.brooks@students.northbridge.edu>",
+    subject: "I dropped after the no-W deadline, can my transcript still be clean?",
+    body: "Hi Registrar Office, I dropped an elective after April 4 because of a medical appointment conflict. I thought it would not show on my transcript. Can you confirm whether I will receive a W or if an exception is possible?",
+    category: "Registrar",
+    confidence: 88,
+    priority: "High",
+    status: "Draft",
+    assignee: "Jordan Lee",
+    aiDraft:
+      "Hello Ethan,\n\nThe published registrar calendar lists April 4 at 11:59 PM local time as the last day to drop an elective without a W grade. Requests submitted after that deadline may affect the transcript according to the withdrawal rules.\n\nBecause you mentioned a possible exception, we recommend that Registrar Operations review the case before a final answer is sent. Please include any relevant documentation through the official student request process.\n\nRegards,\nRegistrar Office",
+    staffNote:
+      "Useful pitch case for showing a safe draft: it answers the rule but routes the exception request to staff review.",
+    source: "Registrar Calendar and Enrollment Deadlines 2026.pdf",
+    summary:
+      "Student asks whether a post-deadline elective drop can avoid a W grade because of a possible medical exception.",
+    manualReviewReason: null,
+    receivedAt: "2026-04-24T12:05:00.000Z",
+    lastUpdatedAt: "2026-04-24T12:29:00.000Z",
+    threadHistory: [
+      {
+        id: "EM-1014-TH-1",
+        kind: "Inbound",
+        label: "Student inquiry",
+        author: "Ethan Brooks",
+        sentAt: "2026-04-24T12:05:00.000Z",
+        body:
+          "Hi Registrar Office, I dropped an elective after April 4 because of a medical appointment conflict. I thought it would not show on my transcript. Can you confirm whether I will receive a W or if an exception is possible?",
+      },
+      {
+        id: "EM-1014-TH-2",
+        kind: "Internal",
+        label: "Exception-sensitive draft",
+        author: "Registrar triage",
+        sentAt: "2026-04-24T12:29:00.000Z",
+        body:
+          "Draft cites the published deadline and keeps the exception path under human review.",
+      },
+    ],
+    sourceCitations: [
+      {
+        id: "EM-1014-SRC-1",
+        documentName: "Registrar Calendar and Enrollment Deadlines 2026.pdf",
+        excerpt:
+          "The last day to drop an elective without a W grade is April 4 at 11:59 PM local time.",
+        reason:
+          "Supports the deadline guidance in the draft.",
+      },
+      {
+        id: "EM-1014-SRC-2",
+        documentName: "Registrar Calendar and Enrollment Deadlines 2026.pdf",
+        excerpt:
+          "Staff should always anchor schedule guidance to the published registrar calendar and flag exceptions for manual review if the request arrives after the relevant deadline.",
+        reason:
+          "Supports routing the exception question to staff review.",
+      },
+    ],
+  },
+  {
+    id: "EM-1015",
+    sender: "Nora Singh <nora.singh@students.northbridge.edu>",
+    subject: "Can I get a refund after switching to part-time enrollment?",
+    body: "Hello Student Finance, I changed from full-time to part-time enrollment and my billing portal still shows the original tuition amount. Does the refund happen automatically, and will this affect my transcript request?",
+    category: "Finance",
+    confidence: 87,
+    priority: "Medium",
+    status: "Draft",
+    assignee: "Noah Kim",
+    aiDraft:
+      "Hello Nora,\n\nThank you for reaching out. Refund and billing adjustments should be reviewed through the Student Finance workflow and checked against the published billing calendar. The team can confirm whether the enrollment change creates an adjustment on your account.\n\nPlease note that overdue balances may affect transcript services until Student Finance confirms the account is in good standing or under a compliant repayment arrangement.\n\nRegards,\nStudent Finance Team",
+    staffNote:
+      "Good case for demonstrating cross-functional context: finance answer with transcript-service risk.",
+    source: "Student Billing and Payment Plans 2026.docx",
+    summary:
+      "Student asks whether switching to part-time enrollment creates a refund and whether billing status could affect transcript access.",
+    manualReviewReason: null,
+    receivedAt: "2026-04-24T13:11:00.000Z",
+    lastUpdatedAt: "2026-04-24T13:34:00.000Z",
+    threadHistory: [
+      {
+        id: "EM-1015-TH-1",
+        kind: "Inbound",
+        label: "Student inquiry",
+        author: "Nora Singh",
+        sentAt: "2026-04-24T13:11:00.000Z",
+        body:
+          "Hello Student Finance, I changed from full-time to part-time enrollment and my billing portal still shows the original tuition amount. Does the refund happen automatically, and will this affect my transcript request?",
+      },
+      {
+        id: "EM-1015-TH-2",
+        kind: "Internal",
+        label: "Draft queued",
+        author: "Finance triage",
+        sentAt: "2026-04-24T13:34:00.000Z",
+        body:
+          "Draft prepared with billing-calendar caution and transcript-service hold context.",
+      },
+    ],
+    sourceCitations: [
+      {
+        id: "EM-1015-SRC-1",
+        documentName: "Student Billing and Payment Plans 2026.docx",
+        excerpt:
+          "Refund questions should be routed through the student finance workflow, and staff should reference the published billing calendar instead of promising immediate reversals.",
+        reason:
+          "Supports a careful refund explanation without promising automatic reversal.",
+      },
+      {
+        id: "EM-1015-SRC-2",
+        documentName: "Student Billing and Payment Plans 2026.docx",
+        excerpt:
+          "Overdue balances may place registration or transcript services on hold until the finance team confirms a compliant repayment arrangement.",
+        reason:
+          "Supports the transcript-service caveat.",
+      },
+    ],
+  },
+  {
+    id: "EM-1016",
+    sender: "Owen Miller <owen.miller@students.northbridge.edu>",
+    subject: "Can you confirm my payment plan is active?",
+    body: "Hi, I enrolled in the spring monthly payment plan yesterday and want to make sure I do not need to do anything else before registration opens. Could you confirm the next step?",
+    category: "Finance",
+    confidence: 97,
+    priority: "Low",
+    status: "Auto-sent",
+    assignee: "Noah Kim",
+    aiDraft:
+      "Hello Owen,\n\nThank you for your message. Monthly payment plans are activated through the billing portal before the published tuition deadline. Please check the billing portal for your current payment-plan status and upcoming installment schedule.\n\nIf the portal does not show the plan as active, contact Student Finance so the team can review your account.\n\nRegards,\nStudent Finance Team",
+    staffNote: null,
+    source: "Student Billing and Payment Plans 2026.docx",
+    summary:
+      "Low-risk finance question asking how to confirm a payment plan is active before registration opens.",
+    manualReviewReason: null,
+    receivedAt: "2026-04-24T14:02:00.000Z",
+    lastUpdatedAt: "2026-04-24T14:10:00.000Z",
+    threadHistory: [
+      {
+        id: "EM-1016-TH-1",
+        kind: "Inbound",
+        label: "Student inquiry",
+        author: "Owen Miller",
+        sentAt: "2026-04-24T14:02:00.000Z",
+        body:
+          "Hi, I enrolled in the spring monthly payment plan yesterday and want to make sure I do not need to do anything else before registration opens. Could you confirm the next step?",
+      },
+      {
+        id: "EM-1016-TH-2",
+        kind: "Outbound",
+        label: "Approved reply",
+        author: "Noah Kim",
+        sentAt: "2026-04-24T14:10:00.000Z",
+        body:
+          "Directed the student to confirm payment-plan status in the billing portal and contact Finance if the plan is not visible.",
+      },
+    ],
+    sourceCitations: [
+      {
+        id: "EM-1016-SRC-1",
+        documentName: "Student Billing and Payment Plans 2026.docx",
+        excerpt:
+          "Monthly payment plans can be activated through the billing portal before the published tuition deadline.",
+        reason:
+          "Supports the approved low-risk payment-plan guidance.",
+      },
+    ],
+  },
+  {
     id: "EM-1001",
     sender: "Maya Thompson <maya.thompson@students.northbridge.edu>",
     subject: "Can prior study in English waive IELTS for Fall 2027 admissions?",

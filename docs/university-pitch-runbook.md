@@ -29,7 +29,7 @@ Frame this as the control center:
 
 4. `/dashboard/inbox`
 Open the first featured case immediately:
-- `Can prior study in English waive IELTS for Fall 2027 admissions?`
+- `Can I stay in scholarship review while my translated transcript is pending?`
 
 5. Featured case talking points
 - show the original student message
@@ -39,12 +39,19 @@ Open the first featured case immediately:
 - show regenerate reply as the "improve with oversight" moment
 - explain that approval stays human
 
-6. `/dashboard/knowledge-base`
+6. Optional inbox cases to click if the room asks for more
+- `Registration hold after missing one payment-plan installment` shows human control for account-specific finance promises.
+- `Urgent transcript for graduate application is still on hold` shows escalation when identity verification is involved.
+- `Grade correction approved by chair, what happens next?` shows owner assignment and academic-records workflow.
+- `I dropped after the no-W deadline, can my transcript still be clean?` shows a safe draft that cites a deadline but routes exceptions to staff.
+- `Can I get a refund after switching to part-time enrollment?` shows billing guidance with cross-functional transcript-service risk.
+
+7. `/dashboard/knowledge-base`
 Show that the reply is grounded in institutional guidance:
 - `International Admissions Guidance 2026.pdf`
 - one or two other policy documents
 
-7. Close on one of:
+8. Close on one of:
 - `/dashboard/activity` for traceability and operational visibility
 - `/dashboard/admin` for staff access and governance
 
@@ -60,7 +67,7 @@ Show that the reply is grounded in institutional guidance:
 
 - Open the app in English
 - Be signed in before the meeting if needed
-- Confirm the first inbox case is the admissions case
+- Confirm the first inbox case is `Can I stay in scholarship review while my translated transcript is pending?`
 - Confirm dashboard metrics are populated
 - Confirm recent activity is populated
 - Confirm the knowledge-base page highlights matching documents from the cited case
